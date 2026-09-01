@@ -1,0 +1,844 @@
+<title>ForkJoinSum Autopsy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    color-scheme: light;
+    --page:      #f9f9f7;
+    --surface:   #fcfcfb;
+    --surface-2: #f2f1ec;
+    --ink:       #0b0b0b;
+    --ink-2:     #52514e;
+    --ink-muted: #898781;
+    --grid:      #e1e0d9;
+    --baseline:  #c3c2b7;
+    --border:    rgba(11,11,11,0.10);
+    --blue:      #2a78d6;   /* measured / parallelizable work */
+    --orange:    #eb6834;   /* overhead: Amdahl-fit gap, startup cost */
+    --aqua:      #1baf7a;   /* algorithmic serial (fork/join bookkeeping) */
+    --blue-wash:   rgba(42,120,214,0.10);
+    --orange-wash: rgba(235,104,52,0.10);
+    --aqua-wash:   rgba(27,175,122,0.14);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page:      #0d0d0d;
+      --surface:   #1a1a19;
+      --surface-2: #232320;
+      --ink:       #ffffff;
+      --ink-2:     #c3c2b7;
+      --ink-muted: #8f8d86;
+      --grid:      #2c2c2a;
+      --baseline:  #3a3a37;
+      --border:    rgba(255,255,255,0.10);
+      --blue:      #3987e5;
+      --orange:    #d95926;
+      --aqua:      #199e70;
+      --blue-wash:   rgba(57,135,229,0.14);
+      --orange-wash: rgba(217,89,38,0.14);
+      --aqua-wash:   rgba(25,158,112,0.16);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page:      #0d0d0d;
+    --surface:   #1a1a19;
+    --surface-2: #232320;
+    --ink:       #ffffff;
+    --ink-2:     #c3c2b7;
+    --ink-muted: #8f8d86;
+    --grid:      #2c2c2a;
+    --baseline:  #3a3a37;
+    --border:    rgba(255,255,255,0.10);
+    --blue:      #3987e5;
+    --orange:    #d95926;
+    --aqua:      #199e70;
+    --blue-wash:   rgba(57,135,229,0.14);
+    --orange-wash: rgba(217,89,38,0.14);
+    --aqua-wash:   rgba(25,158,112,0.16);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.55;
+  }
+  ::selection { background: var(--blue-wash); }
+
+  .wrap { max-width: 760px; margin: 0 auto; padding: 56px 24px 96px; }
+
+  /* ---------- Header ---------- */
+  header { margin-bottom: 48px; }
+  .kicker {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-size: clamp(30px, 5vw, 42px);
+    line-height: 1.12;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0 0 16px;
+    text-wrap: balance;
+    max-width: 16ch;
+  }
+  .dek {
+    font-size: 17px;
+    color: var(--ink-2);
+    max-width: 62ch;
+    margin: 0 0 20px;
+  }
+  .meta {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+  }
+  .meta b { color: var(--ink-2); font-weight: 500; }
+
+  /* ---------- Sections ---------- */
+  section { margin: 64px 0; }
+  section.summary { margin-top: 56px; }
+
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .sec-num {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    flex: none;
+  }
+  h2 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .prose { max-width: 65ch; }
+  .prose p { margin: 0 0 16px; font-size: 15.5px; }
+  .prose p:last-child { margin-bottom: 0; }
+  .prose code, .inline-code {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.88em;
+    background: var(--surface-2);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+    color: var(--ink);
+  }
+  .prose strong { font-weight: 600; }
+  .finding {
+    color: var(--ink);
+    background: var(--orange-wash);
+    padding: 0.02em 0.35em;
+    border-radius: 3px;
+    font-weight: 500;
+  }
+
+  /* ---------- Code block ---------- */
+  .code-block {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 13px;
+    line-height: 1.65;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin: 20px 0 0;
+    overflow-x: auto;
+    color: var(--ink-2);
+    white-space: pre;
+  }
+  .code-block .kw { color: var(--ink); font-weight: 500; }
+  .code-block .fj { color: var(--orange); font-weight: 600; }
+  .code-block .cm { color: var(--ink-muted); font-style: italic; }
+
+  /* ---------- Chart card ---------- */
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 22px 18px;
+    margin-top: 24px;
+  }
+  .chart-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 4px;
+  }
+  .chart-title { font-size: 14.5px; font-weight: 600; color: var(--ink); }
+  .chart-sub { font-size: 12.5px; color: var(--ink-muted); margin-top: 2px; }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11.5px;
+    color: var(--ink-2);
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .legend-swatch { width: 14px; height: 2px; border-radius: 1px; flex: none; }
+  .legend-swatch.dashed { background: none; border-top: 2px dashed currentColor; height: 0; }
+  .legend-swatch.dotted { background: none; border-top: 2px dotted currentColor; height: 0; }
+
+  .chart-svg-wrap { position: relative; margin-top: 10px; }
+  svg.chart { width: 100%; height: auto; display: block; overflow: visible; }
+  .axis-label { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 10.5px; fill: var(--ink-muted); }
+  .axis-title { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 10.5px; fill: var(--ink-muted); letter-spacing: 0.03em; }
+  .grid-line { stroke: var(--grid); stroke-width: 1; }
+  .baseline-line { stroke: var(--baseline); stroke-width: 1; }
+  .data-label { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11px; font-weight: 500; }
+
+  .tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--ink);
+    color: var(--page);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11.5px;
+    line-height: 1.5;
+    border-radius: 8px;
+    padding: 8px 11px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+    opacity: 0;
+    transition: opacity 0.1s ease;
+    z-index: 5;
+    white-space: nowrap;
+  }
+  .tooltip.show { opacity: 1; }
+  .tooltip .t-head { color: var(--page); opacity: 0.6; font-size: 10.5px; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .tooltip .t-row { display: flex; gap: 10px; justify-content: space-between; }
+  .tooltip .t-row + .t-row { margin-top: 2px; }
+  .tooltip .t-key { display: inline-flex; align-items: center; gap: 5px; opacity: 0.9; }
+  .tooltip .t-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .tooltip .t-val { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .tooltip .t-total { border-top: 1px solid rgba(255,255,255,0.2); margin-top: 5px; padding-top: 5px; font-weight: 600; }
+
+  /* ---------- Stat tiles ---------- */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 20px;
+  }
+  .stat {
+    background: var(--surface);
+    padding: 18px 18px 16px;
+  }
+  .stat-label { font-size: 12px; color: var(--ink-muted); margin-bottom: 8px; }
+  .stat-value {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .stat-value.c-orange { color: var(--orange); }
+  .stat-value.c-aqua { color: var(--aqua); }
+  .stat-value.c-blue { color: var(--blue); }
+  .stat-note { font-size: 12px; color: var(--ink-muted); margin-top: 6px; }
+
+  /* ---------- Verdict ---------- */
+  .verdict {
+    border-left: 3px solid var(--orange);
+    background: var(--orange-wash);
+    border-radius: 0 10px 10px 0;
+    padding: 18px 22px;
+    margin-top: 20px;
+  }
+  .verdict p { margin: 0 0 10px; font-size: 15px; }
+  .verdict p:last-child { margin-bottom: 0; }
+
+  footer {
+    margin-top: 72px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+
+  @media (max-width: 560px) {
+    .wrap { padding: 36px 16px 72px; }
+    h1 { max-width: none; }
+    .chart-card { padding: 16px 14px 14px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tooltip { transition: none; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <p class="kicker">Performance investigation &middot; java.util.concurrent</p>
+    <p style="margin: -6px 0 18px;">
+      <a href="https://claude.ai/code/artifact/82beb647-0349-4688-bbaf-7dbbb2acf6b2" style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12.5px;color:var(--ink-muted);text-decoration:none;border-bottom:1px dotted var(--ink-muted);">&larr; Prerequisite: Before the Autopsy (Java threads &amp; ForkJoinPool)</a>
+    </p>
+    <h1>The ForkJoinSum Autopsy</h1>
+    <p class="dek">
+      A recursive fork/join sum looked like it should scale cleanly with thread count.
+      It didn't. Chasing the gap between measured and ideal speedup turns up two
+      separate serial costs hiding inside one Amdahl fit &mdash; and one of them gets
+      <em>worse</em> the more threads you ask for.
+    </p>
+    <div class="meta">
+      <span><b>N</b> = 50,000,000 longs</span>
+      <span><b>runtime</b> OpenJDK 26</span>
+      <span><b>cores</b> Apple silicon, 4P + 6E</span>
+      <span><b>threshold</b> 10,000 (leaf task size)</span>
+    </div>
+  </header>
+
+  <section id="sec-code">
+    <div class="prose">
+      <p>
+        <code>ForkJoinSum</code> sums an array by recursively halving the range.
+        Each half becomes a task; one half is handed off with <code>fork()</code>,
+        the other is computed inline, and the two results are combined at
+        <code>join()</code>. Below <code>THRESHOLD</code> elements, a task just
+        adds sequentially &mdash; that's the base case every leaf of the recursion
+        bottoms out on.
+      </p>
+    </div>
+    <div class="code-block">protected Long compute() {
+    if (hi - lo &lt;= THRESHOLD) {
+        <span class="kw">long</span> sum = 0;
+        <span class="kw">for</span> (<span class="kw">int</span> i = lo; i &lt; hi; i++) sum += a[i];
+        <span class="kw">return</span> sum;                       <span class="cm">// leaf: pure serial work</span>
+    }
+    <span class="kw">int</span> mid = (lo + hi) / 2;
+    ForkJoinSum left  = <span class="kw">new</span> ForkJoinSum(a, lo, mid);
+    ForkJoinSum right = <span class="kw">new</span> ForkJoinSum(a, mid, hi);
+
+    left.<span class="fj">fork()</span>;                    <span class="cm">// hand the left half to another thread</span>
+    <span class="kw">long</span> rightSum = right.compute();      <span class="cm">// this thread keeps the right half</span>
+    <span class="kw">long</span> leftSum  = left.<span class="fj">join()</span>;      <span class="cm">// wait for the left half</span>
+
+    <span class="kw">return</span> leftSum + rightSum;
+}</div>
+  </section>
+
+  <section id="sec-amdahl">
+    <div class="sec-head"><span class="sec-num">01</span><h2>The baseline: measured speedup vs. Amdahl's law</h2></div>
+    <div class="prose">
+      <p>
+        Timed as <em>steady state</em> &mdash; the pool already warm, threads already
+        alive, JIT already compiled &mdash; across 1&ndash;10 threads (80 repeats each,
+        medians plotted). Fitting Amdahl's law, <code>S(p) = 1 / (f + (1&minus;f)/p)</code>,
+        to the measured curve gives a serial fraction <strong>f &asymp; 21.4%</strong>.
+      </p>
+      <p>
+        That's <span class="finding">2.7 ms of every 12.65 ms run that no thread count
+        can ever remove</span> &mdash; the textbook Amdahl ceiling, about 4.7&times; no
+        matter how many cores you throw at it.
+      </p>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title-row">
+        <div>
+          <div class="chart-title">Speedup vs. thread count</div>
+          <div class="chart-sub">steady-state, median of 80 runs &middot; N = 50M</div>
+        </div>
+        <div class="legend" id="legend-amdahl"></div>
+      </div>
+      <div class="chart-svg-wrap" id="chart-amdahl"></div>
+    </div>
+  </section>
+
+  <section id="sec-split">
+    <div class="sec-head"><span class="sec-num">02</span><h2>A cold run tells a different story</h2></div>
+    <div class="prose">
+      <p>
+        That 21.4% is measured <em>after</em> a warm-up call &mdash; it excludes pool
+        construction and the first, cold <code>invoke()</code>, where
+        <code>ForkJoinPool</code> actually spins up its worker threads. Include that
+        first call, and the picture changes: pool construction is a flat ~0.28&nbsp;ms
+        regardless of pool size, but the <em>first invoke</em> gets more expensive as
+        you request more threads &mdash; more OS threads to create before the first
+        task can even run.
+      </p>
+      <p>
+        Stacking the three components of a real, one-shot invocation shows why: the
+        Amdahl-serial term (aqua) stays fixed, the parallelizable work (blue) shrinks
+        as expected &mdash; but <span class="finding">startup overhead (orange) grows
+        with thread count</span>, and by 10 threads it dwarfs everything else in the bar.
+      </p>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title-row">
+        <div>
+          <div class="chart-title">Where a cold run's time actually goes</div>
+          <div class="chart-sub">pool-init + first invoke(), decomposed &middot; threshold = 10,000</div>
+        </div>
+        <div class="legend" id="legend-stack"></div>
+      </div>
+      <div class="chart-svg-wrap" id="chart-stack"></div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat">
+        <div class="stat-label">Startup's share at 1 thread</div>
+        <div class="stat-value c-orange">74%</div>
+        <div class="stat-note">of the non-scaling portion</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Startup's share at 10 threads</div>
+        <div class="stat-value c-orange">93%</div>
+        <div class="stat-note">of the non-scaling portion</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Amdahl-serial term</div>
+        <div class="stat-value c-aqua">2.7 ms</div>
+        <div class="stat-note">fixed, any thread count</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="sec-floor">
+    <div class="sec-head"><span class="sec-num">03</span><h2>Splitting the 2.7&nbsp;ms itself</h2></div>
+    <div class="prose">
+      <p>
+        The Amdahl-serial term isn't one thing either. <code>THRESHOLD</code> controls
+        leaf-task size &mdash; smaller leaves mean more fork/join pairs on the critical
+        path. Sweeping it while holding N fixed and refitting Amdahl's law at each
+        setting separates the two:
+      </p>
+      <p>
+        Coarsening from 5,000 leaf tasks down to 50 cuts the serial term from 2.6&nbsp;ms
+        to 2.1&nbsp;ms, then <span class="finding">flattens into a floor that finer or
+        coarser granularity can't touch</span>. With only 50 tasks, bookkeeping is
+        microseconds &mdash; the floor is something else: most likely the external-thread
+        wait in <code>pool.invoke()</code>, since the calling thread isn't a pool worker
+        and has to park, then be woken once the root task completes.
+      </p>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title-row">
+        <div>
+          <div class="chart-title">Amdahl-serial time vs. leaf-task threshold</div>
+          <div class="chart-sub">N = 50M, refit at each threshold &middot; log scale</div>
+        </div>
+      </div>
+      <div class="chart-svg-wrap" id="chart-floor"></div>
+    </div>
+  </section>
+
+  <section class="summary">
+    <div class="sec-head"><span class="sec-num">&mdash;</span><h2>What "serial" was actually made of</h2></div>
+    <div class="verdict">
+      <p>
+        <strong>The classic Amdahl serial fraction (21.4%, 2.7 ms) is real but small,
+        and most of it isn't even algorithmic.</strong> Roughly 0.5&nbsp;ms scales with
+        task count &mdash; fork/join bookkeeping on the critical path. The remaining
+        ~2.1&nbsp;ms is a fixed floor, most likely the external-thread handoff in
+        <code>pool.invoke()</code>, unmoved by granularity.
+      </p>
+      <p>
+        None of that is where the real cost lives. A cold, one-shot run's non-scaling
+        time is <strong>74&ndash;93% thread-pool startup</strong> &mdash; and that
+        portion <em>grows</em> with the very thread count you'd add for more speedup.
+        For a short-lived computation, requesting more parallelism can spend more on
+        creating the workers than it saves on the work itself.
+      </p>
+    </div>
+  </section>
+
+  <footer>ForkJoinSum.java &middot; java.util.concurrent &middot; measurements: median of repeated JVM invocations, steady-state unless noted</footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  function css(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  function el(tag, attrs) {
+    var e = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  function fmt(n, d) {
+    return Number(n).toFixed(d === undefined ? 1 : d);
+  }
+
+  function makeTooltip(wrap) {
+    var t = document.createElement("div");
+    t.className = "tooltip";
+    wrap.appendChild(t);
+    return t;
+  }
+
+  // ============================================================
+  // Chart 1 — Amdahl speedup line chart
+  // ============================================================
+  function chartAmdahl() {
+    var wrap = document.getElementById("chart-amdahl");
+    var W = 680, H = 360, M = { top: 16, right: 20, bottom: 34, left: 34 };
+    var plotW = W - M.left - M.right, plotH = H - M.top - M.bottom;
+
+    var threads = [1, 2, 4, 6, 8, 10];
+    var timesMs = [12.650, 7.100, 5.025, 4.250, 4.250, 3.600];
+    var T1 = timesMs[0];
+    var speedup = timesMs.map(function (t) { return T1 / t; });
+
+    // Amdahl fit (precomputed via curve_fit on this data): f = 0.2137
+    var f = 0.2137;
+    function amdahl(p) { return 1 / (f + (1 - f) / p); }
+
+    var xMax = 10, yMax = 5;
+    function xs(v) { return M.left + (v - 1) / (xMax - 1) * plotW; }
+    function ys(v) { return M.top + plotH - (v / yMax) * plotH; }
+
+    var svg = el("svg", { class: "chart", viewBox: "0 0 " + W + " " + H, role: "img",
+      "aria-label": "Speedup versus thread count, measured against an Amdahl's law fit and ideal linear scaling" });
+
+    var clipId = "clip-amdahl";
+    var defs = el("defs", {});
+    var clip = el("clipPath", { id: clipId });
+    clip.appendChild(el("rect", { x: M.left, y: M.top, width: plotW, height: plotH }));
+    defs.appendChild(clip);
+    svg.appendChild(defs);
+
+    // gridlines + y ticks
+    var yTicks = [0, 1, 2, 3, 4, 5];
+    yTicks.forEach(function (t) {
+      svg.appendChild(el("line", { class: "grid-line", x1: M.left, x2: M.left + plotW, y1: ys(t), y2: ys(t) }));
+      var lbl = el("text", { class: "axis-label", x: M.left - 8, y: ys(t) + 3.5, "text-anchor": "end" });
+      lbl.textContent = t + "×";
+      svg.appendChild(lbl);
+    });
+    // x ticks
+    threads.forEach(function (t) {
+      var lbl = el("text", { class: "axis-label", x: xs(t), y: M.top + plotH + 20, "text-anchor": "middle" });
+      lbl.textContent = t;
+      svg.appendChild(lbl);
+    });
+    var xTitle = el("text", { class: "axis-title", x: M.left + plotW / 2, y: H - 2, "text-anchor": "middle" });
+    xTitle.textContent = "THREADS";
+    svg.appendChild(xTitle);
+
+    // baseline
+    svg.appendChild(el("line", { class: "baseline-line", x1: M.left, x2: M.left + plotW, y1: ys(0), y2: ys(0) }));
+
+    var plot = el("g", { "clip-path": "url(#" + clipId + ")" });
+
+    // ideal linear (dotted, muted)
+    var idealPts = [[1, 1], [xMax, xMax]];
+    var idealD = "M " + idealPts.map(function (p) { return xs(p[0]) + " " + ys(p[1]); }).join(" L ");
+    plot.appendChild(el("path", { d: idealD, fill: "none", stroke: css("--ink-muted"), "stroke-width": 1.5, "stroke-dasharray": "1.5 3.5" }));
+
+    // amdahl fit (dashed orange)
+    var fitPts = [];
+    for (var i = 0; i <= 60; i++) {
+      var p = 1 + (xMax - 1) * i / 60;
+      fitPts.push([p, amdahl(p)]);
+    }
+    var fitD = "M " + fitPts.map(function (p) { return xs(p[0]) + " " + ys(p[1]); }).join(" L ");
+    plot.appendChild(el("path", { d: fitD, fill: "none", stroke: css("--orange"), "stroke-width": 2, "stroke-dasharray": "7 5" }));
+
+    // measured (solid blue)
+    var measD = "M " + threads.map(function (t, i) { return xs(t) + " " + ys(speedup[i]); }).join(" L ");
+    plot.appendChild(el("path", { d: measD, fill: "none", stroke: css("--blue"), "stroke-width": 2.5 }));
+
+    svg.appendChild(plot);
+
+    // markers + hit areas (outside clip so end labels/rings aren't cut)
+    var hitG = el("g", {});
+    threads.forEach(function (t, i) {
+      var cx = xs(t), cy = ys(speedup[i]);
+      svg.appendChild(el("circle", { cx: cx, cy: cy, r: 5, fill: css("--blue"), stroke: css("--surface"), "stroke-width": 2 }));
+      var hit = el("circle", { cx: cx, cy: cy, r: 14, fill: "transparent", style: "cursor:pointer" });
+      hit.dataset.i = i;
+      hitG.appendChild(hit);
+    });
+    svg.appendChild(hitG);
+
+    // end labels
+    var lastI = threads.length - 1;
+    var measLbl = el("text", { class: "data-label", x: xs(threads[lastI]) + 10, y: ys(speedup[lastI]) + 4, fill: css("--ink") });
+    measLbl.textContent = fmt(speedup[lastI], 2) + "×";
+    svg.appendChild(measLbl);
+
+    wrap.appendChild(svg);
+
+    // legend
+    var legend = document.getElementById("legend-amdahl");
+    legend.innerHTML =
+      '<span class="legend-item" style="color:' + css("--blue") + '"><span class="legend-swatch" style="background:currentColor"></span>Measured</span>' +
+      '<span class="legend-item" style="color:' + css("--orange") + '"><span class="legend-swatch dashed"></span>Amdahl fit (f=21.4%)</span>' +
+      '<span class="legend-item" style="color:' + css("--ink-muted") + '"><span class="legend-swatch dotted"></span>Ideal linear</span>';
+
+    // tooltip
+    var tooltip = makeTooltip(wrap);
+    hitG.querySelectorAll("circle").forEach(function (hit) {
+      hit.addEventListener("pointerenter", function () {
+        var i = +hit.dataset.i;
+        var cx = xs(threads[i]), cy = ys(speedup[i]);
+        tooltip.innerHTML =
+          '<div class="t-head">' + threads[i] + (threads[i] === 1 ? " thread" : " threads") + '</div>' +
+          '<div class="t-row"><span class="t-key"><span class="t-dot" style="background:' + css("--blue") + '"></span>measured</span><span class="t-val">' + fmt(speedup[i], 2) + '×</span></div>' +
+          '<div class="t-row"><span class="t-key"><span class="t-dot" style="background:' + css("--orange") + '"></span>Amdahl fit</span><span class="t-val">' + fmt(amdahl(threads[i]), 2) + '×</span></div>' +
+          '<div class="t-row"><span class="t-key">time</span><span class="t-val">' + fmt(timesMs[i], 2) + ' ms</span></div>';
+        var bw = wrap.getBoundingClientRect().width, scale = bw / W;
+        tooltip.style.left = (cx * scale) + "px";
+        tooltip.style.top = (cy * scale - 14) + "px";
+        tooltip.style.transform = "translate(-50%, -100%)";
+        tooltip.classList.add("show");
+      });
+      hit.addEventListener("pointerleave", function () { tooltip.classList.remove("show"); });
+    });
+  }
+
+  // ============================================================
+  // Chart 2 — stacked decomposition of a cold single-shot run
+  // ============================================================
+  function chartStack() {
+    var wrap = document.getElementById("chart-stack");
+    var W = 680, H = 380, M = { top: 16, right: 16, bottom: 34, left: 38 };
+    var plotW = W - M.left - M.right, plotH = H - M.top - M.bottom;
+
+    var threads = [1, 2, 4, 6, 8, 10];
+    var serialFixed = 2.704;
+    var parallel = [9.946, 4.973, 2.4865, 1.6577, 1.24325, 0.9946];
+    var startup = [7.875, 10.190, 12.428, 17.069, 15.094, 35.038];
+
+    var yMax = 40;
+    var n = threads.length;
+    var bandW = plotW / n;
+    var barW = Math.min(26, bandW * 0.52);
+    var gap = 2; // surface-color separator between segments
+
+    function ys(v) { return M.top + plotH - (v / yMax) * plotH; }
+    function xCenter(i) { return M.left + bandW * (i + 0.5); }
+
+    var svg = el("svg", { class: "chart", viewBox: "0 0 " + W + " " + H, role: "img",
+      "aria-label": "Stacked bar chart decomposing a cold ForkJoinSum run into parallel work, algorithmic serial time, and startup overhead, per thread count" });
+
+    var yTicks = [0, 10, 20, 30, 40];
+    yTicks.forEach(function (t) {
+      svg.appendChild(el("line", { class: "grid-line", x1: M.left, x2: M.left + plotW, y1: ys(t), y2: ys(t) }));
+      var lbl = el("text", { class: "axis-label", x: M.left - 8, y: ys(t) + 3.5, "text-anchor": "end" });
+      lbl.textContent = t;
+      svg.appendChild(lbl);
+    });
+    var yTitle = el("text", { class: "axis-title", x: 10, y: M.top - 4 });
+    yTitle.textContent = "MS";
+    svg.appendChild(yTitle);
+
+    svg.appendChild(el("line", { class: "baseline-line", x1: M.left, x2: M.left + plotW, y1: ys(0), y2: ys(0) }));
+
+    var barsG = el("g", {});
+    var bars = []; // for tooltip hit areas
+
+    threads.forEach(function (t, i) {
+      var cx = xCenter(i);
+      var x0 = cx - barW / 2;
+
+      var segs = [
+        { name: "Parallel work", val: parallel[i], color: css("--blue") },
+        { name: "Algorithmic serial", val: serialFixed, color: css("--aqua") },
+        { name: "Startup overhead", val: startup[i], color: css("--orange") }
+      ];
+
+      var yCursor = ys(0); // bottom, growing upward
+      segs.forEach(function (seg, si) {
+        var segH = (seg.val / yMax) * plotH;
+        var yTop = yCursor - segH;
+        var isTop = si === segs.length - 1;
+        var insetTop = si === 0 ? 0 : gap / 2;
+        var insetBottom = isTop ? 0 : gap / 2;
+        var ry = yTop + insetTop;
+        var rh = Math.max(0, segH - insetTop - insetBottom);
+
+        if (isTop) {
+          var r = 4;
+          var d = "M " + x0 + " " + (ry + rh) +
+                  " L " + x0 + " " + (ry + r) +
+                  " Q " + x0 + " " + ry + " " + (x0 + r) + " " + ry +
+                  " L " + (x0 + barW - r) + " " + ry +
+                  " Q " + (x0 + barW) + " " + ry + " " + (x0 + barW) + " " + (ry + r) +
+                  " L " + (x0 + barW) + " " + (ry + rh) + " Z";
+          barsG.appendChild(el("path", { d: d, fill: seg.color }));
+        } else {
+          barsG.appendChild(el("rect", { x: x0, y: ry, width: barW, height: rh, fill: seg.color }));
+        }
+        yCursor = yTop;
+      });
+
+      var totalH = parallel[i] + serialFixed + startup[i];
+      var hit = el("rect", { x: x0 - gap, y: ys(totalH) - 6, width: barW + gap * 2, height: (ys(0) - ys(totalH)) + 6, fill: "transparent", style: "cursor:pointer" });
+      hit.dataset.i = i;
+      barsG.appendChild(hit);
+      bars.push({ x0: x0, top: ys(totalH), total: totalH });
+
+      var xl = el("text", { class: "axis-label", x: cx, y: M.top + plotH + 20, "text-anchor": "middle" });
+      xl.textContent = t;
+      svg.appendChild(xl);
+    });
+    svg.appendChild(barsG);
+
+    var xTitle = el("text", { class: "axis-title", x: M.left + plotW / 2, y: H - 2, "text-anchor": "middle" });
+    xTitle.textContent = "THREADS";
+    svg.appendChild(xTitle);
+
+    wrap.appendChild(svg);
+
+    var legend = document.getElementById("legend-stack");
+    legend.innerHTML =
+      '<span class="legend-item" style="color:' + css("--blue") + '"><span class="legend-swatch" style="background:currentColor"></span>Parallel work</span>' +
+      '<span class="legend-item" style="color:' + css("--aqua") + '"><span class="legend-swatch" style="background:currentColor"></span>Algorithmic serial</span>' +
+      '<span class="legend-item" style="color:' + css("--orange") + '"><span class="legend-swatch" style="background:currentColor"></span>Startup overhead</span>';
+
+    var tooltip = makeTooltip(wrap);
+    barsG.querySelectorAll("rect[data-i]").forEach(function (hit) {
+      hit.addEventListener("pointerenter", function () {
+        var i = +hit.dataset.i;
+        var total = parallel[i] + serialFixed + startup[i];
+        tooltip.innerHTML =
+          '<div class="t-head">' + threads[i] + (threads[i] === 1 ? " thread" : " threads") + '</div>' +
+          '<div class="t-row"><span class="t-key"><span class="t-dot" style="background:' + css("--orange") + '"></span>startup</span><span class="t-val">' + fmt(startup[i], 2) + ' ms</span></div>' +
+          '<div class="t-row"><span class="t-key"><span class="t-dot" style="background:' + css("--aqua") + '"></span>algorithmic serial</span><span class="t-val">' + fmt(serialFixed, 2) + ' ms</span></div>' +
+          '<div class="t-row"><span class="t-key"><span class="t-dot" style="background:' + css("--blue") + '"></span>parallel work</span><span class="t-val">' + fmt(parallel[i], 2) + ' ms</span></div>' +
+          '<div class="t-row t-total"><span class="t-key">total</span><span class="t-val">' + fmt(total, 2) + ' ms</span></div>';
+        var bar = bars[i];
+        var bw = wrap.getBoundingClientRect().width, scale = bw / W;
+        tooltip.style.left = ((bar.x0 + barW / 2) * scale) + "px";
+        tooltip.style.top = (bar.top * scale - 10) + "px";
+        tooltip.style.transform = "translate(-50%, -100%)";
+        tooltip.classList.add("show");
+      });
+      hit.addEventListener("pointerleave", function () { tooltip.classList.remove("show"); });
+    });
+  }
+
+  // ============================================================
+  // Chart 3 — threshold sweep, the algorithmic-serial floor
+  // ============================================================
+  function chartFloor() {
+    var wrap = document.getElementById("chart-floor");
+    var W = 680, H = 320, M = { top: 20, right: 24, bottom: 34, left: 34 };
+    var plotW = W - M.left - M.right, plotH = H - M.top - M.bottom;
+
+    var thresholds = [1000, 10000, 100000, 1000000];
+    var leaves = [50000, 5000, 500, 50];
+    var serialMs = [7.169, 2.617, 2.151, 2.139];
+    var floor = 2.139;
+
+    var xMin = 3, xMax = 6; // log10(threshold)
+    var yMax = 8;
+    function xs(v) { return M.left + (Math.log10(v) - xMin) / (xMax - xMin) * plotW; }
+    function ys(v) { return M.top + plotH - (v / yMax) * plotH; }
+
+    var svg = el("svg", { class: "chart", viewBox: "0 0 " + W + " " + H, role: "img",
+      "aria-label": "Line chart of algorithmic serial time versus leaf task threshold, showing a floor around 2.1 milliseconds" });
+
+    var yTicks = [0, 2, 4, 6, 8];
+    yTicks.forEach(function (t) {
+      svg.appendChild(el("line", { class: "grid-line", x1: M.left, x2: M.left + plotW, y1: ys(t), y2: ys(t) }));
+      var lbl = el("text", { class: "axis-label", x: M.left - 8, y: ys(t) + 3.5, "text-anchor": "end" });
+      lbl.textContent = t;
+      svg.appendChild(lbl);
+    });
+    var yTitle = el("text", { class: "axis-title", x: 10, y: M.top - 6 });
+    yTitle.textContent = "MS";
+    svg.appendChild(yTitle);
+
+    thresholds.forEach(function (th) {
+      var lbl = el("text", { class: "axis-label", x: xs(th), y: M.top + plotH + 20, "text-anchor": "middle" });
+      lbl.textContent = th >= 1000000 ? "1M" : th >= 1000 ? (th / 1000) + "K" : th;
+      svg.appendChild(lbl);
+    });
+    var xTitle = el("text", { class: "axis-title", x: M.left + plotW / 2, y: H - 2, "text-anchor": "middle" });
+    xTitle.textContent = "LEAF-TASK THRESHOLD (log scale)";
+    svg.appendChild(xTitle);
+
+    svg.appendChild(el("line", { class: "baseline-line", x1: M.left, x2: M.left + plotW, y1: ys(0), y2: ys(0) }));
+
+    // floor reference line
+    svg.appendChild(el("line", { x1: M.left, x2: M.left + plotW, y1: ys(floor), y2: ys(floor),
+      stroke: css("--ink-muted"), "stroke-width": 1.5, "stroke-dasharray": "1.5 3.5" }));
+    var floorLbl = el("text", { class: "axis-label", x: M.left + plotW - 4, y: ys(floor) - 6, "text-anchor": "end", fill: css("--ink-muted") });
+    floorLbl.textContent = "floor ≈ " + fmt(floor, 2) + " ms";
+    svg.appendChild(floorLbl);
+
+    // area wash above the floor (task-management overhead)
+    var areaPts = thresholds.map(function (th, i) { return [xs(th), ys(serialMs[i])]; });
+    var areaD = "M " + areaPts.map(function (p) { return p[0] + " " + p[1]; }).join(" L ") +
+      " L " + xs(thresholds[thresholds.length - 1]) + " " + ys(floor) +
+      " L " + xs(thresholds[0]) + " " + ys(floor) + " Z";
+    svg.appendChild(el("path", { d: areaD, fill: css("--aqua"), opacity: 0.12 }));
+
+    // main line
+    var lineD = "M " + areaPts.map(function (p) { return p[0] + " " + p[1]; }).join(" L ");
+    svg.appendChild(el("path", { d: lineD, fill: "none", stroke: css("--aqua"), "stroke-width": 2.5 }));
+
+    var hitG = el("g", {});
+    thresholds.forEach(function (th, i) {
+      var cx = xs(th), cy = ys(serialMs[i]);
+      svg.appendChild(el("circle", { cx: cx, cy: cy, r: 5, fill: css("--aqua"), stroke: css("--surface"), "stroke-width": 2 }));
+      var above = i < 2; // place labels above for the two higher points, below-ish for the floor points
+      var lbl = el("text", { class: "data-label", x: cx, y: above ? cy - 12 : cy - 12, "text-anchor": "middle", fill: css("--ink") });
+      lbl.textContent = fmt(serialMs[i], 2);
+      svg.appendChild(lbl);
+      var hit = el("circle", { cx: cx, cy: cy, r: 16, fill: "transparent", style: "cursor:pointer" });
+      hit.dataset.i = i;
+      hitG.appendChild(hit);
+    });
+    svg.appendChild(hitG);
+
+    wrap.appendChild(svg);
+
+    var tooltip = makeTooltip(wrap);
+    hitG.querySelectorAll("circle").forEach(function (hit) {
+      hit.addEventListener("pointerenter", function () {
+        var i = +hit.dataset.i;
+        var cx = xs(thresholds[i]), cy = ys(serialMs[i]);
+        tooltip.innerHTML =
+          '<div class="t-head">threshold = ' + thresholds[i].toLocaleString() + '</div>' +
+          '<div class="t-row"><span class="t-key">leaf tasks</span><span class="t-val">~' + leaves[i].toLocaleString() + '</span></div>' +
+          '<div class="t-row"><span class="t-key">serial time</span><span class="t-val">' + fmt(serialMs[i], 2) + ' ms</span></div>' +
+          '<div class="t-row"><span class="t-key">above floor</span><span class="t-val">' + fmt(Math.max(0, serialMs[i] - floor), 2) + ' ms</span></div>';
+        var bw = wrap.getBoundingClientRect().width, scale = bw / W;
+        tooltip.style.left = (cx * scale) + "px";
+        tooltip.style.top = (cy * scale - 14) + "px";
+        tooltip.style.transform = "translate(-50%, -100%)";
+        tooltip.classList.add("show");
+      });
+      hit.addEventListener("pointerleave", function () { tooltip.classList.remove("show"); });
+    });
+  }
+
+  chartAmdahl();
+  chartStack();
+  chartFloor();
+})();
+</script>

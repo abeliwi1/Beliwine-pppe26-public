@@ -1,0 +1,44 @@
+java rag pipeline: serial vs per-file vs sharded
+date: Fri Aug 28 16:59:42 EDT 2026
+cores (sysctl hw.ncpu / nproc): 10
+
+=== ChunkEmbedInsert ===
+read         10 documents     0.032 s
+chunk     29583 segments      0.499 s
+embed    trial 1/5   29583 embeddings    0.228 s
+embed    trial 2/5   29583 embeddings    0.183 s
+embed    trial 3/5   29583 embeddings    0.187 s
+embed    trial 4/5   29583 embeddings    0.180 s
+embed    trial 5/5   29583 embeddings    0.179 s
+update    29583 entries       0.030 s
+wrote vector store to corpus_embeddings_store.json
+
+=== ChunkEmbedInsertPerFile ===
+trial 1/5  10 files   29583 segments     0.499 s  (10 threads, read+chunk+embed)
+trial 2/5  10 files   29583 segments     0.245 s  (10 threads, read+chunk+embed)
+trial 3/5  10 files   29583 segments     0.208 s  (10 threads, read+chunk+embed)
+trial 4/5  10 files   29583 segments     0.152 s  (10 threads, read+chunk+embed)
+trial 5/5  10 files   29583 segments     0.156 s  (10 threads, read+chunk+embed)
+  per-file finish times (steady-state trial, skew check):
+    war_and_peace.txt              5708 segments  finished at  0.156 s
+    les_miserables.txt             5798 segments  finished at  0.153 s
+    count_of_monte_cristo.txt      4555 segments  finished at  0.125 s
+    don_quixote.txt                4035 segments  finished at  0.109 s
+    anna_karenina.txt              3498 segments  finished at  0.093 s
+    ulysses.txt                    2588 segments  finished at  0.084 s
+    pride_and_prejudice.txt        1293 segments  finished at  0.040 s
+    sherlock_holmes.txt            1001 segments  finished at  0.033 s
+    frankenstein.txt                767 segments  finished at  0.017 s
+    the_time_machine.txt            340 segments  finished at  0.013 s
+update    29583 entries       0.030 s
+wrote vector store to corpus_embeddings_store.json
+
+=== ChunkEmbedInsertSharded ===
+trial 1/5  10 files   40 shards   29595 segments     0.587 s  (pool of 10 threads, chunk+embed)
+trial 2/5  10 files   40 shards   29595 segments     0.186 s  (pool of 10 threads, chunk+embed)
+trial 3/5  10 files   40 shards   29595 segments     0.195 s  (pool of 10 threads, chunk+embed)
+trial 4/5  10 files   40 shards   29595 segments     0.164 s  (pool of 10 threads, chunk+embed)
+trial 5/5  10 files   40 shards   29595 segments     0.140 s  (pool of 10 threads, chunk+embed)
+update    29595 entries       0.033 s
+wrote vector store to corpus_embeddings_store.json
+

@@ -1,0 +1,39 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>pppe26</groupId>
+  <artifactId>java-embeddings</artifactId>
+  <version>1.0</version>
+  <packaging>jar</packaging>
+
+  <properties>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <dependencies>
+    <!-- DocumentSplitters, InMemoryEmbeddingStore, FileSystemDocumentLoader,
+         plus langchain4j-core transitively for EmbeddingModel/Embedding/
+         TextSegment/EmbeddingStore. HashEmbeddingModel is pure Java, so no
+         ONNX/native embedding model dependency is needed anymore. -->
+    <dependency>
+      <groupId>dev.langchain4j</groupId>
+      <artifactId>langchain4j</artifactId>
+      <version>1.19.0</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.6.3</version>
+        <configuration>
+          <mainClass>ChunkEmbedInsert</mainClass>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

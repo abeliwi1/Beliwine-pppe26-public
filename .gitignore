@@ -43,8 +43,11 @@ __pycache__/
 *.tmp
 
 # branch_optimizations build artifacts
+branch_optimizations/branch_free
 branch_optimizations/branch_free_*
+branch_optimizations/lut_branch
 branch_optimizations/lut_branch_*
+branch_optimizations/loop_unswitch
 branch_optimizations/loop_unswitch_*
 !branch_optimizations/*.md
 !branch_optimizations/*.cpp
@@ -90,6 +93,8 @@ false_sharing/fs_O*
 
 # strength.reduction build artifacts
 strength.reduction/sr_O*
+strength.reduction/sr1_O*
+strength.reduction/sr2_O*
 
 # vectorization build artifacts
 vectorization/find_first
@@ -97,6 +102,7 @@ vectorization/find_first
 # prefetch.example build artifacts
 prefetch.example/prefetch.example
 prefetch.example/prefetch.example.clang
+prefetch.example/gather.prefetch
 
 # sorting x86 build artifacts (sources for some of these are no longer in the repo)
 sorting/n16_*
@@ -125,3 +131,30 @@ roofline/roofline_example/stencil_bench_mt
 roofline/roofline_example/spmv_bench_mt
 roofline/roofline_example/nbody_bench_mt
 roofline/roofline_example/matmul_naive_bench_mt
+
+# loop_optimizations build artifacts
+loop_optimizations/fission_O1
+loop_optimizations/fusion_O1
+loop_optimizations/interchange_O1
+loop_optimizations/tiling_O1
+loop_optimizations/unroll_O0
+loop_optimizations/unroll_O1
+loop_optimizations/unroll_O2
+
+# openmp build artifacts
+openmp/hello_omp
+openmp/vector_add
+openmp/dot_product
+openmp/reduction
+openmp/fib
+openmp/omp_scheduling_prefix_sum/prefixsum
+openmp/omp_scheduling_prefix_sum/cilk_prefix_sum
+
+# false_sharing build artifacts (fs_O* covers -O flag builds; this is the plain name)
+false_sharing/false_sharing
+
+# java_rag_pipeline: generated data, not source
+java_rag_pipeline/target/
+java_rag_pipeline/*_embeddings_store.json
+java_rag_pipeline/corpus/
+java_rag_pipeline/corpus4/

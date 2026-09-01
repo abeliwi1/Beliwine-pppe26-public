@@ -1,5 +1,8 @@
 # Parallel Prefix Sum (Inclusive Scan)
 
+This is a really cool code that demonstrates several interesting properties:
+  * the best parallel program often does more work than 
+
 ## What is a prefix sum?
 
 Given an input array `A[0..N-1]`, the **inclusive prefix sum** (scan) produces an output array `B` where:
@@ -139,7 +142,9 @@ The parallel version produces results that are **not bit-identical** to the seri
 ## Building and running
 
 ```bash
+# from openmp/
 make omp_prefix_sum
+cd omp_scheduling_prefix_sum
 ./omp_prefix_sum [N] [threads]      # defaults: N=100000000, threads=10
 
 ~/opencilk/bin/clang -fopencilk -O3 cilk_prefix_sum.c -o cilk_prefix_sum

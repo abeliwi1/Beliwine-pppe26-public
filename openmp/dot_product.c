@@ -4,18 +4,20 @@
 #include <omp.h>
 
 /*
- *  dotproduct.c
+ *  dot_product.c  --  #pragma omp parallel for reduction(+:sum), benchmarked
  *
- *  Vector dot product: result = sum( A[i] * B[i] )
- *  Compares serial vs OpenMP parallel reduction.
+ *  Vector dot product: result = sum( A[i] * B[i] ). Same reduction clause
+ *  as reduction.c, but timed head-to-head against the serial loop and
+ *  reported in GB/s, so the primitive's payoff is visible as a number
+ *  instead of just a correctness argument.
  *
  *  Compile (clang + libomp on macOS):
  *    clang -Xpreprocessor -fopenmp -O3 \
  *      -I/opt/homebrew/opt/libomp/include \
  *      -L/opt/homebrew/opt/libomp/lib -lomp \
- *      dotproduct.c -o dotproduct
+ *      dot_product.c -o dot_product
  *
- *  Usage: ./dotproduct [N]   (default N=100000000)
+ *  Usage: ./dot_product [N] [threads]   (default N=100000000, threads=10)
  */
 
 int N = 100000000;
