@@ -15,10 +15,10 @@ formula's placeholders):
 
 - **Pipeline (superscalar issue width):** 10-wide OOO engine, sustaining ~7
   instructions/cycle in practice (measured in
-  [speculative_execution.md](../../ILP/speculative_execution.md) via the
+  [speculative_execution.md](../../examples/ILP/speculative_execution.md) via the
   CPI=0.14 sorted-branch result)
 - **Vector width:** 4 lanes/instruction — 128-bit NEON, FP32 (confirmed by
-  [peak_flops.cpp](../../roofline/roofline_example/peak_flops.cpp)'s 4-FMA-unit
+  [peak_flops.cpp](../../examples/roofline/roofline_example/peak_flops.cpp)'s 4-FMA-unit
   GFLOPS ceiling)
 
 **In flight (pipeline x vector, no core multiplier):**
@@ -68,7 +68,7 @@ So the gap isn't really "front-end can't keep up" — it's that **hitting
 categories in the same cycle**. A homogeneous stream (all loads+adds)
 saturates on how many of *that* port type exist (here, ~4 ALU results/cycle),
 regardless of how independent the work is. The
-`ILP/speculative_execution.md` example hits ~7 because its loop naturally
+`examples/ILP/speculative_execution.md` example hits ~7 because its loop naturally
 mixes loads, compares, and branches — more port diversity than a pure add
 sweep, so it gets closer to the ceiling.
 

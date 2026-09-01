@@ -29,7 +29,7 @@ static const long long ARR_N  = 8160;          // 8160 * 8B = ~64 KB: fits L1
 static const long long PASSES = 500000;         // total adds/pass = ARR_N
 static const int RUNS = 5;
 
-// Apple M5 performance core (see ../../branch_optimizations/branch_free.cpp).
+// Apple M5 performance core (see ../../examples/branch_optimizations/branch_free.cpp).
 static const double CPU_GHZ = 4.6;
 
 template <typename Func>
@@ -150,7 +150,7 @@ int main() {
            "a lower bound on achievable ALU throughput, not an absolute ceiling.\n"
            "Where IPC stops climbing as K grows is this core's sustained integer\n"
            "ALU width -- compare that to the 10-wide front-end figure quoted in\n"
-           "../../ILP/speculative_execution.md.\n");
+           "../../examples/ILP/speculative_execution.md.\n");
 
     return 0;
 }

@@ -19,17 +19,17 @@
 *.dSYM/
 
 # Compiled binaries (add specific names as needed)
-pipeline/pipeline
-pipeline/pipeline.cse
-pipeline/pipeline.dce
-pipeline/pipeline.tempvar
-pipeline/pipeline_O0
-pipeline/pipeline_O1
-pipeline/pipeline_O2
-pipeline/pipeline_O3
-pipeline/pipeline_stall_elimination
-strength.reduction/strength.reduction
-strength.reduction/a.out
+examples/pipeline/pipeline
+examples/pipeline/pipeline.cse
+examples/pipeline/pipeline.dce
+examples/pipeline/pipeline.tempvar
+examples/pipeline/pipeline_O0
+examples/pipeline/pipeline_O1
+examples/pipeline/pipeline_O2
+examples/pipeline/pipeline_O3
+examples/pipeline/pipeline_stall_elimination
+examples/strength.reduction/strength.reduction
+examples/strength.reduction/a.out
 
 # Python
 __pycache__/
@@ -43,118 +43,118 @@ __pycache__/
 *.tmp
 
 # branch_optimizations build artifacts
-branch_optimizations/branch_free
-branch_optimizations/branch_free_*
-branch_optimizations/lut_branch
-branch_optimizations/lut_branch_*
-branch_optimizations/loop_unswitch
-branch_optimizations/loop_unswitch_*
-!branch_optimizations/*.md
-!branch_optimizations/*.cpp
+examples/branch_optimizations/branch_free
+examples/branch_optimizations/branch_free_*
+examples/branch_optimizations/lut_branch
+examples/branch_optimizations/lut_branch_*
+examples/branch_optimizations/loop_unswitch
+examples/branch_optimizations/loop_unswitch_*
+!examples/branch_optimizations/*.md
+!examples/branch_optimizations/*.cpp
 
 # memory_hierarchy build artifacts (the .csv measurements ARE tracked)
-memory_hierarchy/cache_latency
-memory_hierarchy/stride_bandwidth
-memory_hierarchy/core_to_core
-memory_hierarchy/row_column
-memory_hierarchy/bandwidth_scaling
-memory_hierarchy/storage_latency
-memory_hierarchy/spin_cost
-memory_hierarchy/set_conflict
-memory_hierarchy/tlb_walk
+examples/memory_hierarchy/cache_latency
+examples/memory_hierarchy/stride_bandwidth
+examples/memory_hierarchy/core_to_core
+examples/memory_hierarchy/row_column
+examples/memory_hierarchy/bandwidth_scaling
+examples/memory_hierarchy/storage_latency
+examples/memory_hierarchy/spin_cost
+examples/memory_hierarchy/set_conflict
+examples/memory_hierarchy/tlb_walk
 
 # virtual_memory build artifacts (the .csv/.txt measurements ARE tracked)
-virtual_memory/address_space
-virtual_memory/lazy_alloc
-virtual_memory/fault_cost
-virtual_memory/cow_fork
-virtual_memory/same_address
+examples/virtual_memory/address_space
+examples/virtual_memory/lazy_alloc
+examples/virtual_memory/fault_cost
+examples/virtual_memory/cow_fork
+examples/virtual_memory/same_address
 
 # sorting build artifacts
-sorting/bitonic_sort
-sorting/bitonic_sort_highway
-sorting/bitonic_sort_simd
-sorting/insertion_sort
-sorting/newintrosort
-sorting/newintrosort_heapsortfallback
-sorting/quicksort
-sorting/sort_compare_large
-sorting/sort_compare_n16
-sorting/std_sort
-sorting/vqs_highway
+examples/sorting/bitonic_sort
+examples/sorting/bitonic_sort_highway
+examples/sorting/bitonic_sort_simd
+examples/sorting/insertion_sort
+examples/sorting/newintrosort
+examples/sorting/newintrosort_heapsortfallback
+examples/sorting/quicksort
+examples/sorting/sort_compare_large
+examples/sorting/sort_compare_n16
+examples/sorting/std_sort
+examples/sorting/vqs_highway
 
 # ILP build artifacts
-ILP/ooo_O*
-ILP/sep_O*
-ILP/spec_O*
+examples/ILP/ooo_O*
+examples/ILP/sep_O*
+examples/ILP/spec_O*
 
 # false_sharing build artifacts
-false_sharing/fs_O*
+examples/false_sharing/fs_O*
 
 # strength.reduction build artifacts
-strength.reduction/sr_O*
-strength.reduction/sr1_O*
-strength.reduction/sr2_O*
+examples/strength.reduction/sr_O*
+examples/strength.reduction/sr1_O*
+examples/strength.reduction/sr2_O*
 
 # vectorization build artifacts
-vectorization/find_first
+examples/vectorization/find_first
 
 # prefetch.example build artifacts
-prefetch.example/prefetch.example
-prefetch.example/prefetch.example.clang
-prefetch.example/gather.prefetch
+examples/prefetch.example/prefetch.example
+examples/prefetch.example/prefetch.example.clang
+examples/prefetch.example/gather.prefetch
 
 # sorting x86 build artifacts (sources for some of these are no longer in the repo)
-sorting/n16_*
-sorting/sort_compare_n16_x86
-sorting/sort_survey_x86*
-sorting/vqs_x86_*
+examples/sorting/n16_*
+examples/sorting/sort_compare_n16_x86
+examples/sorting/sort_survey_x86*
+examples/sorting/vqs_x86_*
 
 # roofline_example build artifacts (roofline*.png plots ARE tracked)
-roofline/roofline_example/stream
-roofline/roofline_example/peak_flops
-roofline/roofline_example/sort_bench
-roofline/roofline_example/dot_bench
-roofline/roofline_example/saxpy_bench
-roofline/roofline_example/stencil_bench
-roofline/roofline_example/spmv_bench
-roofline/roofline_example/nbody_bench
-roofline/roofline_example/matmul_naive_bench
-roofline/roofline_example/matmul_bench
-roofline/roofline_example/openblas_bench
-roofline/roofline_example/stream_mt
-roofline/roofline_example/peak_flops_mt
-roofline/roofline_example/sort_bench_mt
-roofline/roofline_example/dot_bench_mt
-roofline/roofline_example/saxpy_bench_mt
-roofline/roofline_example/stencil_bench_mt
-roofline/roofline_example/spmv_bench_mt
-roofline/roofline_example/nbody_bench_mt
-roofline/roofline_example/matmul_naive_bench_mt
+examples/roofline/roofline_example/stream
+examples/roofline/roofline_example/peak_flops
+examples/roofline/roofline_example/sort_bench
+examples/roofline/roofline_example/dot_bench
+examples/roofline/roofline_example/saxpy_bench
+examples/roofline/roofline_example/stencil_bench
+examples/roofline/roofline_example/spmv_bench
+examples/roofline/roofline_example/nbody_bench
+examples/roofline/roofline_example/matmul_naive_bench
+examples/roofline/roofline_example/matmul_bench
+examples/roofline/roofline_example/openblas_bench
+examples/roofline/roofline_example/stream_mt
+examples/roofline/roofline_example/peak_flops_mt
+examples/roofline/roofline_example/sort_bench_mt
+examples/roofline/roofline_example/dot_bench_mt
+examples/roofline/roofline_example/saxpy_bench_mt
+examples/roofline/roofline_example/stencil_bench_mt
+examples/roofline/roofline_example/spmv_bench_mt
+examples/roofline/roofline_example/nbody_bench_mt
+examples/roofline/roofline_example/matmul_naive_bench_mt
 
 # loop_optimizations build artifacts
-loop_optimizations/fission_O1
-loop_optimizations/fusion_O1
-loop_optimizations/interchange_O1
-loop_optimizations/tiling_O1
-loop_optimizations/unroll_O0
-loop_optimizations/unroll_O1
-loop_optimizations/unroll_O2
+examples/loop_optimizations/fission_O1
+examples/loop_optimizations/fusion_O1
+examples/loop_optimizations/interchange_O1
+examples/loop_optimizations/tiling_O1
+examples/loop_optimizations/unroll_O0
+examples/loop_optimizations/unroll_O1
+examples/loop_optimizations/unroll_O2
 
 # openmp build artifacts
-openmp/hello_omp
-openmp/vector_add
-openmp/dot_product
-openmp/reduction
-openmp/fib
-openmp/omp_scheduling_prefix_sum/prefixsum
-openmp/omp_scheduling_prefix_sum/cilk_prefix_sum
+examples/openmp/hello_omp
+examples/openmp/vector_add
+examples/openmp/dot_product
+examples/openmp/reduction
+examples/openmp/fib
+examples/openmp/omp_scheduling_prefix_sum/prefixsum
+examples/openmp/omp_scheduling_prefix_sum/cilk_prefix_sum
 
 # false_sharing build artifacts (fs_O* covers -O flag builds; this is the plain name)
-false_sharing/false_sharing
+examples/false_sharing/false_sharing
 
 # java_rag_pipeline: generated data, not source
-java_rag_pipeline/target/
-java_rag_pipeline/*_embeddings_store.json
-java_rag_pipeline/corpus/
-java_rag_pipeline/corpus4/
+examples/java_rag_pipeline/target/
+examples/java_rag_pipeline/*_embeddings_store.json
+examples/java_rag_pipeline/corpus/
+examples/java_rag_pipeline/corpus4/
