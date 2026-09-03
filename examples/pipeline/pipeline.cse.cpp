@@ -15,9 +15,9 @@
  * Compile and benchmark:
  *   clang++ -O2 -o pipeline.cse pipeline.cse.cpp -lm && ./pipeline.cse
  *
- * Works at any optimisation level: NOINLINE + doNotOptimize() barriers prevent
- * the compiler from collapsing the before* variants even under -O3.  The after*
- * variants are intentionally left free to optimise so the comparison is fair.
+ * The "before" and "after" functions here are ordinary code — no NOINLINE,
+ * no optimizer fences. The compiler is free to CSE the "before" variants
+ * itself, and at -O1 and up, for two of the three sections, it does.
  */
 
 #include <array>
@@ -28,37 +28,6 @@
 
 using namespace std;
 using namespace std::chrono;
-
-// ============================================================
-// Optimisation-prevention utilities
-// ============================================================
-
-// NOINLINE — prevents inter-procedural CSE across call sites.
-#if defined(__GNUC__) || defined(__clang__)
-#  define NOINLINE __attribute__((noinline))
-#elif defined(_MSC_VER)
-#  define NOINLINE __declspec(noinline)
-#else
-#  define NOINLINE
-#endif
-
-// doNotOptimize<T> — makes a value appear potentially modified to the compiler.
-// The "+r,m" read-write constraint forces the compiler to treat val as unknown
-// after the call, preventing CSE from reusing any expression that depends on it.
-// Zero instructions are emitted; this is purely an optimiser fence.
-template <typename T>
-inline void doNotOptimize(T& val)
-{
-#if defined(__GNUC__) || defined(__clang__)
-    asm volatile("" : "+r,m"(val));
-#elif defined(_MSC_VER)
-    #include <intrin.h>
-    _ReadWriteBarrier();
-    (void)val;
-#else
-    (void)val;   // fallback: compile with -O0
-#endif
-}
 
 // benchMs — runs fn() and returns wall-clock milliseconds elapsed.
 static double benchMs(const function<void()>& fn)
@@ -95,12 +64,10 @@ static double benchMs(const function<void()>& fn)
 //   14     ADD  z,  z,  2
 //                                            ↑ 6 wasted stall cycles
 
-NOINLINE static int beforeCse(int a, int b, int c)
+static int beforeCse(int a, int b, int c)
 {
     int x = a * b + c;          // chain 1: MUL → stall stall → ADD
-    doNotOptimize(a); doNotOptimize(b); doNotOptimize(c);
     int y = a * b + c + 1;      // chain 2: MUL → stall stall → ADD → ADD
-    doNotOptimize(a); doNotOptimize(b); doNotOptimize(c);
     int z = a * b + c + 2;      // chain 3: MUL → stall stall → ADD → ADD
     return x + y + z;
 }
@@ -118,7 +85,7 @@ NOINLINE static int beforeCse(int a, int b, int c)
 //    7     ADD  z,   base, 2    ; z = base + 2  ← no stall
 //                                            ↑ 0 wasted stall cycles
 
-NOINLINE static int afterCse(int a, int b, int c)
+static int afterCse(int a, int b, int c)
 {
     const int base = a * b + c; // ONE multiply, ONE dependency chain
     const int x = base;         // register rename / copy — free
@@ -131,21 +98,19 @@ NOINLINE static int afterCse(int a, int b, int c)
 // SECTION 2 — Loop body: stride*i address calculation reused 3×
 // ============================================================
 
-NOINLINE static void arraySumBefore(const array<int, 1024>& arr, int stride, int n, long& out)
+static void arraySumBefore(const array<int, 1024>& arr, int stride, int n, long& out)
 {
     long sum = 0;
     for (int i = 0; i < n; i++) {
         // stride*i recomputed three times; each is a MUL → stall chain.
         sum += arr[stride * i];
-        doNotOptimize(stride); doNotOptimize(i);
         sum += arr[stride * i] * 2;
-        doNotOptimize(stride); doNotOptimize(i);
         sum += arr[stride * i] + 10;
     }
     out = sum;
 }
 
-NOINLINE static void arraySumAfter(const array<int, 1024>& arr, int stride, int n, long& out)
+static void arraySumAfter(const array<int, 1024>& arr, int stride, int n, long& out)
 {
     long sum = 0;
     for (int i = 0; i < n; i++) {
@@ -165,17 +130,15 @@ NOINLINE static void arraySumAfter(const array<int, 1024>& arr, int stride, int 
 // with the same argument triples the stall budget.
 // ============================================================
 
-NOINLINE static double normalizeBefore(double x, double y, double z)
+static double normalizeBefore(double x, double y, double z)
 {
     const double nx = x / sqrt(x*x + y*y + z*z); // sqrt → ~14-cycle stall
-    doNotOptimize(x); doNotOptimize(y); doNotOptimize(z);
     const double ny = y / sqrt(x*x + y*y + z*z); // sqrt again → stall
-    doNotOptimize(x); doNotOptimize(y); doNotOptimize(z);
     const double nz = z / sqrt(x*x + y*y + z*z); // sqrt again → stall
     return nx + ny + nz;
 }
 
-NOINLINE static double normalizeAfter(double x, double y, double z)
+static double normalizeAfter(double x, double y, double z)
 {
     const double lenSq  = x*x + y*y + z*z;    // one FMA chain
     const double invLen = 1.0 / sqrt(lenSq);   // one sqrt, one division
@@ -217,11 +180,17 @@ int main()
     array<int, 1024> arr;
     for (int i = 0; i < 1024; i++) arr[i] = i;
 
-    ms = benchMs([&]{ for (int r = 0; r < 1000; r++) arraySumBefore(arr, 1, 100, tmpI); });
+    // volatile so the compiler can't prove stride/n at compile time and
+    // fold the whole loop away to a constant.
+    volatile int strideIn = 1;
+    volatile int nIn = 100;
+    const int ARR_REPS = 1'000'000;
+
+    ms = benchMs([&]{ for (int r = 0; r < ARR_REPS; r++) arraySumBefore(arr, strideIn, nIn, tmpI); });
     sinkI = tmpI;
     printf("    BEFORE CSE : %6.2f ms  (result=%ld)\n", ms, (long)sinkI);
 
-    ms = benchMs([&]{ for (int r = 0; r < 1000; r++) arraySumAfter(arr, 1, 100, tmpI); });
+    ms = benchMs([&]{ for (int r = 0; r < ARR_REPS; r++) arraySumAfter(arr, strideIn, nIn, tmpI); });
     sinkI = tmpI;
     printf("    AFTER  CSE : %6.2f ms  (result=%ld)\n\n", ms, (long)sinkI);
 

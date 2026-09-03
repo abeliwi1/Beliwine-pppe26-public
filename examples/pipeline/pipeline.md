@@ -70,12 +70,14 @@ clang++ -std=c++17 -O1 -o pipeline pipeline.cpp && ./pipeline
 | -O2   | 0 ms*     | 45 ms       | —       | 0 ms*       | 2 ms      | —       |
 | -O3   | 0 ms*     | 0 ms*       | —       | 0 ms*       | 0 ms*     | —       |
 
-`*` — the effect doesn't vanish at higher `-O`; the *measurement* does. At
--O2/-O3 the compiler recognizes `dependentChain`'s recurrence and either
-strength-reduces it or auto-vectorizes the independent-chain loops (4
-independent accumulators is exactly the shape the auto-vectorizer wants),
-so the timed region finishes in well under a millisecond and
-`duration_cast<milliseconds>` rounds it to 0.
+`*` — the effect doesn't vanish at higher `-O`; the *measurement* does, and
+**not for the reason this file used to claim.** Dumping `-S` output shows
+`dependentChain` and `independentChains` compile to **byte-identical
+assembly at `-O1`, `-O2`, and `-O3`** — no vectorization (zero `v`/`q`
+registers at any level, including where each collapses to `0 ms`), no
+strength reduction, no constant-folding. Neither function's own generated
+code changes at all past `-O0`. See Analysis, below, for what that actually
+rules in and out.
 
 ## Verified optimization levels
 
@@ -90,18 +92,51 @@ Re-built and re-run at each level to confirm the table above (`clang++
 | `-O3` | No — both sides report 0 ms |
 
 **Only `-O0` and `-O1` demonstrate this example as a timing comparison.**
-From `-O2` on, the compiler has already applied an equivalent fix on its
-own, so there's no gap left for the benchmark to show.
+From `-O2` on, the *measured* gap disappears — but not because the
+compiler applied an equivalent fix to the code. See Analysis.
 
 ## Analysis
 
 The 2.5–3.8x speedups from breaking the dependency chain are real and
 visible at -O0/-O1, where the compiler still emits something close to a
-literal instruction-per-line translation. Confirming what actually happened
-at -O3 requires dumping `-S` and checking for vectorized instructions
-(`vmulq`/`vpaddq` and friends) vs. a constant-folded result, or switching the
-timer to microseconds — see [pipeline.tempvar.md](pipeline.tempvar.md) for a
-worked example of exactly that diagnosis.
+literal instruction-per-line translation.
+
+**This file used to say** that confirming what happened at `-O2`/`-O3`
+would show either vectorization or a constant-folded result. That guess was
+never actually checked against the assembly — and it's wrong. Dumping `-S`
+for `dependentChain` and `independentChains` at every level shows:
+
+```bash
+clang++ -std=c++17 -O1 -S -o o1.s pipeline.cpp
+clang++ -std=c++17 -O2 -S -o o2.s pipeline.cpp
+clang++ -std=c++17 -O3 -S -o o3.s pipeline.cpp
+diff <(awk '/^__Z14dependentChain/{f=1} f{print} /ret/{if(f)exit}' o1.s) \
+     <(awk '/^__Z14dependentChain/{f=1} f{print} /ret/{if(f)exit}' o3.s)
+# no differences
+```
+
+Both functions are byte-identical across `-O1`, `-O2`, and `-O3` — same
+scalar `x`/`w`-register instructions, no vector register ever appears, and
+the loop body itself is never removed or reduced. Since `dependentChain`
+and `independentChains`'s own compiled code is unchanged, a genuinely
+serial (or four-way scalar) 100-million-element loop cannot physically
+finish in under a millisecond — the `0 ms` reading has to come from
+somewhere other than the function itself running faster.
+
+The most likely remaining explanation: both functions are fully inlined
+into `main` from `-O1` on (no calls to either symbol by name at *any*
+level — checkable the same way, grepping the mangled names), and `data`
+never changes across the 5 `clobber()`-separated benchmark runs. Once
+everything is inlined into one function, `-O3`'s more aggressive optimizer
+plausibly recognizes the repeated pure computation on unchanging input and
+eliminates the redundant re-execution across runs — a **benchmark-harness
+effect**, not the compiler solving the RAW hazard. This is exactly the same
+finding [pipeline.tempvar.md](https://github.com/randalburns/pppe26/blob/activities/examples/pipeline/pipeline.tempvar.md)
+reaches independently for a different benchmark in this same file's family
+— that example now lives on the `activities` branch, alongside
+[Activity 1's solutions](https://github.com/randalburns/pppe26/blob/activities/activities/activity1.pipeline.solutions.md),
+which walk through the full investigation, including where it runs out
+before identifying the exact optimizer pass responsible.
 
 This is the same phenomenon [../ILP/out_of_order.md](../ILP/out_of_order.md)
 and [../ILP/sep_dependent.md](../ILP/sep_dependent.md) measure far more
@@ -119,6 +154,14 @@ cycle-accounting those two go on to do.
 2. **Independent accumulators expose that concurrency** without changing
    the arithmetic — same total, more overlap.
 3. **The effect survives past -O1; the measurement doesn't.** A 0 ms result
-   at -O2/-O3 means the compiler already solved the problem for you
-   (vectorization or strength reduction), not that the RAW hazard stopped
-   existing.
+   at -O2/-O3 does *not* mean the compiler solved the RAW hazard for you —
+   verified: the compiled functions are byte-identical, unvectorized, at
+   every level from -O1 up. The vanishing measurement is a benchmark-harness
+   effect (most likely redundant-call elimination once everything is
+   inlined), not the compiler fixing the recurrence.
+4. **A claim about "what the compiler did" isn't true until you've checked
+   the assembly.** This file stated the vectorization/strength-reduction
+   explanation for years without anyone dumping `-S` to confirm it — it
+   sounded plausible and was wrong. Diffing the generated code across `-O`
+   levels is one command; guessing about compiler internals is free and
+   frequently incorrect.

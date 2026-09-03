@@ -61,13 +61,13 @@ Cycle  Instruction
                               ↑ 0 wasted stall cycles
 ```
 
-The source benchmarks this shape three times: a plain integer multiply
-(`a*b + c`), an array-index calculation (`stride*i`, recomputed inside a
-loop), and a floating-point `sqrt()` — the highest-latency of the three at
-~14 cycles on typical x86. Each `before*` function is marked `NOINLINE` and
-fenced with `doNotOptimize()` between repeats, so the compiler can't quietly
-apply the same CSE for you even at `-O3`; the `after*` versions are left
-free to optimize normally.
+The source benchmarks this same shape three times: the integer multiply
+above, an array index (`arr[stride * i]`, recomputed on every access inside
+a loop), and a floating-point `sqrt()` call (`sqrt(x² + y² + z²)`, the
+highest-latency operation of the three). The `before*`/`after*` functions
+are ordinary code — no `NOINLINE`, no optimizer fences — so the compiler is
+free to apply the same CSE to the "before" variants itself, and at `-O1`
+and up, for two of the three sections, it does.
 
 ## Build
 
@@ -75,68 +75,63 @@ free to optimize normally.
 clang++ -O2 -o pipeline.cse pipeline.cse.cpp -lm && ./pipeline.cse
 ```
 
-## Results (Apple M-series, `-O2`)
+## Results (Apple M-series, min of 12 runs per cell)
 
-| Section | Before | After | Speedup |
+| Level | Integer (`a*b+c`) | Array index (`stride*i`) | `sqrt` |
 |---|---|---|---|
-| Integer: `a*b + c` reused 3x | 108.39 ms | 45.19 ms | 2.40x |
-| Loop index: `stride*i` reused 3x | 0.17 ms | 0.01 ms | 17x |
-| FP: `sqrt(x²+y²+z²)` reused 3x | 20.93 ms | 11.62 ms | 1.80x |
+| `-O0` | 158 / 187 ms — **0.85x** (before is faster) | 245 / 307 ms — **0.80x** (before is faster) | 42 / 51 ms — **0.83x** (before is faster) |
+| `-O1` | 22.5 / 22.5 ms — converged | 74 / 72 ms — converged | 11.6 / 9.4 ms — **1.23x** |
+| `-O2` | 22.6 / 22.5 ms — converged | 11.3 / 11.3 ms — converged | 6.7 / 6.3 ms — **1.06x** |
+| `-O3` | 22.5 / 22.5 ms — converged | 11.3 / 11.3 ms — converged | 6.7 / 6.3 ms — **1.06x** |
 
-## Verified optimization levels
-
-Rebuilt and re-run at every level (`clang++`, best of 3 runs per cell —
-`main()` here doesn't loop internally, so single runs are noisier than
-[pipeline.cpp](pipeline.cpp)'s):
-
-| Level | Integer speedup | Loop-index speedup | `sqrt` speedup |
-|---|---|---|---|
-| `-O0` | 2.4x | 1.4x | 1.2x |
-| `-O1` | 2.0x | 2.1x | 1.8x |
-| `-O2` | 2.0x | **17x** | 1.8x |
-| `-O3` | 2.1x | **17x** | 1.8x |
-
-**All four levels show a real before/after gap** — confirming the source
-comment's claim that the `NOINLINE`/`doNotOptimize()` fences work "at any
-optimisation level." But the loop-index case is *not* level-invariant: its
-dramatic 17x only appears at `-O2`/`-O3`. At `-O0`/`-O1` the manual CSE
-alone is worth roughly 1.4–2.1x, the same ballpark as the other two
-sections; the extra 8x only shows up once the compiler's own optimizations
-(loop-invariant code motion, stronger address-calculation folding) start
-compounding with the hand-written fix on top of it. The integer and `sqrt`
-cases don't show this — they're consistently ~2x and ~1.2–1.8x at every
-level, since there's no comparable second optimization for the compiler to
-add on top of the manual fix there.
+"Converged" means the before/after floors land on the same number to within
+run-to-run noise — there's no reliable gap left to report once the compiler
+is allowed to inline and optimize the "before" variant itself.
 
 ## Analysis
 
-Same underlying mechanism throughout: each repeated recomputation re-issues
-a multi-cycle instruction (multiply, load, or `sqrt`) and re-pays its
-stall, instead of reading a register the first computation already filled.
-The loop-index case shows the largest speedup (17x) because `stride*i` sits
-inside a hot loop — CSE there removes a redundant multiply from every single
-iteration, not just once per call. The `sqrt` case shows the smallest
-relative speedup despite the highest per-call latency, because the
-surrounding division and floating-point adds dilute the fraction of total
-time the redundant `sqrt` calls actually account for.
+**The integer and array-index cases are already solved by `-O1`.** Without
+`NOINLINE` forcing a real function call, the compiler inlines `beforeCse`
+and `arraySumBefore` into their benchmark loops and its own CSE pass finds
+the exact redundancy the "after" rewrite targets by hand. The two variants
+compile down to equivalent code, so their timings converge — the same thing
+[pipeline.md](pipeline.md)'s dependent-chain example shows for a different
+optimization: the effect is real, but only visible at levels where the
+compiler hasn't already automated the fix.
+
+**`sqrt()` is the exception**, and it's real: dumping the `-O3` assembly
+shows `normalizeBefore` still contains three separate `fsqrt` instructions
+where `normalizeAfter` has one. The compiler can't merge them because a libm
+`sqrt()` call is allowed to set `errno` on a domain error (unless built with
+`-fno-math-errno` or `-ffast-math`) — an observable side effect the as-if
+rule won't let the compiler optimize past. Three calls with identical
+arguments aren't provably redundant, so this is one of the few cases here
+where the by-hand rewrite still buys something even when the compiler is
+otherwise left free to do its job.
+
+**`-O0` shows a real, backwards effect on all three sections**: "before" is
+consistently *faster* than "after". At `-O0` nothing is register-allocated
+across statements, so the "after" variants' extra named locals (`base`,
+`idx`/`elem`, `lenSq`/`invLen`) round-trip through the stack more than the
+"before" versions' inline recomputation does. Same phenomenon documented in
+[loop_unrolling.md](../loop_optimizations/loop_unrolling.md)'s `-O0` result
+— a debugging-only optimization level can penalize a rewrite that only pays
+off once real optimization is turned on.
 
 ## Key takeaways
 
-1. **CSE eliminates redundant stalls, not redundant instructions.** The win
-   isn't "fewer lines of code" — it's paying a multi-cycle latency once
-   instead of N times.
-2. **The effect scales with the instruction's latency and how many times
-   it's actually repeated per unit of surrounding work** — a cheap
-   expression inside a hot loop (loop-index CSE) can outperform an
-   expensive one called rarely (the `sqrt` case), because the stall's share
-   of total runtime differs.
-3. **This is a compiler pass you can usually rely on** — `NOINLINE` and
-   `doNotOptimize()` exist here specifically to defeat the optimizer so the
-   "before" cost is even observable. Ordinary code rarely needs to force
-   this by hand.
-4. **A speedup number can itself be level-dependent, even when the effect
-   is real at every level.** The loop-index case's headline 17x needs
-   `-O2`/`-O3` — at `-O0`/`-O1` the same fix is genuinely present but worth
-   only ~1.4–2.1x, because the rest of that speedup comes from a second
-   compiler optimization compounding with the manual one, not from CSE
-   alone.
+1. **Most hand-CSE here turns out to be something `-O1` already does for
+   you.** Once nothing (like a forced `NOINLINE`) stops the compiler from
+   seeing across the call, its ordinary CSE pass finds the same redundancy
+   the manual rewrite targets.
+2. **The case that survives is the one the compiler isn't allowed to
+   touch.** `sqrt()`'s `errno` contract blocks CSE across identical calls
+   unless you relax it — this is a case where doing the rewrite by hand (or
+   building with `-fno-math-errno`) genuinely helps at every level.
+3. **`-O0` is not a performance baseline.** It can penalize a "cleaner"
+   refactor for reasons that have nothing to do with the optimization being
+   taught — see the as-if rule and optimization-level discussion in
+   [01.compiler_optimization.ipynb](../../course_materials/01.compiler_optimization.ipynb).
+4. **Trust the floor, not a single run, when the effect is this small.**
+   The median timings here made `-O1`..`-O3`'s integer case look like a real
+   ~1.3–1.4x win; the minimum over many runs shows that's noise, not signal.
