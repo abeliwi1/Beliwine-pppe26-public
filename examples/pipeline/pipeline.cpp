@@ -29,6 +29,18 @@ static void clobber() {
     asm volatile("" ::: "memory");
 }
 
+// Build with -DPIPELINE_DEBUG to force noinline on functions marked
+// DEBUG_NOINLINE below, so a debugger lands on a real, callable,
+// out-of-line copy instead of whatever gets inlined into main -- see the
+// comment on independentChains. Without that flag (the normal/measurement
+// build), this expands to nothing and the compiler is free to inline as
+// it likes, so timing numbers aren't affected by debug-only scaffolding.
+#ifdef PIPELINE_DEBUG
+#define DEBUG_NOINLINE __attribute__((noinline))
+#else
+#define DEBUG_NOINLINE
+#endif
+
 // ============================================================
 // EXAMPLE 1: Dependent Chain vs Independent Operations
 // ============================================================
@@ -51,6 +63,14 @@ long long dependentChain(vector<int>& data) {
 
 // FAST: Four independent chains processed simultaneously
 // Pipeline stays FULL - CPU executes 4 operations in parallel
+//
+// DEBUG_NOINLINE (see above): with -DPIPELINE_DEBUG, forces a real,
+// callable out-of-line copy so the debugger lands on the schedule LLVM
+// chooses in isolation (interleaved) rather than the more conservative
+// schedule it picks once this loop is inlined into main under main's
+// register pressure. Without that flag, this is a no-op -- normal builds
+// let the compiler inline as usual, so measured timings aren't affected.
+DEBUG_NOINLINE
 long long independentChains(vector<int>& data) {
     // Four SEPARATE accumulators - no dependencies between them
     long long x1 = 1, x2 = 2, x3 = 3, x4 = 4;
