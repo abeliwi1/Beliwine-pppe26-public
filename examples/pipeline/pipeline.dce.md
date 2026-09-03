@@ -91,6 +91,15 @@ change:
 
 ## Analysis
 
+The dead-store case's `0 ms` "after" isn't just the two dead stores going
+away, leaving a fast-but-real loop — checking the `-O2` assembly,
+`deadStoreAfter`'s entire loop collapses to one instruction (`bic w0, w0,
+w0, asr #31`, a branchless `max(n, 0)`). Once the two provably-dead
+assignments are gone, what's left (`x = i + 1` on every iteration, only the
+final value observed) has a closed form, and the compiler replaces the
+whole loop with it — the same kind of whole-loop elimination the
+dead-branch and dead-call cases show, not merely local dead-store removal.
+
 At `-O1` and above, the dead-branch case is 0 ms in *both* variants: the
 compiler already applies DCE to a `constexpr false` branch automatically,
 even in the "before" code — the "after" version just makes that
