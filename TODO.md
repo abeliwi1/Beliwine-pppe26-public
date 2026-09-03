@@ -1,3 +1,5 @@
+`git publish` is an alias to update main to pppe26-main.
+
 ## RB Thoughts
 
 There are really only 2 computations in all of CS.

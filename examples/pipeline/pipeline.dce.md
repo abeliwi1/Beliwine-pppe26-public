@@ -1,6 +1,6 @@
 # Dead Code Elimination: Work That Never Enters the Pipeline
 
-The other three write-ups in this directory are about hiding a stall once
+The other write-ups in this directory are about hiding a stall once
 an instruction is already in the pipeline. Dead code elimination (DCE) is
 different in kind: it removes instructions whose results are never
 observable, so they never get fetched or decoded at all — no stall to
