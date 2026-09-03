@@ -27,6 +27,9 @@ examples/pipeline/pipeline_O0
 examples/pipeline/pipeline_O1
 examples/pipeline/pipeline_O2
 examples/pipeline/pipeline_O3
+examples/pipeline/pipeline_debug
+examples/pipeline/pipeline_debug_O1
+examples/pipeline/pipeline_debug_O2
 examples/pipeline/pipeline_stall_elimination
 examples/strength.reduction/strength.reduction
 examples/strength.reduction/a.out

@@ -131,7 +131,7 @@ off once real optimization is turned on.
 3. **`-O0` is not a performance baseline.** It can penalize a "cleaner"
    refactor for reasons that have nothing to do with the optimization being
    taught — see the as-if rule and optimization-level discussion in
-   [01.compiler_optimization.ipynb](../../course_materials/01.compiler_optimization.ipynb).
+   [01.compiler_optimization.md](../../course_materials/01.compiler_optimization.md).
 4. **Trust the floor, not a single run, when the effect is this small.**
    The median timings here made `-O1`..`-O3`'s integer case look like a real
    ~1.3–1.4x win; the minimum over many runs shows that's noise, not signal.
