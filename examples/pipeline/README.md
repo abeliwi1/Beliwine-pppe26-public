@@ -123,6 +123,12 @@ function 100M times.
 
 ---
 
+## Preview of Activity 1
+
+You will use temporary variables to avoid RAW conflicts. This pattern is a more authentic programming in that the compiler cannot and does not always fix it even at higher optimization levels.  
+
+---
+
 ## Files at a glance
 
 **Sources** — `pipeline.cpp`, `pipeline.cse.cpp`, `pipeline.dce.cpp`
