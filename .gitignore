@@ -88,8 +88,8 @@ examples/sorting/std_sort
 examples/sorting/vqs_highway
 
 # ILP build artifacts
-examples/ILP/ooo_O*
-examples/ILP/sep_O*
+examples/pipeline/multiple_accs_O*
+examples/ILP/fuse_O*
 examples/ILP/spec_O*
 
 # false_sharing build artifacts
@@ -162,3 +162,6 @@ examples/java_rag_pipeline/target/
 examples/java_rag_pipeline/*_embeddings_store.json
 examples/java_rag_pipeline/corpus/
 examples/java_rag_pipeline/corpus4/
+
+# local files not intended for sync with remote repository
+local/

@@ -20,23 +20,41 @@
 using namespace std;
 using namespace std::chrono;
 
-template <typename T>
-inline void doNotOptimize(T& val)
-{
-#if defined(__GNUC__) || defined(__clang__)
-    asm volatile("" : "+r,m"(val));
-#else
-    (void)val;
-#endif
-}
+// Compiler barrier. This only fences the timed region -- it does NOT stop
+// the compiler from optimizing inside the functions under test, which is
+// the whole point of this file. (An earlier version sprinkled
+// doNotOptimize() fences through the loop bodies to keep the "before"
+// variants from being optimized away. That guaranteed a dramatic
+// before/after gap and taught nothing about what the compiler actually
+// does with dead code, so it's gone.)
+static void clobber() { asm volatile("" ::: "memory"); }
 
-static double benchMs(long long (*fn)(int), int arg)
+// Min of `runs`, accumulating every result so none of the calls is dead.
+// (`result = fn(arg)` in a loop would let the compiler delete all but the
+// last call, and the minimum would come from a run that never happened.)
+static double benchMs(long long (*fn)(int), int arg, int runs = 5)
 {
-    auto t0 = steady_clock::now();
-    volatile long long sink = fn(arg);
+    double best = 1e300;
+    long long acc = 0;
+
+    for (int r = 0; r < runs; r++) {
+        clobber();
+        auto t0 = steady_clock::now();
+        clobber();
+
+        acc += fn(arg);
+
+        clobber();
+        auto t1 = steady_clock::now();
+        clobber();
+
+        double ms = duration<double, milli>(t1 - t0).count();
+        if (ms < best) best = ms;
+    }
+
+    volatile long long sink = acc;
     (void)sink;
-    auto t1 = steady_clock::now();
-    return duration<double, milli>(t1 - t0).count();
+    return best;
 }
 
 static const int REPS = 100'000'000;
@@ -55,7 +73,6 @@ long long deadStoreBefore(int n)
         x = i * i;              // dead: overwritten next line before read
         x = i * i * i;         // dead: overwritten on the line below
         x = i + 1;             // live: this is the value actually accumulated
-        doNotOptimize(x);      // prevent the compiler from applying DCE for us
     }
     return x;
 }
@@ -127,7 +144,6 @@ long long deadCallBefore(int n)
     long long sum = 0;
     for (int i = 0; i < n; i++) {
         expensivePure(i);    // return value discarded — dead call
-        doNotOptimize(sum);  // prevent hoisting sum out of the loop
         sum += i;
     }
     return sum;

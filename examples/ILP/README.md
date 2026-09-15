@@ -22,8 +22,9 @@ stream. Four techniques make this possible:
 * **Vector processing (SIMD)** — a single instruction operates on several
   data elements packed into one register at once. This is the one technique
   with a direct programming interface (compiler auto-vectorization or
-  intrinsics); see [../vectorization/](../vectorization/) for that side of
-  it. Pipelining, out-of-order execution, and speculation, by contrast, are
+  intrinsics); see [../vectorization/](../vectorization/).
+  
+  Pipelining, out-of-order execution, and speculation, by contrast, are
   managed by the hardware — you don't call them directly. But how you write
   code still determines how well the hardware can use them: a dependency
   chain, a loop boundary, or an unpredictable branch each hide available
@@ -42,61 +43,110 @@ division, for instance) cost tens of cycles; for exact per-instruction
 latencies on real hardware, see Agner Fog's
 [instruction tables](https://www.agner.org/optimize/instruction_tables.pdf).
 
+## The reorder buffer
+
+All three examples below are really about one piece of hardware, so it is
+worth setting out before you read them.
+
+An out-of-order core decouples the order it *fetches* instructions from the
+order it *executes* them. The structure that makes this safe is the **reorder
+buffer (ROB)**: a queue of every instruction currently in flight. Each
+instruction moves through three distinct steps:
+
+1. **Enter, in program order.** The front end fetches and decodes, and
+   allocates a ROB entry. Order here is the order you wrote.
+2. **Execute, in dependency order.** An instruction issues to a functional
+   unit as soon as *its inputs are ready* — which may be long before earlier
+   instructions in the buffer have run. This is where reordering happens, and
+   the only thing constraining it is the **data dependency graph**.
+3. **Retire, in program order again.** Results become architecturally visible
+   strictly in order, from the head of the buffer. This is what makes the
+   whole scheme recoverable: if something ahead of an instruction faults, or a
+   branch turns out to have been mispredicted, everything behind it in the
+   buffer is discarded before it was ever official.
+
+Two properties of the ROB explain everything the examples measure.
+
+**It reorders by dependency, not by distance.** The hardware does not care
+that you wrote `s += a[i]` before `s += a[i+1]`; it cares that the second one
+reads the register the first one writes. Give it a chain and there is nothing
+to reorder — it will issue one instruction per dependency latency no matter
+how many idle execution units are sitting there. Give it independent work and
+it will fill those units without being asked.
+
+**It is finite, and therefore near-sighted.** The buffer holds a few hundred
+instructions — Apple publishes no figure, but reverse-engineering of its
+performance cores puts them in the 600s. Independent work that sits *inside*
+that window gets interleaved automatically. Independent work that sits
+outside it may as well not exist: the hardware never has both pieces in view
+at the same time, so it cannot discover that they are independent. Note this
+is a limit of *sight*, not of permission — a common and wrong intuition is
+that some construct (a loop boundary, say) forbids reordering across it.
+Nothing forbids it; the window is just too small to span 64M iterations.
+
+Speculation is what keeps the buffer full in the first place. The front end
+cannot wait for a branch to resolve before fetching past it — that would empty
+the ROB at every conditional — so it predicts and keeps going, and the
+in-order retire step cleans up when the prediction was wrong.
+
+That gives two distinct ways for code to starve the machine, one per
+example:
+
+| What the code does | What the ROB sees | Example |
+|---|---|---|
+| independent work 10⁸ instructions away | never both in view | 1 · loop fusion |
+| unpredictable branch | fetches the wrong path, discards it | 2 · speculation |
+
+Each example measures one row, and the fix in both is a source change that
+hands the ROB something it can work with.
+
+A third effect — how far breaking a dependency chain scales, and what stops it
+— lives in [../pipeline/multiple_accs.md](../pipeline/multiple_accs.md)
+instead. That transformation needs no reorder buffer at all, since an in-order
+machine issues the independent adds back to back just as happily, so it belongs
+with the pipeline material. Read it first if you have not: it establishes the
+saturation and bandwidth limits these two build on.
+
 ## The examples
 
-Three examples, each isolating one source of ILP a modern out-of-order CPU can
-exploit — or fail to, when the code gets in its way. Measured on Apple M5
-(Apple Clang & GCC) and cross-checked on AMD Zen 5 (GCC 13.3.0, AMD Ryzen
-AI 9 HX 370); see each write-up for build flags and exact numbers.
+Two examples, each isolating one source of ILP a modern out-of-order CPU can
+exploit — or fail to, when the code gets in its way. All measurements are on
+Apple M5 with Apple Clang 17; see each write-up for build flags and exact
+numbers.
 
-Each example is a single source file; build with `g++ <flags> -o <name>
-<name>.cpp` and run it directly — no shared Makefile.
+Each example is a single source file; build with `clang++ <flags> -o <name>
+<name>.cpp` and run it directly — no shared Makefile. Example 1 builds plainly
+at `-O1`; example 2 needs two extra `-mllvm` flags to stop the compiler from
+optimizing away the very branch it is trying to measure — see its write-up.
+
+Note that on macOS `g++` is a Clang shim, not GCC: `g++ --version` prints
+"Apple clang version". Recipes here use `clang++` to make that explicit.
 
 ---
 
-### 1 · Out-of-order execution — break a loop-carried dependency chain
+### 1 · Loop fusion and the reorder window
 
-A single accumulator forces every `fadd` to wait on the previous one; the
-reorder buffer can't reorder around a chain where each instruction depends on
-the last.
+**This is the example that needs out-of-order hardware.** Two accumulation
+loops compute independent reductions over the same array — the processor
+*could* interleave them and fill each chain's stalls with the other's work. It
+doesn't, and the reason is the useful part: 64M iterations of pass 1 is
+~4 × 10⁸ instructions, and the reorder buffer holds a few hundred, so pass 2
+sits about 700,000 windows away. Fusing the loops moves it one instruction
+away.
 
 | Step | Open | What it teaches |
 |------|------|------------------|
-| Read | [out_of_order.md](out_of_order.md) | the ROB, the loop-carried dependency chain, and the `K_min = latency / throughput` saturation formula |
-| Run  | [out_of_order.cpp](out_of_order.cpp) | sum-reduction over 64M doubles with 1, 2, 4, and 8 independent accumulators |
-| Compare | [out_of_order.ryzen.md](out_of_order.ryzen.md) | the same rerun on a Zen 5 P-core |
+| Read | [fuse_loops_rob.md](fuse_loops_rob.md) | that the ROB is near-sighted rather than blocked at a loop boundary, how big the window actually is, and why latency only costs you on the critical path |
+| Run  | [fuse_loops_rob.cpp](fuse_loops_rob.cpp) | `sum` and `sumsq` over 64M floats — two passes, fused single-pass, fused with 2 accumulators per chain |
 
-Splitting one dependency chain into four independent ones hides the 3-cycle
-FADD latency: 38 ms → 8 ms (**4.75x**), then flattens as memory bandwidth
-becomes the floor. Zen 5 measures the same 3-cycle FADD latency and the same
-mechanism, but tops out at **3.08x** — its single-core memory bandwidth wall
-arrives at K=4 instead of K=8, so the gap between chips here is a memory
-story, not an ILP one.
+Fusing exposes the two chains' independence: 90.1 ms → 52.6 ms (**1.71x**);
+doubling accumulators per chain removes the remaining stalls: 52.6 ms → 28.5 ms
+(**3.16x** total). The working set stays latency-bound throughout — unlike
+example 1, this one never reaches the bandwidth wall.
 
 ---
 
-### 2 · Separating dependent instructions — fuse loops to interleave chains
-
-Two separate accumulation loops each stall on their own dependency chain, and
-the loop boundary is a hard ordering barrier the ROB can't see past. Fusing
-them puts both chains in the same instruction window.
-
-| Step | Open | What it teaches |
-|------|------|------------------|
-| Read | [sep_dependent.md](sep_dependent.md) | why a loop boundary blocks the ROB from reordering across it, and how independent work fills the stall slots of a dependent chain |
-| Run  | [sep_dependent.cpp](sep_dependent.cpp) | `sum` and `sumsq` over 64M floats — two passes, fused single-pass, fused with 2 accumulators per chain |
-| Compare | [sep_dependent.ryzen.md](sep_dependent.ryzen.md) | the same rerun on a Zen 5 P-core |
-
-Fusing exposes the two chains' independence: 90 ms → 53 ms (**1.70x**);
-doubling accumulators per chain removes the remaining stalls: 53 ms → 28 ms
-(**3.21x** total). Zen 5 does even better here — **2.00x** then **3.81x** —
-because fusion also strips a whole loop's worth of x86 pointer/compare/branch
-overhead, and the working set is small enough to stay latency-bound rather
-than hitting the bandwidth wall seen in example 1.
-
----
-
-### 3 · Speculative execution — the cost of guessing wrong
+### 2 · Speculative execution — the cost of guessing wrong
 
 A branch the CPU can't predict flushes 15+ cycles of speculative work on
 every miss. Sorting the data (or removing the branch entirely) removes the
@@ -106,35 +156,21 @@ guesswork.
 |------|------|------------------|
 | Read | [speculative_execution.md](speculative_execution.md) | why sorted vs. shuffled data isolates prediction accuracy from instruction count, and why Apple Clang's automatic `csel` conversion hides the effect at `-O1` |
 | Run  | [speculative_execution.cpp](speculative_execution.cpp) | a threshold filter over 32M ints — branchy+shuffled, branchy+sorted, branchless |
-| Compare | [speculative_execution.ryzen.md](speculative_execution.ryzen.md) | the same rerun on a Zen 5 P-core |
 
-Sorting turns ~50% misprediction into one mispredict total: 85 ms → 8 ms
-(**10.62x**) — matched exactly by the branchless version, since instruction
-count is constant and speedup here equals the CPI ratio. Zen 5 reproduces the
-misprediction result almost exactly (**10.78x**, an ~18-cycle penalty on both
-chips), but *not* the branchless tie: `cmov` sits inside x86's accumulator
-dependency chain, so branchless is only **7.46x** there — a real trade, not a
-free win, that the M5's wider issue happens to hide.
+Sorting turns ~50% misprediction into one mispredict total: 83.1 ms → 7.7 ms
+(**10.85x**); since the sorted and shuffled runs execute the same binary over
+the same values, that entire speedup is CPI. The branchless version gets
+**9.92x** — nearly all of the win, but not quite a tie: `csel` is cheap, not
+free. The measured misprediction
+penalty works out to ~18 cycles, somewhat above the 15 the source assumes.
 
 ---
 
 ### Files at a glance
 
-**Sources** — `out_of_order.cpp`, `sep_dependent.cpp`, `speculative_execution.cpp`
-**Write-ups (Apple M5)** — `out_of_order.md`, `sep_dependent.md`, `speculative_execution.md`
-**Write-ups (AMD Zen 5)** — `out_of_order.ryzen.md`, `sep_dependent.ryzen.md`, `speculative_execution.ryzen.md`
-**Assembly** — `ooo.s`, `sep_dep.s`, `spec.s` — reference disassembly used in the write-ups
-**Binaries** — `ooo_O1`, `sep_O0`, `sep_O1`, `spec_O1` — prebuilt from the commands in each write-up
-
-All three examples share one theme: the out-of-order engine can only exploit
-the parallelism it can *see*. A loop-carried dependency, a loop boundary, and
-an unpredictable branch are three different ways of hiding available
-parallelism from the ROB — and independent accumulators, loop fusion, and
-branchless arithmetic are the matching fixes.
-
-The Zen 5 reruns confirm the mechanisms are architecture-independent — each
-fix works for the same reason on both chips — while showing where the
-*numbers* diverge: Zen 5's single-core memory bandwidth ceiling arrives
-sooner (example 1), its x86 addressing modes make loop fusion pay off more
-(example 2), and its `cmov` lowering reintroduces a data dependency that
-makes branchless code a real trade rather than a free win (example 3).
+**Sources** — `fuse_loops_rob.cpp`, `speculative_execution.cpp`
+**Write-ups** — `fuse_loops_rob.md`, `speculative_execution.md`
+**Assembly** — `fuse.s`, `spec.s` — reference disassembly used in the write-ups
+**Binaries** — `fuse_O1`, `spec_O1` are build artifacts, gitignored rather than
+shipped; build them with the command in each write-up. Anything already sitting in this
+directory may predate the current harness — rebuild before trusting its output.

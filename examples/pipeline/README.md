@@ -69,37 +69,20 @@ result is still in flight.
 
 | Step | Open | What it teaches |
 |------|------|------------------|
-| Read | [pipeline.md](pipeline.md) | the RAW hazard, and why a 0 ms result at `-O2`/`-O3` is a benchmark-harness effect, not proof the compiler solved the problem — verified via assembly, not assumed |
+| Read | [pipeline.md](pipeline.md) | the RAW hazard, why splitting a chain is only legal when the operator is associative, and why the gap closes at `-O2` — verified via assembly, not assumed |
 | Run  | [pipeline.cpp](pipeline.cpp) | dependent-chain vs. 4 independent accumulators, and single vs. 8 accumulators over a plain sum, swept across `-O0`..`-O3` |
-
-Breaking one dependency chain into four independent ones: 496 ms → 198 ms
-at `-O0` (**2.51x**), widening to **3.59x** at `-O1`. At `-O2`/`-O3` the
-measured gap disappears, but the compiled function doesn't change at all
-(byte-identical, unvectorized code at every level `-O1`-`-O3`) — the timing
-collapse comes from elsewhere. Verified: **only `-O0` and `-O1` show this
-as a timing comparison.**
 
 ---
 
 ## 2 · Common subexpression elimination — pay the stall once
 
 Recomputing the same expression re-issues the same multi-cycle instruction
-and re-pays its stall every time; caching the result pays it once.
+and re-pays its stall every time; caching the result pays it once. This is something that the compiler does for you and is difficult to accomplish by hand.
 
 | Step | Open | What it teaches |
 |------|------|------------------|
-| Read | [pipeline.cse.md](pipeline.cse.md) | three latencies side by side (multiply, address arithmetic, `sqrt`), and why the compiler already solves two of the three once nothing forces it not to |
+| Read | [pipeline.cse.md](pipeline.cse.md) | three latencies side by side (multiply, address arithmetic, `sqrt`), why the compiler solves all three, and why the one apparent exception isn't CSE at all |
 | Run  | [pipeline.cse.cpp](pipeline.cse.cpp) | `a*b+c`, a loop-index calculation, and `sqrt(x²+y²+z²)`, each reused 3x, before vs. after CSE |
-
-No `NOINLINE`/optimizer fences here — ordinary code, compiler left free to
-act on it. Result: at `-O1` and up, the integer and loop-index cases
-converge to the same floor before/after, because the compiler's own CSE
-pass already finds the redundancy. Only `sqrt()` keeps a real, verified gap
-(**1.06–1.23x**) — it can set `errno` on a domain error, so the compiler
-can't prove three identical calls are redundant. `-O0` shows a real but
-*backwards* effect on all three (before faster than after): no register
-allocation across statements means the "after" variants' extra named
-locals cost more stack traffic than just recomputing inline.
 
 ---
 
@@ -110,16 +93,51 @@ never get fetched at all, because their result is never observable.
 
 | Step | Open | What it teaches |
 |------|------|------------------|
-| Read | [pipeline.dce.md](pipeline.dce.md) | three patterns (dead store, dead branch, dead call) and why a compile-time-constant branch is already free, with no runtime win left to claim |
-| Run  | [pipeline.dce.cpp](pipeline.dce.cpp) | each pattern, before vs. after removing the dead code by hand |
+| Read | [pipeline.dce.md](pipeline.dce.md) | three patterns (dead store, dead branch, dead call), and where hand-removing dead code is worth anything at all |
+| Run  | [pipeline.dce.cpp](pipeline.dce.cpp) | each pattern, before vs. after removing the dead code by hand — no optimizer fences |
 
-Removing genuinely unobservable work: ~22 ms → 0 ms (dead store), ~28 ms →
-0 ms (dead call) at `-O1`–`-O3` — the dead-branch case is 0 ms either way at
-those levels, since the compiler already strips a `constexpr false` branch
-on its own. Verified: **`-O0` is a real exception**, not just weaker — the
-dead-branch "free win" disappears entirely (no optimization enabled to
-produce it), and the dead call balloons to ~5.8 s calling an unoptimized
-function 100M times.
+Again, the compiler does this very effectively.
+
+---
+
+## 4 · How far does it go? — speedup and its limits
+
+The three examples above each establish that a transformation *works*. This one
+asks what happens when you keep going, and is the right place to end the
+lecture: every optimization in this course has a ceiling, and this is the
+cleanest look at what ceilings are made of.
+
+It takes example 1's transformation — one accumulator vs. several independent
+ones — and sweeps K = 1, 2, 4, 8 over the same reduction, measuring against a
+*measured* FADD latency and clock rather than assumed ones.
+
+| Step | Open | What it teaches |
+|------|------|------------------|
+| Read | [multiple_accs.md](multiple_accs.md) | the `K_min = latency / throughput` saturation point, the three regions of a speedup curve, and what `-O2` will and won't do to a floating-point reduction |
+| Run  | [multiple_accs.cpp](multiple_accs.cpp) | the same sum with 1, 2, 4 and 8 accumulators over 64M doubles |
+
+The curve has three distinct regions, and the boundaries are the lesson:
+
+* **Latency-bound** (K=1→2, 2.16x). Each added chain buys nearly linear
+  speedup while the FP unit is still starved.
+* **Unit-bound** (K=2→4, 1.90x more). Two accumulators already fill one FP unit
+  at the measured 2-cycle latency, so further gains come from engaging *more
+  units*, not from hiding latency. Knowing which of the two you are buying
+  tells you when to stop.
+* **Bandwidth-bound** (K=4→8, 1.30x more, then flat). At 6.9 ms the loop is
+  streaming 512 MB at 72.5 GB/s and no amount of instruction-level parallelism
+  goes below the time it takes to fetch the data.
+
+Total 5.39x, and then nothing — which is the point. The same latency→throughput→
+bandwidth progression is what the roofline model formalizes later in the course.
+
+The write-up also carries a worked correction worth reading on its own: the
+page's `cycles/elem` and `CPI` columns were computed for months from an assumed
+4.0 GHz clock and a 3-cycle FADD latency, and the two were **jointly
+impossible** — a strict dependency chain cannot run faster than its own
+latency, yet the numbers claimed it did. Both constants were wrong. Measuring
+them is a short exercise in method, and the lesson generalizes: a derived
+column is only as good as the constant behind it.
 
 ---
 
@@ -131,19 +149,8 @@ You will use temporary variables to avoid RAW conflicts. This pattern is a more 
 
 ## Files at a glance
 
-**Sources** — `pipeline.cpp`, `pipeline.cse.cpp`, `pipeline.dce.cpp`
-**Write-ups** — `pipeline.md`, `pipeline.cse.md`, `pipeline.dce.md`
-**Build** — `buildandrun.sh` sweeps `pipeline.cpp` across `-O0`..`-O3`; the other two sources document a single `clang++` command in their own write-up
+**Sources** — `pipeline.cpp`, `pipeline.cse.cpp`, `pipeline.dce.cpp`, `multiple_accs.cpp`
+**Write-ups** — `pipeline.md`, `pipeline.cse.md`, `pipeline.dce.md`, `multiple_accs.md`
+**Assembly** — `multiple_accs.s` — reference disassembly used in that write-up
+**Build** — `buildandrun.sh` sweeps `pipeline.cpp` across `-O0`..`-O3`; the other sources document a single `clang++` command in their own write-up
 
-The first example breaks a dependency chain apart with more accumulators;
-the second avoids re-paying a stall that's already been paid once; the
-third removes work that was never going to affect the result at all.
-[../ILP/](../ILP/) picks up where the first leaves off, with cycle-accurate
-analysis of the same dependent-chain mechanism on doubles instead of ints,
-plus a Zen 5 comparison this directory doesn't have.
-
-A fourth example, temporaries (splitting a stall chain into a load phase
-and a compute phase), now lives on the `activities` branch alongside
-Activity 1, which is built directly from it —
-[pipeline.tempvar.md](https://github.com/randalburns/pppe26/blob/activities/examples/pipeline/pipeline.tempvar.md) /
-[pipeline.tempvar.cpp](https://github.com/randalburns/pppe26/blob/activities/examples/pipeline/pipeline.tempvar.cpp).

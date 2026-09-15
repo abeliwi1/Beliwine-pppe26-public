@@ -35,12 +35,23 @@
 // negligible misprediction cost — often a wash.
 //
 // Compiler note:
-//   Apple Clang converts simple if-statements to CSEL (conditional select) even
-//   at -O1, eliminating the branch — and with it the misprediction penalty.
-//   GCC with -fno-if-conversion keeps a real branch instruction, which is
-//   required to observe the speculative execution effect.
+//   Apple Clang converts the if-statement to CSEL (conditional select) even at
+//   -O1, eliminating the branch — and with it the misprediction penalty this
+//   example exists to measure.  It does so thoroughly: at plain -O1,
+//   sum_conditional and sum_branchless compile to the *same* inner loop, so all
+//   three rows below would time identical code and report ~1.00x across the
+//   board.  A real branch has to be preserved deliberately.
 //
-// Build:
+// Build (Apple Clang — two -mllvm flags keep the branch in sum_conditional
+// while leaving sum_branchless branch-free, which is exactly the contrast we
+// want; verified in the generated assembly, see speculative_execution.md):
+//   clang++ -O1 -mllvm -two-entry-phi-node-folding-threshold=0
+//              -mllvm -aarch64-enable-early-ifcvt=false
+//              -o spec_O1 speculative_execution.cpp && ./spec_O1
+//   (one line; split here only for width -- no trailing backslashes, which
+//    would continue the // comment and trip -Wcomment)
+//
+// Build (GCC, if you have a real one — note Apple's `g++` is a Clang shim):
 //   g++-15 -O1 -fno-if-conversion -o spec_O1 speculative_execution.cpp && ./spec_O1
 
 #include <iostream>
@@ -59,8 +70,9 @@ static const int N         = 32 * 1024 * 1024;  // 32M ints = 128 MB
 static const int THRESHOLD = 128;                 // ~50% of [0,255] values exceed this
 static const int RUNS      = 5;
 
-// Misprediction penalty on Apple M-series ≈ 15 cycles.
-// x86-64 (Skylake): ≈ 15–20 cycles.
+// Misprediction penalty on Apple M-series ≈ 15 cycles.  Note the measured
+// value from this benchmark works out closer to 18 -- see
+// speculative_execution.md.
 static const int MISPREDICT_PENALTY = 15;
 
 // CPU frequency for CPI calculation (Apple M5 performance core).
@@ -74,18 +86,36 @@ static const double CPU_GHZ = 4.0;
 //   average at 50% taken: 7 insns/element
 static const double INSNS_PER_ELEM = 7.0;
 
-template <typename T>
-static void sink(T const& val) { asm volatile("" : : "m"(val) : "memory"); }
+// Compiler barrier.  This fences the timed region only -- it says nothing
+// about the code inside the kernels, which is the whole point.
+static void clobber() { asm volatile("" ::: "memory"); }
 
+// Min-of-RUNS wall time in milliseconds, at sub-millisecond resolution.
+//
+// The lambda returns its kernel's result and we accumulate every one into
+// `acc`, so no call is ever dead.  An earlier version instead applied a
+// per-call sink() fence to the returned value.  That worked, but a fence
+// is a blunt instrument: accumulating keeps all RUNS calls observable
+// without telling the optimizer anything about the code being timed.
+// (Dropping both -- `f()` with the result discarded -- would let the
+// compiler delete the calls outright and report a time for work that
+// never ran.  See ../pipeline/pipeline.dce.md.)
 template <typename Func>
-long long bench(Func f) {
-    long long best = LLONG_MAX;
+double bench(Func f, double& acc) {
+    double best = 1e300;
     for (int r = 0; r < RUNS; r++) {
-        asm volatile("" ::: "memory");
+        clobber();
         auto t0 = high_resolution_clock::now();
-        f();
+        clobber();
+
+        acc += (double)f();
+
+        clobber();
         auto t1 = high_resolution_clock::now();
-        best = min(best, (long long)duration_cast<milliseconds>(t1 - t0).count());
+        clobber();
+
+        double ms = duration<double, milli>(t1 - t0).count();
+        if (ms < best) best = ms;
     }
     return best;
 }
@@ -110,7 +140,7 @@ int64_t sum_conditional(const int* data, int n) {
 //
 // v * (v >= THRESHOLD): the comparison yields 0 or 1, multiplying by
 // v gives 0 or v.  The compiler lowers this to a compare + multiply
-// (or CSEL/CMOV) with no branch instruction — no speculation, no
+// (or CSEL) with no branch instruction — no speculation, no
 // misprediction penalty regardless of data order.
 // ================================================================
 
@@ -159,19 +189,20 @@ int main() {
          << "(" << (int)(mispredict_rate*100) << "% mispredict × "
          << MISPREDICT_PENALTY << " cycles × 32M branches at 3 GHz)\n";
 
-    auto t_shuf = bench([&]{ sink(sum_conditional(shuffled.data(), N)); });
-    auto t_sort = bench([&]{ sink(sum_conditional(sorted.data(),   N)); });
-    auto t_brnl = bench([&]{ sink(sum_branchless (shuffled.data(), N)); });
+    double acc = 0.0;
+    auto t_shuf = bench([&]{ return sum_conditional(shuffled.data(), N); }, acc);
+    auto t_sort = bench([&]{ return sum_conditional(sorted.data(),   N); }, acc);
+    auto t_brnl = bench([&]{ return sum_branchless (shuffled.data(), N); }, acc);
 
     // CPI calculation: cycles = time_ms * CPU_GHZ * 1e6
     //                  cycles/elem = cycles / N
     //                  CPI = cycles / (N * INSNS_PER_ELEM)
-    auto cpi = [&](long long ms) -> double {
-        double cycles = (double)ms * CPU_GHZ * 1e6;
+    auto cpi = [&](double ms) -> double {
+        double cycles = ms * CPU_GHZ * 1e6;
         return cycles / ((double)N * INSNS_PER_ELEM);
     };
-    auto cpe = [&](long long ms) -> double {
-        return (double)ms * CPU_GHZ * 1e6 / (double)N;
+    auto cpe = [&](double ms) -> double {
+        return ms * CPU_GHZ * 1e6 / (double)N;
     };
 
     cout << "\n" << string(80, '-') << "\n";
@@ -185,13 +216,13 @@ int main() {
          << right << setw(10) << "speedup" << "\n";
     cout << string(80, '-') << "\n";
 
-    auto row = [&](const char* label, long long ms) {
+    auto row = [&](const char* label, double ms) {
         cout << left  << setw(36) << label
-             << right << setw(7)  << ms << " ms"
+             << right << setw(7)  << fixed << setprecision(1) << ms << " ms"
              << right << setw(11) << fixed << setprecision(2) << cpe(ms)
              << right << setw(7)  << fixed << setprecision(2) << cpi(ms)
              << right << setw(9)  << fixed << setprecision(2)
-             << (double)t_shuf / max(1LL, ms) << "x\n";
+             << t_shuf / ms << "x\n";
     };
 
     row("branchy  + shuffled  (50% mispredict)", t_shuf);
@@ -206,7 +237,10 @@ int main() {
          << fixed << setprecision(2) << cpi_fast << " = "
          << fixed << setprecision(1) << cpi_slow / cpi_fast << "x"
          << "  [measured: "
-         << fixed << setprecision(1) << (double)t_shuf / max(1LL, t_sort) << "x])\n";
+         << fixed << setprecision(1) << t_shuf / t_sort << "x])\n";
+
+    volatile double keep_alive = acc;
+    (void)keep_alive;
 
     return 0;
 }

@@ -9,7 +9,7 @@
 // core, as distinct from its 10-wide front-end issue width.
 //
 // The source array is small (fits L1) and re-read many times ("passes") so
-// the loop is ALU-bound, not memory-bound -- unlike out_of_order.cpp, which
+// the loop is ALU-bound, not memory-bound -- unlike examples/pipeline/multiple_accs.cpp, which
 // deliberately runs large enough to hit a memory-bandwidth floor.
 //
 // Build: clang++ -O1 -o ipc_sweep ipc_sweep.cpp && ./ipc_sweep

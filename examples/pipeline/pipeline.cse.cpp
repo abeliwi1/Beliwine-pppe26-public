@@ -17,7 +17,10 @@
  *
  * The "before" and "after" functions here are ordinary code — no NOINLINE,
  * no optimizer fences. The compiler is free to CSE the "before" variants
- * itself, and at -O1 and up, for two of the three sections, it does.
+ * itself, and from -O1 up it does, in all three sections. See
+ * pipeline.cse.md: the measured result is that hand-CSE buys nothing (and
+ * at -O0 actively costs), and that section 3's apparent remaining win is
+ * not CSE at all.
  */
 
 #include <array>
@@ -29,13 +32,32 @@
 using namespace std;
 using namespace std::chrono;
 
-// benchMs — runs fn() and returns wall-clock milliseconds elapsed.
-static double benchMs(const function<void()>& fn)
+// Compiler barrier around the timed region only. It does not stop the
+// compiler optimizing inside the functions under test -- that's the point.
+static void clobber() { asm volatile("" ::: "memory"); }
+
+// benchMs — runs fn() `runs` times and returns the fastest.
+// Single-shot timing on this file was badly noisy: the same binary would
+// report a "before" that beat its own "after" on one run and lost by 3x on
+// the next. Take the minimum.
+static double benchMs(const function<void()>& fn, int runs = 5)
 {
-    auto t0 = steady_clock::now();
-    fn();
-    auto t1 = steady_clock::now();
-    return duration<double, milli>(t1 - t0).count();
+    double best = 1e300;
+    for (int r = 0; r < runs; r++) {
+        clobber();
+        auto t0 = steady_clock::now();
+        clobber();
+
+        fn();
+
+        clobber();
+        auto t1 = steady_clock::now();
+        clobber();
+
+        double ms = duration<double, milli>(t1 - t0).count();
+        if (ms < best) best = ms;
+    }
+    return best;
 }
 
 // ============================================================
@@ -126,26 +148,31 @@ static void arraySumAfter(const array<int, 1024>& arr, int stride, int n, long& 
 // ============================================================
 // SECTION 3 — Floating-point: sqrt() reused 3×
 //
-// sqrt has ~14-cycle latency on typical x86.  Calling it three times
-// with the same argument triples the stall budget.
+// The interesting one, and not for the reason it looks like. The compiler
+// DOES CSE these three identical sqrt() calls down to one (verified: one
+// fsqrt in the -O1 assembly, not three). What "after" actually changes is
+// three divisions into one division plus three multiplies -- and that is a
+// different transformation, which the compiler declines because it is not
+// bit-exact: the two versions disagree on 47% of inputs. -ffast-math is
+// what unlocks it.
 // ============================================================
 
 static double normalizeBefore(double x, double y, double z)
 {
-    const double nx = x / sqrt(x*x + y*y + z*z); // sqrt → ~14-cycle stall
-    const double ny = y / sqrt(x*x + y*y + z*z); // sqrt again → stall
-    const double nz = z / sqrt(x*x + y*y + z*z); // sqrt again → stall
+    const double nx = x / sqrt(x*x + y*y + z*z); // compiler CSEs the sqrt...
+    const double ny = y / sqrt(x*x + y*y + z*z); // ...so this is one sqrt
+    const double nz = z / sqrt(x*x + y*y + z*z); // ...and three divisions
     return nx + ny + nz;
 }
 
 static double normalizeAfter(double x, double y, double z)
 {
-    const double lenSq  = x*x + y*y + z*z;    // one FMA chain
-    const double invLen = 1.0 / sqrt(lenSq);   // one sqrt, one division
-    const double nx = x * invLen;              // FMUL — no stall
-    const double ny = y * invLen;              // FMUL — no stall
-    const double nz = z * invLen;              // FMUL — no stall
-    return nx + ny + nz;
+    const double lenSq  = x*x + y*y + z*z;
+    const double invLen = 1.0 / sqrt(lenSq);   // one sqrt, ONE division
+    const double nx = x * invLen;              // multiply, not divide
+    const double ny = y * invLen;
+    const double nz = z * invLen;
+    return nx + ny + nz;                       // NOT bit-equal to Before
 }
 
 // ============================================================
@@ -156,8 +183,13 @@ static const int REPS = 100'000'000;
 
 int main()
 {
-    volatile long   sinkI = 0;   // volatile prevents dead-code elimination
+    // Accumulate into plain locals and sink to volatile once, after timing.
+    // (An earlier version accumulated straight into a `volatile long` inside
+    // the hot loop -- 100M volatile read-modify-writes, which cost more than
+    // the CSE difference being measured and flattened every ratio.)
+    volatile long   sinkI = 0;
     volatile double sinkD = 0.0;
+    long   accI = 0;
     long   tmpI = 0;
     double tmpD = 0.0;
     double ms = 0.0;
@@ -167,11 +199,14 @@ int main()
     // ---- Section 1: integer CSE ----
     printf("[ 1 ] Integer common sub-expression  (a*b + c reused 3x)\n");
 
-    ms = benchMs([&]{ for (int i = 0; i < REPS; i++) sinkI += beforeCse(i, 3, 7); });
+    accI = 0;
+    ms = benchMs([&]{ for (int i = 0; i < REPS; i++) accI += beforeCse(i, 3, 7); });
+    sinkI = accI;
     printf("    BEFORE CSE : %6.2f ms  (result=%ld)\n", ms, (long)sinkI);
 
-    sinkI = 0;
-    ms = benchMs([&]{ for (int i = 0; i < REPS; i++) sinkI += afterCse(i, 3, 7); });
+    accI = 0;
+    ms = benchMs([&]{ for (int i = 0; i < REPS; i++) accI += afterCse(i, 3, 7); });
+    sinkI = accI;
     printf("    AFTER  CSE : %6.2f ms  (result=%ld)\n\n", ms, (long)sinkI);
 
     // ---- Section 2: array index CSE ----

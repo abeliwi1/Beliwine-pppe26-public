@@ -27,12 +27,13 @@ _AI question: what are the pipeline steps on my processor and which stage does i
 **Dependent chain — one accumulator, four ops each reading the line above:**
 
 ```cpp
-long long x = 1;
+unsigned long long x = 1;
 for (int i = 0; i < ARRAY_SIZE; i++) {
-    x = x + data[i];
-    x = x ^ (x >> 1);
-    x = x * 3;
-    x = x ^ (x >> 2);
+    unsigned long long v = (unsigned long long)data[i] | 1ull;
+    x = x * v;
+    x = x * (v + 2);
+    x = x * (v + 4);
+    x = x * (v + 6);
 }
 ```
 
@@ -42,19 +43,45 @@ before the previous one finishes.
 **Independent chains — four accumulators, no cross-dependencies:**
 
 ```cpp
-long long x1 = 1, x2 = 2, x3 = 3, x4 = 4;
+unsigned long long x1 = 1, x2 = 1, x3 = 1, x4 = 1;
 for (int i = 0; i < ARRAY_SIZE; i += 4) {
-    x1 = x1 + data[i];      x1 = x1 ^ (x1 >> 1);  x1 = x1 * 3;  x1 = x1 ^ (x1 >> 2);
-    x2 = x2 + data[i + 1];  x2 = x2 ^ (x2 >> 1);  x2 = x2 * 3;  x2 = x2 ^ (x2 >> 2);
-    x3 = x3 + data[i + 2];  x3 = x3 ^ (x3 >> 1);  x3 = x3 * 3;  x3 = x3 ^ (x3 >> 2);
-    x4 = x4 + data[i + 3];  x4 = x4 ^ (x4 >> 1);  x4 = x4 * 3;  x4 = x4 ^ (x4 >> 2);
+    // a, b, c, d are data[i..i+3], each |1 to stay odd
+    x1 = x1 * a;  x1 = x1 * (a + 2);  x1 = x1 * (a + 4);  x1 = x1 * (a + 6);
+    x2 = x2 * b;  x2 = x2 * (b + 2);  x2 = x2 * (b + 4);  x2 = x2 * (b + 6);
+    x3 = x3 * c;  x3 = x3 * (c + 2);  x3 = x3 * (c + 4);  x3 = x3 * (c + 6);
+    x4 = x4 * d;  x4 = x4 * (d + 2);  x4 = x4 * (d + 4);  x4 = x4 * (d + 6);
 }
+return x1 * x2 * x3 * x4;
 ```
 
 `x1`..`x4` share no dependency, so the CPU can overlap all four chains. A
 second, simpler experiment in the same source (`singleAccumulator` vs.
 `multipleAccumulators`, 1 vs. 8 accumulators over a plain `sum += data[i]`)
-isolates the identical effect with no bit-mixing at all.
+isolates the identical effect with a one-op chain instead of a four-op one.
+
+The two are not the same shape, and the difference is worth seeing drawn:
+[**Two Ways to Break a Chain**](pipeline.chains.html)
+puts their dependency graphs side by side. `independentChains` is 4 lanes x 4
+deep — it hides a multiply recurrence *within* one iteration.
+`multipleAccumulators` is 8 lanes x 1 deep — it hides a single add *across*
+iterations. That is why one needs four lanes and the other needs eight, even
+though both land at ~3.8x.
+
+**Why multiply, and why unsigned.** The whole loop is one big product, and
+multiplication is associative — which is exactly what makes splitting it
+into four lanes a *legal* transformation: `independentChains(data)` returns
+the same value as `dependentChain(data)`, and the program prints
+`Same answer? YES` to prove it. The arithmetic is unsigned because 100M
+multiplies overflow immediately and signed overflow is undefined behavior;
+the `| 1` keeps every factor odd, since repeatedly multiplying by even
+values drives the low bits to zero and collapses the accumulator within 64
+elements.
+
+An earlier version of this example used `x = (x + data[i]) * 3 ^ (x >> 2)`
+— bit-mixing that stalls just as well but is **not** associative. It made a
+better-looking benchmark and a worse lesson: the "fast" version computed a
+completely different answer, so it was never a transformation of the slow
+one at all, just a different program with a similar cost profile.
 
 *AI question:* _Is this the same as loop unrolling and if different how?_
 
@@ -69,19 +96,38 @@ clang++ -std=c++17 -O1 -o pipeline pipeline.cpp && ./pipeline
 
 | Level | Dependent | Independent | Speedup | Single acc | Multi acc | Speedup |
 |-------|-----------|-------------|---------|-------------|-----------|---------|
-| -O0   | 496 ms    | 198 ms      | 2.51x   | 112 ms      | 76 ms     | 1.47x   |
-| -O1   | 158 ms    | 44 ms       | 3.59x   | 23 ms       | 6 ms      | 3.83x   |
-| -O2   | 0 ms*     | 45 ms       | —       | 0 ms*       | 2 ms      | —       |
-| -O3   | 0 ms*     | 0 ms*       | —       | 0 ms*       | 0 ms*     | —       |
+| -O0   | 327 ms    | 179 ms      | 1.83x   | 105 ms      | 77 ms     | 1.36x   |
+| -O1   | 269 ms    | 70 ms       | 3.84x   | 23 ms       | 6 ms      | 3.83x   |
+| -O2   | 69 ms     | 70 ms       | 0.99x   | 5 ms        | 5 ms      | 1.00x   |
+| -O3   | 69 ms     | 69 ms       | 1.00x   | 5 ms        | 5 ms      | 1.00x   |
 
-`*` — the effect doesn't vanish at higher `-O`; the *measurement* does, and
-**not for the reason this file used to claim.** Dumping `-S` output shows
-`dependentChain` and `independentChains` compile to **byte-identical
-assembly at `-O1`, `-O2`, and `-O3`** — no vectorization (zero `v`/`q`
-registers at any level, including where each collapses to `0 ms`), no
-strength reduction, no constant-folding. Neither function's own generated
-code changes at all past `-O0`. See Analysis, below, for what that actually
-rules in and out.
+Both experiments print `Same answer? YES` at every level, and the checksum
+is identical across all four builds (`8981613207994990858`) — the split is
+answer-preserving, not just fast.
+
+**The gap closes at `-O2` because the compiler performs the transformation
+itself.** That is the strongest possible evidence the split is legal: an
+optimizer is only permitted to do this if the result is unchanged. Dumping
+`-S` for `dependentChain` shows it directly — at `-O1` the loop is a strict
+four-deep chain, each `mul` reading the destination of the one above:
+
+```
+mul x11, x0,  x10
+mul x11, x11, x12    <- depends on the line above
+mul x11, x11, x12
+mul x0,  x11, x10
+```
+
+At `-O2` the same function unrolls and advances **four independent partial
+products** (`x10`, `x11`, `x12`, `x13`) side by side — by hand at `-O1`,
+by compiler at `-O2`:
+
+```
+mul x10, x10, x14
+mul x11, x11, x15
+mul x12, x12, x16
+mul x13, x13, x17    <- four independent chains
+```
 
 *AI question:* _If the Apple silicon pipeline is more complex, is it benefitical to make the independent chain longer?_
 
@@ -90,7 +136,7 @@ rules in and out.
 
 This is kind of a WOW moment about the power of modern processors. 
 
-This is our first introduction to processor optimization levels. Let's go deeper [compiler_optimization.md](../../course_materials/01.compiler_optimization.md)
+This is our first introduction to processor optimization levels. Let's go deeper [compiler_optimization.md](../../course_materials/01.pipeline.compiler_optimization.md)
 
 
 ## Verified optimization levels
@@ -100,52 +146,68 @@ Re-built and re-run at each level to confirm the table above (`clang++
 
 | Level | Shows the effect? |
 |---|---|
-| `-O0` | **Yes** — 2.51x / 1.50x |
-| `-O1` | **Yes** — 3.59x / 3.83x, the cleanest run |
-| `-O2` | No — the dependent-chain side already reports 0 ms |
-| `-O3` | No — both sides report 0 ms |
+| `-O0` | **Yes** — 1.83x / 1.36x |
+| `-O1` | **Yes** — 3.84x / 3.83x, the cleanest run |
+| `-O2` | No — the compiler splits the chain itself, so both sides match |
+| `-O3` | No — same as `-O2` |
 
-**Only `-O0` and `-O1` demonstrate this example as a timing comparison.**
-From `-O2` on, the *measured* gap disappears — but not because the
-compiler applied an equivalent fix to the code. See Analysis.
+**Only `-O0` and `-O1` demonstrate this example as a timing comparison** —
+but for a satisfying reason. From `-O2` on the gap closes because the
+optimizer applies the same transformation you just applied by hand, which
+it is allowed to do precisely because multiplication is associative. The
+technique doesn't stop working; it stops being *yours*.
+
+Note the times at `-O2`/`-O3` are real (69 ms, 5 ms), not the `0 ms`
+readings this file used to report. Those were a benchmark-harness artifact:
+`benchmark()` did `result = func(data)`, so only the last of five calls was
+ever read and the compiler deleted the other four as dead code, leaving the
+minimum to latch onto a run that never happened. It now accumulates
+(`result += func(data)`) instead.
 
 ## Analysis
 
-The 2.5–3.8x speedups from breaking the dependency chain are real and
+The 1.8–3.8x speedups from breaking the dependency chain are real and
 visible at -O0/-O1, where the compiler still emits something close to a
-literal instruction-per-line translation.
-
-**This file used to say** that confirming what happened at `-O2`/`-O3`
-would show either vectorization or a constant-folded result. That guess was
-never actually checked against the assembly — and it's wrong. Dumping `-S`
-for `dependentChain` and `independentChains` at every level shows:
+literal instruction-per-line translation. Verify it the same way every
+other claim in this directory gets verified — dump `-S` and read the loop:
 
 ```bash
 clang++ -std=c++17 -O1 -S -o o1.s pipeline.cpp
 clang++ -std=c++17 -O2 -S -o o2.s pipeline.cpp
-clang++ -std=c++17 -O3 -S -o o3.s pipeline.cpp
-diff <(awk '/^__Z14dependentChain/{f=1} f{print} /ret/{if(f)exit}' o1.s) \
-     <(awk '/^__Z14dependentChain/{f=1} f{print} /ret/{if(f)exit}' o3.s)
-# no differences
+awk '/^__Z14dependentChain/{f=1} f{print} /ret/{if(f)exit}' o1.s | grep mul
+awk '/^__Z14dependentChain/{f=1} f{print} /ret/{if(f)exit}' o2.s | grep mul
 ```
+
+At `-O1` you get four multiplies in a strict chain; at `-O2`, four
+independent partial products advancing in parallel (shown above). The
+compiler is doing your job for you, and the fact that it *may* is the
+proof that the transformation preserves the answer.
+
+**This file has been wrong twice, in instructive ways.** Both are worth
+knowing about, because both are mistakes that are easy to make in your own
+measurements:
+
 *AI observation*: _This was hallucintaion. It guessed and was wrong for a long time._
 
-Both functions are byte-identical across `-O1`, `-O2`, and `-O3` — same
-scalar `x`/`w`-register instructions, no vector register ever appears, and
-the loop body itself is never removed or reduced. Since `dependentChain`
-and `independentChains`'s own compiled code is unchanged, a genuinely
-serial (or four-way scalar) 100-million-element loop cannot physically
-finish in under a millisecond — the `0 ms` reading has to come from
-somewhere other than the function itself running faster.
+1. **It guessed at a mechanism instead of checking.** For a long time this
+   file explained the `-O2`/`-O3` behavior as auto-vectorization or
+   constant-folding. Nobody had dumped `-S`. When someone finally did, both
+   guesses turned out to be false — the functions were byte-identical
+   scalar code at every level, with no vector register anywhere.
+2. **The benchmark was measuring work that never ran.** The real cause of
+   the old `0 ms` readings was `benchmark()` doing `result = func(data)`:
+   only the last of five calls was ever read, so the compiler legally
+   deleted the other four (the same dead-store pattern as
+   [pipeline.dce.md](pipeline.dce.md)), and the reported minimum came from
+   a run that didn't happen. Accumulating instead of overwriting fixed it,
+   and the `-O2`/`-O3` rows now show honest non-zero times.
 
-The most likely remaining explanation: both functions are fully inlined
-into `main` from `-O1` on (no calls to either symbol by name at *any*
-level — checkable the same way, grepping the mangled names), and `data`
-never changes across the 5 `clobber()`-separated benchmark runs. Once
-everything is inlined into one function, `-O3`'s more aggressive optimizer
-plausibly recognizes the repeated pure computation on unchanging input and
-eliminates the redundant re-execution across runs — a **benchmark-harness
-effect**, not the compiler solving the RAW hazard. 
+A third correction, this one about the example rather than the
+measurement: the original recurrence mixed `*` with `^` and `>>`, which is
+not associative, so `independentChains` computed a *different answer* from
+`dependentChain` and was never a transformation of it. Switching to a pure
+product keeps the four-deep stall and makes the split legal — same answer,
+verified in the program's own output.
 
 *AI question*: _Can you use the result to prevent the compiler from optimizing it out?_
 
@@ -175,11 +237,13 @@ does — you need something stronger than "the result gets used" at the end:
 a barrier at each step or each call that makes the *intermediate* value
 opaque, not just the final one. That's what `clobber()` here and
 `doNotOptimize()` in [pipeline.cse.cpp](pipeline.cse.cpp) are for — and
-even `clobber()` isn't airtight against this, which is the whole reason
-this file's `-O3` row still reads `0 ms`.
+even `clobber()` isn't airtight against this, which is exactly why this
+file's `-O2`/`-O3` rows used to read `0 ms`. The fix wasn't a stronger
+barrier: it was making every call's result actually get read, by
+accumulating in `benchmark()` instead of overwriting.
 
-This is the same phenomenon [../ILP/out_of_order.md](../ILP/out_of_order.md)
-and [../ILP/sep_dependent.md](../ILP/sep_dependent.md) measure far more
+This is the same phenomenon [multiple_accs.md](multiple_accs.md)
+and [../ILP/fuse_loops_rob.md](../ILP/fuse_loops_rob.md) measure far more
 precisely — reorder buffer behavior, cycles/elem, CPI, and a `K_min`
 saturation formula, on doubles rather than ints. This file predates that
 analysis and is the rougher, optimization-level-sweep version of the same
@@ -193,15 +257,24 @@ cycle-accounting those two go on to do.
    start until the one before it finishes.
 2. **Independent accumulators expose that concurrency** without changing
    the arithmetic — same total, more overlap.
-3. **The effect survives past -O1; the measurement doesn't.** A 0 ms result
-   at -O2/-O3 does *not* mean the compiler solved the RAW hazard for you —
-   verified: the compiled functions are byte-identical, unvectorized, at
-   every level from -O1 up. The vanishing measurement is a benchmark-harness
-   effect (most likely redundant-call elimination once everything is
-   inlined), not the compiler fixing the recurrence.
-4. **A claim about "what the compiler did" isn't true until you've checked
-   the assembly.** This file stated the vectorization/strength-reduction
-   explanation for years without anyone dumping `-S` to confirm it — it
-   sounded plausible and was wrong. Diffing the generated code across `-O`
-   levels is one command; guessing about compiler internals is free and
-   frequently incorrect.
+3. **Splitting a chain is only legal if the operator is associative.**
+   That is the whole ballgame. A product or a sum splits into lanes and
+   recombines exactly; a chain that mixes `*` with `^` and `>>` does not,
+   and "parallelizing" it silently computes something else. Both
+   experiments here print `Same answer? YES` — if yours doesn't, you
+   haven't optimized anything, you've written a different program.
+4. **When the compiler takes your optimization away, that's the proof it
+   was valid.** At `-O2` the hand-split stops winning because the optimizer
+   performs the same split — which it is only permitted to do because the
+   answer is preserved. A transformation the compiler *can't* do for you is
+   often one that isn't answer-preserving.
+5. **A claim about "what the compiler did" isn't true until you've checked
+   the assembly.** This file stated a vectorization/strength-reduction
+   explanation for a long time without anyone dumping `-S` to confirm it —
+   it sounded plausible and was wrong. Reading the generated code is one
+   command; guessing about compiler internals is free and frequently
+   incorrect.
+6. **Check that your benchmark is measuring work that actually runs.** A
+   harness that keeps only the last of N results lets the compiler delete
+   the other N-1 calls outright. Accumulate every result, or time a run
+   that never happened.

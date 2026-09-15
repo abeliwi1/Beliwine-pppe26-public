@@ -1,22 +1,30 @@
 /*
- * pipeline.cpp
+ * pipeline.nochains.cpp
  *
- * Two RAW-hazard experiments: a single dependency chain vs. several
- * independent ones doing the same total work. Sweep across -O0..-O3 with
- * buildandrun.sh.
+ * A/B variant of pipeline.cpp. Everything is identical except how
+ * independentChains' loop body is *written*: here the four chains are
+ * interleaved by operation (x1's multiply, x2's, x3's, x4's, then the next
+ * multiply for all four) instead of grouped by chain (all four of x1's
+ * multiplies, then all four of x2's, ...).
  *
- * Both experiments split an associative reduction (a product, then a sum)
- * into independent lanes, so the "fast" version returns the identical
- * value -- the program prints `Same answer? YES` for each. That legality
- * cuts both ways: at -O2/-O3 the compiler performs the same split itself
- * and the measured gap closes, which is the strongest evidence available
- * that the transformation preserves the result. Dump -S and compare
- * dependentChain at -O1 (one four-deep mul chain) against -O2 (four
- * independent partial products) to see it.
+ * The name is slightly loose: the four dependency chains still exist and
+ * are just as long. What's gone is *successive-line* dependency -- no
+ * statement here reads a value the line immediately above it wrote. Each
+ * statement's operand was produced four lines earlier instead of one.
+ * Same instructions, same dependency graph, same answer as pipeline.cpp --
+ * only the source order differs.
+ *
+ * Point of the experiment: on an out-of-order machine, does that source
+ * ordering matter? Two separate schedulers sit between what you type and
+ * what executes -- LLVM's own instruction scheduler (which reorders
+ * independent operations at compile time) and the CPU's out-of-order
+ * execution engine (which issues by operand readiness at runtime, not
+ * fetch order). It turns out to matter a lot at -O0 and not at all at -O1;
+ * see pipeline.nochains.md for the measurements and why.
  *
  * Compile and benchmark:
- *   clang++ -std=c++17 -O1 -o pipeline pipeline.cpp && ./pipeline
- *   ./buildandrun.sh   # sweeps -O0 through -O3
+ *   clang++ -std=c++17 -O0 -o pipeline.nochains pipeline.nochains.cpp && ./pipeline.nochains
+ *   clang++ -std=c++17 -O1 -o pipeline.nochains pipeline.nochains.cpp && ./pipeline.nochains
  */
 
 #include <iostream>
@@ -81,12 +89,17 @@ long long dependentChain(vector<int>& data) {
 // FAST: Four independent chains processed simultaneously
 // Pipeline stays FULL - CPU executes 4 operations in parallel
 //
+// Written interleaved BY OPERATION rather than grouped by chain: read top
+// to bottom and no line depends on the line above it. Compare against
+// pipeline.cpp's version, where each chain's four multiplies sit together
+// and every line *does* read what the previous line wrote.
+//
 // DEBUG_NOINLINE (see above): with -DPIPELINE_DEBUG, forces a real,
 // callable out-of-line copy so the debugger lands on the schedule LLVM
-// chooses in isolation (interleaved) rather than the more conservative
-// schedule it picks once this loop is inlined into main under main's
-// register pressure. Without that flag, this is a no-op -- normal builds
-// let the compiler inline as usual, so measured timings aren't affected.
+// chooses in isolation rather than the more conservative schedule it picks
+// once this loop is inlined into main under main's register pressure.
+// Without that flag, this is a no-op -- normal builds let the compiler
+// inline as usual, so measured timings aren't affected.
 DEBUG_NOINLINE
 long long independentChains(vector<int>& data) {
     // Four SEPARATE accumulators - no dependencies between them.
@@ -99,28 +112,30 @@ long long independentChains(vector<int>& data) {
         unsigned long long c = (unsigned long long)data[i + 2] | 1ull;
         unsigned long long d = (unsigned long long)data[i + 3] | 1ull;
 
-        // Chain 1 - independent
+        // Multiply 1 for all four chains -- none of these four lines
+        // depends on any other
         x1 = x1 * a;
-        x1 = x1 * (a + 2);
-        x1 = x1 * (a + 4);
-        x1 = x1 * (a + 6);
-
-        // Chain 2 - independent of chain 1
         x2 = x2 * b;
-        x2 = x2 * (b + 2);
-        x2 = x2 * (b + 4);
-        x2 = x2 * (b + 6);
-
-        // Chain 3 - independent of chains 1,2
         x3 = x3 * c;
-        x3 = x3 * (c + 2);
-        x3 = x3 * (c + 4);
-        x3 = x3 * (c + 6);
-
-        // Chain 4 - independent of chains 1,2,3
         x4 = x4 * d;
+
+        // Multiply 2 for all four chains -- each reads a value written
+        // four lines up, not one
+        x1 = x1 * (a + 2);
+        x2 = x2 * (b + 2);
+        x3 = x3 * (c + 2);
         x4 = x4 * (d + 2);
+
+        // Multiply 3 for all four chains
+        x1 = x1 * (a + 4);
+        x2 = x2 * (b + 4);
+        x3 = x3 * (c + 4);
         x4 = x4 * (d + 4);
+
+        // Multiply 4 for all four chains
+        x1 = x1 * (a + 6);
+        x2 = x2 * (b + 6);
+        x3 = x3 * (c + 6);
         x4 = x4 * (d + 6);
     }
 
@@ -197,8 +212,10 @@ pair<long long, long long> benchmark(Func func, vector<int>& data, int runs = 5)
 }
 
 int main() {
-    cout << "Array size: " << ARRAY_SIZE << " elements\n" << endl;
-    
+    cout << "Array size: " << ARRAY_SIZE << " elements" << endl;
+    cout << "(independentChains interleaved by operation -- "
+         << "no successive-line dependencies)\n" << endl;
+
     vector<int> data(ARRAY_SIZE);
     for (int i = 0; i < ARRAY_SIZE; i++) {
         data[i] = (i % 100) + 1;

@@ -64,8 +64,8 @@ That's what each transformation actually needs independence for:
 
 A loop where iteration `i` genuinely needs iteration `i-1`'s result — a
 running sum, a recurrence, an accumulator — *is* loop-carried, and none of
-these rewrites are free there. [../ILP/out_of_order.md](../ILP/out_of_order.md)
-and [../ILP/sep_dependent.md](../ILP/sep_dependent.md) measure what a
+these rewrites are free there. [../pipeline/multiple_accs.md](../pipeline/multiple_accs.md)
+and [../ILP/fuse_loops_rob.md](../ILP/fuse_loops_rob.md) measure what a
 loop-carried dependency costs on real hardware, and how breaking one apart
 (multiple accumulators) or hiding it (interleaving independent work)
 recovers performance without changing the loop's dependency structure.

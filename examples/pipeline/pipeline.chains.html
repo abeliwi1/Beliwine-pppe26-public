@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Two Ways to Break a Chain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+  :root {
+    color-scheme: light dark;
+
+    --paper:      #F2F5F6;
+    --surface:    #FFFFFF;
+    --ink:        #12191C;
+    --muted:      #5A686E;
+    --rule:       #CBD5D8;
+    --rule-soft:  #E1E8EA;
+    --serial:     #C1462E;
+    --parallel:   #0E7C7B;
+    --serial-bg:  #FBEDE9;
+    --parallel-bg:#E4F2F1;
+
+    --sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:      #0E1416;
+      --surface:    #161F22;
+      --ink:        #E4EBED;
+      --muted:      #8A9AA0;
+      --rule:       #2B3B42;
+      --rule-soft:  #1E2A2F;
+      --serial:     #E8735A;
+      --parallel:   #3FBFB0;
+      --serial-bg:  #2A1712;
+      --parallel-bg:#0F2A28;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:      #0E1416;
+    --surface:    #161F22;
+    --ink:        #E4EBED;
+    --muted:      #8A9AA0;
+    --rule:       #2B3B42;
+    --rule-soft:  #1E2A2F;
+    --serial:     #E8735A;
+    --parallel:   #3FBFB0;
+    --serial-bg:  #2A1712;
+    --parallel-bg:#0F2A28;
+  }
+
+  * { box-sizing: border-box; }
+
+  img { max-width: 100%; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0 24px 96px;
+  }
+
+  .wrap { max-width: 940px; margin: 0 auto; }
+
+  header.masthead {
+    padding: 56px 0 32px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 18px;
+  }
+  h1 {
+    font-size: clamp(34px, 5.2vw, 52px);
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+    font-weight: 700;
+    margin: 0 0 20px;
+    text-wrap: balance;
+  }
+  .standfirst {
+    font-size: 19px;
+    line-height: 1.55;
+    color: var(--muted);
+    max-width: 62ch;
+    margin: 0;
+  }
+  .standfirst strong { color: var(--ink); font-weight: 600; }
+
+  .setup {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .setup > div { padding: 22px 24px 22px 0; }
+  .setup > div + div {
+    padding-left: 24px;
+    border-left: 1px solid var(--rule-soft);
+  }
+  .setup dt {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 6px;
+  }
+  .setup dd {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 26px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .setup dd span { font-size: 14px; color: var(--muted); font-weight: 400; }
+
+  section { padding-top: 52px; }
+  h2 {
+    font-size: 26px;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    font-weight: 600;
+    margin: 0 0 14px;
+    text-wrap: balance;
+  }
+  p { max-width: 66ch; margin: 0 0 16px; }
+  code {
+    font-family: var(--mono);
+    font-size: 0.9em;
+    background: var(--rule-soft);
+    padding: 1px 5px;
+    border-radius: 2px;
+  }
+
+  figure {
+    margin: 28px 0 0;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    padding: 20px;
+  }
+  .scroller { overflow-x: auto; }
+  figure svg { display: block; width: 100%; min-width: 620px; height: auto; }
+  figcaption {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--rule-soft);
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--muted);
+    max-width: 74ch;
+  }
+  figcaption strong { color: var(--ink); font-weight: 600; }
+
+  .verdict {
+    margin: 28px 0 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+  }
+  .verdict > div { background: var(--surface); padding: 20px; }
+  .verdict h4 {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0 0 12px;
+  }
+  .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    margin-bottom: 12px;
+    background: var(--parallel-bg);
+    color: var(--parallel);
+  }
+  .tag.was { background: var(--serial-bg); color: var(--serial); }
+  .nums {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    line-height: 1.9;
+    margin: 12px 0 0;
+    word-break: break-all;
+  }
+  .nums b { color: var(--ink); font-weight: 600; }
+
+  pre {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.7;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--parallel);
+    padding: 14px 16px;
+    overflow-x: auto;
+    margin: 20px 0 0;
+  }
+  pre .cmt { color: var(--muted); }
+
+  .tablewrap { overflow-x: auto; margin-top: 28px; }
+  table {
+    width: 100%;
+    min-width: 560px;
+    border-collapse: collapse;
+    font-size: 14.5px;
+  }
+  th, td {
+    text-align: left;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+  }
+  thead th {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--rule);
+    font-weight: 500;
+  }
+  tbody th { font-weight: 500; color: var(--muted); width: 34%; }
+  td { font-variant-numeric: tabular-nums; }
+  td.mono { font-family: var(--mono); font-size: 13px; }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
+    font-size: 13px;
+    color: var(--muted);
+    font-family: var(--mono);
+    line-height: 1.7;
+  }
+
+  a { color: var(--parallel); }
+  a:focus-visible { outline: 2px solid var(--parallel); outline-offset: 2px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Pipeline stalls · examples/pipeline</p>
+    <h1>Two Ways to Break a Chain</h1>
+    <p class="standfirst">
+      <code>independentChains</code> and <code>multipleAccumulators</code> both split a serial
+      dependency into parallel lanes, both are legal, and both land within a hundredth of the
+      same speedup. <strong>The dependency graph is where they differ — one is four lanes deep,
+      the other is eight lanes wide, and the shape is what decides how many lanes you need.</strong>
+    </p>
+  </header>
+
+  <dl class="setup">
+    <div>
+      <dt>Example 1 · at -O1</dt>
+      <dd>3.84<span>×</span></dd>
+      <dt style="margin-top:8px">4 lanes × 4 deep · a product</dt>
+    </div>
+    <div>
+      <dt>Example 2 · at -O1</dt>
+      <dd>3.83<span>×</span></dd>
+      <dt style="margin-top:8px">8 lanes × 1 deep · a sum</dt>
+    </div>
+    <div>
+      <dt>Same answer as the serial version</dt>
+      <dd style="font-size:22px;line-height:1.4;color:var(--parallel)">Both<span><br>verified at every -O level</span></dd>
+    </div>
+  </dl>
+
+  <section>
+    <h2>Example 1: four lanes, each still four deep</h2>
+    <p>
+      <code>dependentChain</code> multiplies one accumulator by four derived factors per element,
+      and each multiply reads what the one above it just wrote. The critical path is the whole
+      loop: four multiplies × 100M elements, with nothing available to fill the stall slots.
+    </p>
+    <p>
+      The fix gives each of four accumulators its own copy of that work, striding
+      <code>i += 4</code>. Each lane keeps its full four-multiply depth — what changes is that
+      four of them now sit side by side with no edges between them, and the four partial products
+      multiply back together at the end.
+    </p>
+
+    <figure>
+      <div class="scroller">
+        <svg viewBox="0 0 800 306" role="img" aria-label="Dependency graph comparison: dependentChain is a single column of four dependent multiplies repeated per element, while independentChains is four such columns side by side with no edges between them.">
+          <defs>
+            <marker id="a-serial" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto">
+              <polygon points="0,0 8,4 0,8" fill="var(--serial)"></polygon>
+            </marker>
+          </defs>
+
+          <text x="24" y="18" font-family="var(--mono)" font-size="11" font-weight="600" letter-spacing="1.2" fill="var(--muted)">BEFORE · dependentChain</text>
+
+          <rect x="24" y="44"  width="150" height="28" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.5"></rect>
+          <text x="99" y="63" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink)">x *= v</text>
+          <line x1="99" y1="72" x2="99" y2="80" stroke="var(--serial)" stroke-width="1.5" marker-end="url(#a-serial)"></line>
+
+          <rect x="24" y="82"  width="150" height="28" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.5"></rect>
+          <text x="99" y="101" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink)">x *= (v + 2)</text>
+          <line x1="99" y1="110" x2="99" y2="118" stroke="var(--serial)" stroke-width="1.5" marker-end="url(#a-serial)"></line>
+
+          <rect x="24" y="120" width="150" height="28" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.5"></rect>
+          <text x="99" y="139" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink)">x *= (v + 4)</text>
+          <line x1="99" y1="148" x2="99" y2="156" stroke="var(--serial)" stroke-width="1.5" marker-end="url(#a-serial)"></line>
+
+          <rect x="24" y="158" width="150" height="28" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.5"></rect>
+          <text x="99" y="177" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink)">x *= (v + 6)</text>
+
+          <line x1="99" y1="186" x2="99" y2="208" stroke="var(--serial)" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#a-serial)"></line>
+          <text x="99" y="226" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--muted)">element i+1 …</text>
+
+          <text x="99" y="262" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--serial)" font-weight="600">critical path = 4 muls × N</text>
+          <text x="99" y="278" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--muted)">width 1 · depth 4 per element</text>
+
+          <line x1="206" y1="30" x2="206" y2="288" stroke="var(--rule)" stroke-width="1"></line>
+
+          <text x="240" y="18" font-family="var(--mono)" font-size="11" font-weight="600" letter-spacing="1.2" fill="var(--muted)">AFTER · independentChains</text>
+
+          <text x="300" y="36" text-anchor="middle" font-family="var(--mono)" font-size="11" font-weight="600" fill="var(--parallel)">x1</text>
+          <rect x="240" y="44"  width="120" height="26" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="300" y="61" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">* a</text>
+          <line x1="300" y1="70" x2="300" y2="78" stroke="var(--serial)" stroke-width="1.2" marker-end="url(#a-serial)"></line>
+          <rect x="240" y="80"  width="120" height="26" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="300" y="97" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">* (a+2)</text>
+          <line x1="300" y1="106" x2="300" y2="114" stroke="var(--serial)" stroke-width="1.2" marker-end="url(#a-serial)"></line>
+          <rect x="240" y="116" width="120" height="26" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="300" y="133" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">* (a+4)</text>
+          <line x1="300" y1="142" x2="300" y2="150" stroke="var(--serial)" stroke-width="1.2" marker-end="url(#a-serial)"></line>
+          <rect x="240" y="152" width="120" height="26" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="300" y="169" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">* (a+6)</text>
+
+          <text x="436" y="36" text-anchor="middle" font-family="var(--mono)" font-size="11" font-weight="600" fill="var(--parallel)">x2</text>
+          <rect x="376" y="44"  width="120" height="26" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="436" y="61" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">* b</text>
+          <line x1="436" y1="70" x2="436" y2="78" stroke="var(--serial)" stroke-width="1.2" marker-end="url(#a-serial)"></line>
+          <rect x="376" y="80"  width="120" height="26" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="436" y="97" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">* (b+2)</text>
+          <line x1="436" y1="106" x2="436" y2="114" stroke="var(--serial)" stroke-width="1.2" marker-end="url(#a-serial)"></line>
+          <rect x="376" y="116" width="120" height="26" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="436" y="133" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">* (b+4)</text>
+          <line x1="436" y1="142" x2="436" y2="150" stroke="var(--serial)" stroke-width="1.2" marker-end="url(#a-serial)"></line>
+          <rect x="376" y="152" width="120" height="26" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="436" y="169" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">* (b+6)</text>
+
+          <text x="572" y="36" text-anchor="middle" font-family="var(--mono)" font-size="11" font-weight="600" fill="var(--parallel)">x3</text>
+          <rect x="512" y="44"  width="120" height="26" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="572" y="61" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">* c</text>
+          <line x1="572" y1="70" x2="572" y2="78" stroke="var(--serial)" stroke-width="1.2" marker-end="url(#a-serial)"></line>
+          <rect x="512" y="80"  width="120" height="26" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="572" y="97" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">* (c+2)</text>
+          <line x1="572" y1="106" x2="572" y2="114" stroke="var(--serial)" stroke-width="1.2" marker-end="url(#a-serial)"></line>
+          <rect x="512" y="116" width="120" height="26" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="572" y="133" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">* (c+4)</text>
+          <line x1="572" y1="142" x2="572" y2="150" stroke="var(--serial)" stroke-width="1.2" marker-end="url(#a-serial)"></line>
+          <rect x="512" y="152" width="120" height="26" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="572" y="169" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">* (c+6)</text>
+
+          <text x="708" y="36" text-anchor="middle" font-family="var(--mono)" font-size="11" font-weight="600" fill="var(--parallel)">x4</text>
+          <rect x="648" y="44"  width="120" height="26" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="708" y="61" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">* d</text>
+          <line x1="708" y1="70" x2="708" y2="78" stroke="var(--serial)" stroke-width="1.2" marker-end="url(#a-serial)"></line>
+          <rect x="648" y="80"  width="120" height="26" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="708" y="97" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">* (d+2)</text>
+          <line x1="708" y1="106" x2="708" y2="114" stroke="var(--serial)" stroke-width="1.2" marker-end="url(#a-serial)"></line>
+          <rect x="648" y="116" width="120" height="26" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="708" y="133" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">* (d+4)</text>
+          <line x1="708" y1="142" x2="708" y2="150" stroke="var(--serial)" stroke-width="1.2" marker-end="url(#a-serial)"></line>
+          <rect x="648" y="152" width="120" height="26" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="708" y="169" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">* (d+6)</text>
+
+          <line x1="240" y1="196" x2="768" y2="196" stroke="var(--parallel)" stroke-width="1.5" stroke-dasharray="5 4"></line>
+          <line x1="240" y1="192" x2="240" y2="200" stroke="var(--parallel)" stroke-width="1.5"></line>
+          <line x1="768" y1="192" x2="768" y2="200" stroke="var(--parallel)" stroke-width="1.5"></line>
+          <text x="504" y="216" text-anchor="middle" font-family="var(--mono)" font-size="10.5" font-weight="600" fill="var(--parallel)">no dependency edges cross here</text>
+
+          <text x="504" y="262" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--serial)" font-weight="600">critical path = 4 muls × N/4</text>
+          <text x="504" y="278" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--muted)">width 4 · depth 4 per iteration</text>
+        </svg>
+      </div>
+      <figcaption>
+        <strong>Red edges are real dependencies; the teal bracket marks where independence was
+        created.</strong> Notice what did <em>not</em> change: each lane is still four multiplies
+        deep, and every red edge inside a column survives the transformation. The win comes
+        entirely from the absence of horizontal edges — four four-deep lanes with nothing
+        connecting them, so three of them fill the stall slots of the fourth.
+      </figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>Example 2: eight lanes, each one op deep</h2>
+    <p>
+      <code>singleAccumulator</code> looks similar in prose — one running value, a dependency
+      every iteration — but its graph has a different shape. There is no four-op recurrence here.
+      Each element contributes exactly one add, so the chain is <em>N</em> long and one deep.
+    </p>
+
+    <figure>
+      <div class="scroller">
+        <svg viewBox="0 0 900 256" role="img" aria-label="Dependency graph comparison: singleAccumulator is a single chain of one-operation adds, while multipleAccumulators is eight independent single adds in a row with no edges between them.">
+          <defs>
+            <marker id="b-serial" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto">
+              <polygon points="0,0 8,4 0,8" fill="var(--serial)"></polygon>
+            </marker>
+          </defs>
+
+          <text x="24" y="18" font-family="var(--mono)" font-size="11" font-weight="600" letter-spacing="1.2" fill="var(--muted)">BEFORE · singleAccumulator</text>
+
+          <rect x="24" y="42"  width="164" height="26" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.5"></rect>
+          <text x="106" y="59" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink)">sum += data[i]</text>
+          <line x1="106" y1="68" x2="106" y2="76" stroke="var(--serial)" stroke-width="1.5" marker-end="url(#b-serial)"></line>
+
+          <rect x="24" y="78"  width="164" height="26" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.5"></rect>
+          <text x="106" y="95" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink)">sum += data[i+1]</text>
+          <line x1="106" y1="104" x2="106" y2="112" stroke="var(--serial)" stroke-width="1.5" marker-end="url(#b-serial)"></line>
+
+          <rect x="24" y="114" width="164" height="26" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.5"></rect>
+          <text x="106" y="131" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink)">sum += data[i+2]</text>
+
+          <line x1="106" y1="140" x2="106" y2="162" stroke="var(--serial)" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#b-serial)"></line>
+          <text x="106" y="180" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--muted)">… N deep</text>
+
+          <text x="106" y="216" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--serial)" font-weight="600">critical path = 1 add × N</text>
+          <text x="106" y="232" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--muted)">width 1 · depth 1 per element</text>
+
+          <line x1="220" y1="30" x2="220" y2="240" stroke="var(--rule)" stroke-width="1"></line>
+
+          <text x="252" y="18" font-family="var(--mono)" font-size="11" font-weight="600" letter-spacing="1.2" fill="var(--muted)">AFTER · multipleAccumulators</text>
+
+          <text x="288" y="58" text-anchor="middle" font-family="var(--mono)" font-size="10" font-weight="600" fill="var(--parallel)">sum1</text>
+          <rect x="252" y="66" width="72" height="30" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="288" y="85" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">+d[i]</text>
+
+          <text x="368" y="58" text-anchor="middle" font-family="var(--mono)" font-size="10" font-weight="600" fill="var(--parallel)">sum2</text>
+          <rect x="332" y="66" width="72" height="30" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="368" y="85" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">+d[i+1]</text>
+
+          <text x="448" y="58" text-anchor="middle" font-family="var(--mono)" font-size="10" font-weight="600" fill="var(--parallel)">sum3</text>
+          <rect x="412" y="66" width="72" height="30" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="448" y="85" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">+d[i+2]</text>
+
+          <text x="528" y="58" text-anchor="middle" font-family="var(--mono)" font-size="10" font-weight="600" fill="var(--parallel)">sum4</text>
+          <rect x="492" y="66" width="72" height="30" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="528" y="85" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">+d[i+3]</text>
+
+          <text x="608" y="58" text-anchor="middle" font-family="var(--mono)" font-size="10" font-weight="600" fill="var(--parallel)">sum5</text>
+          <rect x="572" y="66" width="72" height="30" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="608" y="85" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">+d[i+4]</text>
+
+          <text x="688" y="58" text-anchor="middle" font-family="var(--mono)" font-size="10" font-weight="600" fill="var(--parallel)">sum6</text>
+          <rect x="652" y="66" width="72" height="30" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="688" y="85" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">+d[i+5]</text>
+
+          <text x="768" y="58" text-anchor="middle" font-family="var(--mono)" font-size="10" font-weight="600" fill="var(--parallel)">sum7</text>
+          <rect x="732" y="66" width="72" height="30" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="768" y="85" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">+d[i+6]</text>
+
+          <text x="848" y="58" text-anchor="middle" font-family="var(--mono)" font-size="10" font-weight="600" fill="var(--parallel)">sum8</text>
+          <rect x="812" y="66" width="72" height="30" rx="2" fill="var(--surface)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <text x="848" y="85" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">+d[i+7]</text>
+
+          <line x1="252" y1="118" x2="884" y2="118" stroke="var(--parallel)" stroke-width="1.5" stroke-dasharray="5 4"></line>
+          <line x1="252" y1="114" x2="252" y2="122" stroke="var(--parallel)" stroke-width="1.5"></line>
+          <line x1="884" y1="114" x2="884" y2="122" stroke="var(--parallel)" stroke-width="1.5"></line>
+          <text x="568" y="138" text-anchor="middle" font-family="var(--mono)" font-size="10.5" font-weight="600" fill="var(--parallel)">eight independent adds — no edges at all within an iteration</text>
+
+          <text x="568" y="180" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--muted)">each sum carries only to its own next iteration</text>
+          <text x="568" y="216" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--serial)" font-weight="600">critical path = 1 add × N/8</text>
+          <text x="568" y="232" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--muted)">width 8 · depth 1 per iteration</text>
+        </svg>
+      </div>
+      <figcaption>
+        <strong>The lanes here have no internal depth at all.</strong> Where Example 1 hides the
+        latency of a four-multiply recurrence <em>inside</em> an iteration, this hides the latency
+        of a single add <em>across</em> iterations. Same idea — more independent work in flight —
+        but the stall being covered is a different one.
+      </figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>The two shapes, at one scale</h2>
+    <p>
+      Strip the labels and the difference is a rectangle versus a strip. This is the whole
+      distinction between the two examples, and it is the thing that decides how many lanes each
+      one needs.
+    </p>
+
+    <figure>
+      <div class="scroller">
+        <svg viewBox="0 0 760 268" role="img" aria-label="Shape comparison: independentChains forms a four-wide by four-deep block of sixteen operations, while multipleAccumulators forms an eight-wide by one-deep strip of eight operations.">
+          <text x="140" y="24" text-anchor="middle" font-family="var(--mono)" font-size="11" font-weight="600" fill="var(--ink)">independentChains</text>
+          <text x="140" y="42" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--muted)">4 wide × 4 deep = 16 muls</text>
+
+          <rect x="68"  y="60"  width="28" height="28" rx="2" fill="var(--serial-bg)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <rect x="104" y="60"  width="28" height="28" rx="2" fill="var(--serial-bg)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <rect x="140" y="60"  width="28" height="28" rx="2" fill="var(--serial-bg)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <rect x="176" y="60"  width="28" height="28" rx="2" fill="var(--serial-bg)" stroke="var(--serial)" stroke-width="1.2"></rect>
+
+          <rect x="68"  y="96"  width="28" height="28" rx="2" fill="var(--serial-bg)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <rect x="104" y="96"  width="28" height="28" rx="2" fill="var(--serial-bg)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <rect x="140" y="96"  width="28" height="28" rx="2" fill="var(--serial-bg)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <rect x="176" y="96"  width="28" height="28" rx="2" fill="var(--serial-bg)" stroke="var(--serial)" stroke-width="1.2"></rect>
+
+          <rect x="68"  y="132" width="28" height="28" rx="2" fill="var(--serial-bg)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <rect x="104" y="132" width="28" height="28" rx="2" fill="var(--serial-bg)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <rect x="140" y="132" width="28" height="28" rx="2" fill="var(--serial-bg)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <rect x="176" y="132" width="28" height="28" rx="2" fill="var(--serial-bg)" stroke="var(--serial)" stroke-width="1.2"></rect>
+
+          <rect x="68"  y="168" width="28" height="28" rx="2" fill="var(--serial-bg)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <rect x="104" y="168" width="28" height="28" rx="2" fill="var(--serial-bg)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <rect x="140" y="168" width="28" height="28" rx="2" fill="var(--serial-bg)" stroke="var(--serial)" stroke-width="1.2"></rect>
+          <rect x="176" y="168" width="28" height="28" rx="2" fill="var(--serial-bg)" stroke="var(--serial)" stroke-width="1.2"></rect>
+
+          <line x1="52" y1="60" x2="52" y2="196" stroke="var(--serial)" stroke-width="1.5"></line>
+          <line x1="48" y1="60" x2="56" y2="60" stroke="var(--serial)" stroke-width="1.5"></line>
+          <line x1="48" y1="196" x2="56" y2="196" stroke="var(--serial)" stroke-width="1.5"></line>
+          <text x="40" y="132" text-anchor="end" font-family="var(--mono)" font-size="10" font-weight="600" fill="var(--serial)">depth 4</text>
+
+          <line x1="68" y1="212" x2="204" y2="212" stroke="var(--parallel)" stroke-width="1.5"></line>
+          <text x="136" y="230" text-anchor="middle" font-family="var(--mono)" font-size="10" font-weight="600" fill="var(--parallel)">width 4</text>
+
+          <line x1="380" y1="30" x2="380" y2="248" stroke="var(--rule)" stroke-width="1"></line>
+
+          <text x="568" y="24" text-anchor="middle" font-family="var(--mono)" font-size="11" font-weight="600" fill="var(--ink)">multipleAccumulators</text>
+          <text x="568" y="42" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--muted)">8 wide × 1 deep = 8 adds</text>
+
+          <rect x="428" y="60" width="28" height="28" rx="2" fill="var(--parallel-bg)" stroke="var(--parallel)" stroke-width="1.2"></rect>
+          <rect x="464" y="60" width="28" height="28" rx="2" fill="var(--parallel-bg)" stroke="var(--parallel)" stroke-width="1.2"></rect>
+          <rect x="500" y="60" width="28" height="28" rx="2" fill="var(--parallel-bg)" stroke="var(--parallel)" stroke-width="1.2"></rect>
+          <rect x="536" y="60" width="28" height="28" rx="2" fill="var(--parallel-bg)" stroke="var(--parallel)" stroke-width="1.2"></rect>
+          <rect x="572" y="60" width="28" height="28" rx="2" fill="var(--parallel-bg)" stroke="var(--parallel)" stroke-width="1.2"></rect>
+          <rect x="608" y="60" width="28" height="28" rx="2" fill="var(--parallel-bg)" stroke="var(--parallel)" stroke-width="1.2"></rect>
+          <rect x="644" y="60" width="28" height="28" rx="2" fill="var(--parallel-bg)" stroke="var(--parallel)" stroke-width="1.2"></rect>
+          <rect x="680" y="60" width="28" height="28" rx="2" fill="var(--parallel-bg)" stroke="var(--parallel)" stroke-width="1.2"></rect>
+
+          <line x1="412" y1="60" x2="412" y2="88" stroke="var(--serial)" stroke-width="1.5"></line>
+          <line x1="408" y1="60" x2="416" y2="60" stroke="var(--serial)" stroke-width="1.5"></line>
+          <line x1="408" y1="88" x2="416" y2="88" stroke="var(--serial)" stroke-width="1.5"></line>
+          <text x="400" y="78" text-anchor="end" font-family="var(--mono)" font-size="10" font-weight="600" fill="var(--serial)">depth 1</text>
+
+          <line x1="428" y1="104" x2="708" y2="104" stroke="var(--parallel)" stroke-width="1.5"></line>
+          <text x="568" y="122" text-anchor="middle" font-family="var(--mono)" font-size="10" font-weight="600" fill="var(--parallel)">width 8</text>
+
+          <text x="568" y="176" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--muted)">no internal depth to hide —</text>
+          <text x="568" y="194" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--muted)">the only latency is loop-carried</text>
+        </svg>
+      </div>
+      <figcaption>
+        Sixteen multiplies arranged four-deep against eight adds arranged flat. The block still
+        has a four-multiply critical path inside every iteration; the strip has none. That is why
+        the two examples need different widths — <strong>four lanes are enough to cover a
+        four-deep multiply recurrence; covering a one-cycle add across iterations takes
+        more.</strong>
+      </figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>Both splits are legal — and the compiler proves it</h2>
+    <p>
+      Follow the recombination at the bottom of each graph. Example 1 multiplies its four partial
+      products together; Example 2 adds its eight partial sums. In both cases the recombining
+      operator is the same one the lanes used, and in both cases that operator is associative —
+      which is exactly the property that makes splitting the chain a transformation rather than a
+      rewrite. Both programs print their verdict when you run them.
+    </p>
+
+    <div class="verdict">
+      <div>
+        <span class="tag">legal · a product</span>
+        <h4>independentChains</h4>
+        <p style="font-size:14.5px;margin-bottom:0">
+          The whole loop is one big product, so four lanes of partial products multiply back
+          together exactly. Unsigned arithmetic keeps the wraparound well-defined; the factors are
+          forced odd so repeated even multiplies can't drive the accumulator to zero.
+        </p>
+        <p class="nums">
+          <span style="color:var(--parallel);font-weight:600">Same answer? YES</span>
+        </p>
+      </div>
+      <div>
+        <span class="tag">legal · a sum</span>
+        <h4>multipleAccumulators</h4>
+        <p style="font-size:14.5px;margin-bottom:0">
+          Eight partial sums over disjoint strides, recombined by addition. Because integer
+          <code>+</code> is associative and commutative, the fold is exact and the transformation
+          preserves the result for every input.
+        </p>
+        <p class="nums">
+          <span style="color:var(--parallel);font-weight:600">Same answer? YES</span>
+        </p>
+      </div>
+    </div>
+
+    <p style="margin-top:24px">
+      The strongest evidence isn't the printed verdict — it's what happens at <code>-O2</code>.
+      Both gaps close, because the compiler performs both splits itself. Dumping the assembly for
+      <code>dependentChain</code> shows it directly: a strict four-deep chain at <code>-O1</code>,
+      four independent partial products at <code>-O2</code>.
+    </p>
+
+<pre><span class="cmt">; -O1 — each mul reads the destination of the one above</span>
+mul x11, x0,  x10
+mul x11, x11, x12
+mul x11, x11, x12
+mul x0,  x11, x10
+
+<span class="cmt">; -O2 — four independent partial products, compiler-generated</span>
+mul x10, x10, x14
+mul x11, x11, x15
+mul x12, x12, x16
+mul x13, x13, x17</pre>
+
+    <p style="margin-top:20px">
+      An optimizer is only permitted to do that if the result is unchanged. <strong>When the
+      compiler takes your hand-optimization away, that is the proof it was valid</strong> — and
+      conversely, a split the compiler refuses to perform for you is often one that wouldn't have
+      preserved the answer.
+    </p>
+
+    <div class="verdict" style="margin-top:28px">
+      <div style="grid-column:1/-1">
+        <span class="tag was">what this example used to get wrong</span>
+        <p style="font-size:14.5px;margin-bottom:0">
+          Example 1 originally built its four-deep chain out of <code>+</code>, <code>*</code>,
+          <code>^</code> and <code>&gt;&gt;</code> mixed together. That stalls just as convincingly,
+          but the mix is <em>not</em> associative — so the four lanes recombined to a completely
+          different value (<span class="nums" style="display:inline">86345932972</span> against the
+          serial <span class="nums" style="display:inline">1531458671438922123</span>). It was never
+          a transformation of the baseline at all, just a different program with a similar cost
+          profile. Switching the chain to a pure product kept the stall and made the split real.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Side by side</h2>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col"></th>
+            <th scope="col">independentChains</th>
+            <th scope="col">multipleAccumulators</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Lanes (width)</th>
+            <td class="mono">4</td>
+            <td class="mono">8</td>
+          </tr>
+          <tr>
+            <th scope="row">Ops per lane, per iteration (depth)</th>
+            <td class="mono">4</td>
+            <td class="mono">1</td>
+          </tr>
+          <tr>
+            <th scope="row">Operation</th>
+            <td class="mono">multiply</td>
+            <td class="mono">add</td>
+          </tr>
+          <tr>
+            <th scope="row">Baseline critical path</th>
+            <td class="mono">4 muls × N</td>
+            <td class="mono">1 add × N</td>
+          </tr>
+          <tr>
+            <th scope="row">Latency being hidden</th>
+            <td>a 4-multiply recurrence, <em>within</em> an iteration</td>
+            <td>a single add, <em>across</em> iterations</td>
+          </tr>
+          <tr>
+            <th scope="row">Recombination</th>
+            <td class="mono">x1*x2*x3*x4</td>
+            <td class="mono">sum1+…+sum8</td>
+          </tr>
+          <tr>
+            <th scope="row">Associative, so the split is legal?</th>
+            <td style="color:var(--parallel)">Yes</td>
+            <td style="color:var(--parallel)">Yes</td>
+          </tr>
+          <tr>
+            <th scope="row">Compiler does it for you at -O2?</th>
+            <td style="color:var(--parallel)">Yes</td>
+            <td style="color:var(--parallel)">Yes</td>
+          </tr>
+          <tr>
+            <th scope="row">Measured speedup at -O1</th>
+            <td class="mono">3.84×</td>
+            <td class="mono">3.83×</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    Source: examples/pipeline/pipeline.cpp · N = 100,000,000 ints · Apple M-series · clang++ -std=c++17<br>
+    Speedups are min of 5 runs at -O1. Both experiments print `Same answer? YES`, and the
+    checksum is identical across -O0 through -O3.
+  </footer>
+
+</div>
+
+</body>
+</html>

@@ -98,7 +98,7 @@ the others had stopped. Total bytes over the slowest thread's elapsed time is th
 honest figure.
 
 **One accumulator measures the adder.** The bandwidth loops use four, or they report
-FP latency instead of memory throughput — the same trick as [../ILP/sep_dependent.cpp](../ILP/sep_dependent.cpp).
+FP latency instead of memory throughput — the same trick as [../ILP/fuse_loops_rob.cpp](../ILP/fuse_loops_rob.cpp).
 Integer accumulators, deliberately: FP reductions are not reassociable, so the
 compiler will not vectorize them without `-ffast-math` and the read test silently
 becomes compute-bound.

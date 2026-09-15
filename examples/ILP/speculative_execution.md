@@ -68,34 +68,70 @@ speculation, no flush possible.  Performance is independent of data order.
 
 ## Compiler note
 
-Apple Clang converts simple `if`-statements to `csel` (conditional select) even
-at `-O1`, eliminating the branch instruction before we can observe its cost.
-GCC with `-fno-if-conversion` preserves the real branch.
+Apple Clang converts the `if`-statement to `csel` (conditional select) even at
+`-O1`, eliminating the branch instruction before we can observe its cost.
+
+It does this *thoroughly*.  At plain `clang++ -O1`, `sum_conditional` and
+`sum_branchless` compile to the same inner loop, differing only in how the
+addend is widened:
+
+```
+; sum_conditional @ clang -O1          ; sum_branchless @ clang -O1
+ldr  w10, [x0], #4                     ldr  w10, [x0], #4
+cmp  w10, #127                         cmp  w10, #127
+csel w10, w10, wzr, gt   ← no branch   csel w10, w10, wzr, gt
+add  x8, x8, x10                       add  x8, x8, w10, sxtw
+subs x9, x9, #1                        subs x9, x9, #1
+b.ne .loop                             b.ne .loop
+```
+
+Built that way, all three rows of this benchmark time identical code and report
+~1.00x across the board.  **The example measures nothing unless a real branch is
+preserved deliberately.**
+
+### Preserving the branch
+
+Two `-mllvm` flags keep the branch in `sum_conditional` while leaving
+`sum_branchless` branch-free — which is exactly the contrast the example needs:
+
+```bash
+clang++ -O1 -mllvm -two-entry-phi-node-folding-threshold=0 \
+        -mllvm -aarch64-enable-early-ifcvt=false \
+        -o spec_O1 speculative_execution.cpp && ./spec_O1
+```
+
+The first stops SimplifyCFG from folding the two-entry phi into a select; the
+second stops the AArch64 backend from re-forming a `csel` afterward.  Both are
+needed — either alone still yields `csel`.  Verifying the result:
+
+```
+; sum_conditional, both flags: real branch
+LBB0_3:
+    ldr  w10, [x0], #4
+    cmp  w10, #128
+    b.lt LBB0_2          ← data-dependent conditional branch — mispredictable
+    add  x8, x8, x10
+LBB0_2:
+    subs x9, x9, #1
+    b.eq LBB0_6
+```
+
+`sum_branchless` still compiles to `csel` under these flags, as intended.
+
+On a machine with real GCC, `-fno-if-conversion` does the same job:
 
 ```bash
 g++-15 -O1 -fno-if-conversion -o spec_O1 speculative_execution.cpp && ./spec_O1
 ```
 
-Verifying with the assembler output (`g++-15 -O1 -fno-if-conversion -S`):
+Note that Apple's `g++` is a Clang shim, not GCC — `g++ --version` on macOS
+prints "Apple clang version".  The GCC recipe requires a genuinely separate
+install (Homebrew `gcc`), and the flag is silently unavailable otherwise.
 
-```
-; GCC -O1 -fno-if-conversion: real branch
-ldr   w1, [x2]
-cmp   w1, 127
-ble   skip          ← conditional branch — subject to misprediction
-add   x0, x0, w1, sxtw
-skip: ...
-
-; Apple Clang -O1: conditional select (no branch)
-ldr   w10, [x0], #4
-cmp   w10, #127
-csel  w10, w10, wzr, gt   ← no branch; always executes both paths
-add   x8, x8, x10
-```
-
-The fact that Clang converts to `csel` automatically is itself a lesson: the
-compiler applies the same branchless transformation the programmer can apply
-manually, eliminating the misprediction penalty without any source change.
+The fact that Clang reaches for `csel` unprompted is itself the lesson: the
+compiler applies the same branchless transformation a programmer would apply
+manually, eliminating the misprediction penalty with no source change — which
+is why we have to fight it to *show* you the penalty at all.
 
 ---
 
@@ -114,17 +150,27 @@ sorted, shuffled, and branchless — so speedup equals the CPI ratio directly.
 
 ---
 
-## Results (Apple M5, N=32M ints, 128 MB, threshold=128)
+## Results (Apple M5, N=32M ints, 128 MB, threshold=128, Apple Clang 17)
+
+Built with the two `-mllvm` flags above:
 
 | version | time | cycles/elem | CPI | speedup |
 |---------|------|-------------|-----|---------|
-| branchy + shuffled (50% mispredict) | 85 ms | 10.13 | 1.45 | 1.00x |
-| branchy + sorted (1 mispredict) | 8 ms | 0.95 | 0.14 | **10.62x** |
-| branchless + shuffled (no branch) | 8 ms | 0.95 | 0.14 | **10.62x** |
+| branchy + shuffled (50% mispredict) | 83.1 ms | 9.90 | 1.41 | 1.00x |
+| branchy + sorted (1 mispredict) | 7.7 ms | 0.91 | 0.13 | **10.85x** |
+| branchless + shuffled (no branch) | 8.4 ms | 1.00 | 0.14 | **9.92x** |
 
 Expected misprediction overhead: `32M × 0.5 × 15 cycles / 4 GHz ≈ 60 ms` added
-to the base 8 ms gives ~68 ms predicted vs 85 ms measured — close, with the
+to the base 7.7 ms gives ~68 ms predicted vs 83.1 ms measured — close, with the
 remainder attributable to pipeline refill after each flush.
+
+> **Branchless is not quite free.**  At sub-millisecond resolution the branchless
+> version is measurably *slower* than the sorted branchy one — 8.4 vs 7.7 ms —
+> because `csel` unconditionally performs the select and feeds it into the
+> accumulator every iteration, where the sorted branchy version simply skips
+> the add on half its elements.  Branchless trades a guaranteed small cost for
+> an unpredictable large one.  That is a good trade on random data and a losing
+> one on sorted data.  
 
 ---
 
@@ -134,12 +180,21 @@ Because instruction count is the same for all three versions, time is
 proportional to CPI, and speedup equals the CPI ratio exactly:
 
 ```
-speedup = CPI_shuffled / CPI_sorted = 1.45 / 0.14 = 10.6x  [measured: 10.6x]
+speedup = CPI_shuffled / CPI_sorted = 1.41 / 0.13 = 10.8x  [measured: 10.8x]
 ```
 
-The 0.14 CPI of the sorted version (< 1) reflects the M5's 10-wide
-superscalar OOO engine issuing ~7 instructions per cycle across multiple
-in-flight iterations when no branch stalls occur.
+This identity is exact for the shuffled-vs-sorted pair and only that pair: those
+two runs execute *the same binary over the same values*, differing solely in the
+order the values are visited.  Instruction count is therefore identical by
+construction, and every bit of the 10.85x is CPI — that is, stall cycles.
+
+The branchless row is a genuinely different instruction mix (`csel` in place of
+a conditional branch, 6 instructions per element rather than 6-or-8), so its
+speedup is *not* a pure CPI ratio and the identity does not apply to it.
+
+The 0.13 CPI of the sorted version (well under 1) reflects the M5's wide
+superscalar OOO engine retiring several instructions per cycle across multiple
+in-flight iterations once no branch stalls occur.
 
 ---
 
@@ -153,15 +208,22 @@ in-flight iterations when no branch stalls occur.
    values, the same instruction count — only memory layout differs.  Sorted
    data gives 10x better performance than random data on this benchmark.
 
-3. **Branchless code avoids the problem entirely.** Replacing a conditional
+3. **Branchless code avoids the problem, at a price.** Replacing a conditional
    branch with arithmetic (`v * (v >= threshold)`) removes the prediction
-   problem at the cost of always doing the multiply.  On random data, branchless
-   matches sorted performance.
+   problem at the cost of always doing the select.  On random data that is a
+   huge win (9.92x); against *sorted* data it is a small loss (8.4 vs 7.7 ms),
+   because a well-predicted branch is nearly free while the select is never
+   free.  Branchless converts an unpredictable large cost into a guaranteed
+   small one — worth it exactly when the branch is unpredictable.
 
 4. **Modern compilers apply branchless transformation automatically.** Apple
-   Clang at `-O1` emits `csel` for the simple `if`, making the compiler-
-   generated code as fast as the hand-written branchless version.
-   `-fno-if-conversion` (GCC) is required to expose the raw hardware effect.
+   Clang at `-O1` emits `csel` for the simple `if` — so completely that
+   `sum_conditional` and `sum_branchless` become the same loop.  Exposing the
+   raw hardware effect requires actively defeating this
+   (`-mllvm -two-entry-phi-node-folding-threshold=0
+   -mllvm -aarch64-enable-early-ifcvt=false`, or GCC's `-fno-if-conversion`).
+   When your benchmark and its control compile to identical code, you are
+   measuring nothing — always check.
 
 5. **Speedup = CPI ratio when instruction count is constant.** Unlike the
    out-of-order accumulator example (where both CPI and instruction count
