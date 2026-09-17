@@ -6,7 +6,7 @@ Instruction-level parallelism (ILP) is the parallel execution of instructions
 *within* a single serial thread. It is not concurrency — there is one
 instruction stream — but a processor still completes more than one
 instruction per cycle by overlapping and reordering the work inside that
-stream. Four techniques make this possible:
+stream. Four techniques maximize instruction throughput:
 
 * **Instruction pipelining** — an instruction executes in stages (fetch,
   decode, execute, ...), and independent instructions overlap those stages
@@ -24,7 +24,7 @@ stream. Four techniques make this possible:
   with a direct programming interface (compiler auto-vectorization or
   intrinsics); see [../vectorization/](../vectorization/).
   
-  Pipelining, out-of-order execution, and speculation, by contrast, are
+Pipelining, out-of-order execution, and speculation are
   managed by the hardware — you don't call them directly. But how you write
   code still determines how well the hardware can use them: a dependency
   chain, a loop boundary, or an unpredictable branch each hide available
@@ -36,17 +36,13 @@ cycles divided by instructions retired — or its reciprocal, **instructions
 per cycle (IPC)**. One instruction per cycle is not a given; it's a ceiling
 that data dependencies, stalls, and mispredictions pull you away from, and a
 wide out-of-order core with enough exposed parallelism can beat it (CPI < 1)
-by retiring several instructions in the same cycle — see the CPI column in
-[speculative_execution.md](speculative_execution.md) for a measured example.
+by retiring several instructions in the same cycle.
 Simple instructions typically cost about a cycle and complex ones (integer
 division, for instance) cost tens of cycles; for exact per-instruction
 latencies on real hardware, see Agner Fog's
 [instruction tables](https://www.agner.org/optimize/instruction_tables.pdf).
 
 ## The reorder buffer
-
-All three examples below are really about one piece of hardware, so it is
-worth setting out before you read them.
 
 An out-of-order core decouples the order it *fetches* instructions from the
 order it *executes* them. The structure that makes this safe is the **reorder

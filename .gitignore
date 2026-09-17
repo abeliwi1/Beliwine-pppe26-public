@@ -49,10 +49,10 @@ __pycache__/
 # branch_optimizations build artifacts
 examples/branch_optimizations/branch_free
 examples/branch_optimizations/branch_free_*
-examples/branch_optimizations/lut_branch
-examples/branch_optimizations/lut_branch_*
-examples/branch_optimizations/loop_unswitch
-examples/branch_optimizations/loop_unswitch_*
+examples/branch_optimizations/lut_crc32
+examples/branch_optimizations/lut_crc32_*
+examples/branch_optimizations/unswitch_alias
+examples/branch_optimizations/unswitch_alias_*
 !examples/branch_optimizations/*.md
 !examples/branch_optimizations/*.cpp
 

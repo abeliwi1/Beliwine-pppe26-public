@@ -34,7 +34,7 @@ and (where it matters) measured numbers.
 | [pipeline/](examples/pipeline/) | pipeline stalls, dependency chains, CSE and dead-code elimination |
 | [ILP/](examples/ILP/) | out-of-order and speculative execution, separating dependent instructions |
 | [loop_optimizations/](examples/loop_optimizations/) | unrolling, fusion, fission, interchange, tiling |
-| [branch_optimizations/](examples/branch_optimizations/) | branch-free code, lookup tables, loop unswitching |
+| [branch_optimizations/](examples/branch_optimizations/) | branch-free code, lookup tables, aliasing-blocked unswitching |
 | [strength.reduction/](examples/strength.reduction/) | replacing expensive operations with cheap ones |
 | [vectorization/](examples/vectorization/) | SIMD by hand and via Highway (AVX2 / NEON) |
 | [sorting/](examples/sorting/) | why `std::sort` is built the way it is — the culminating single-core example |

@@ -86,6 +86,21 @@ static const int HI        = 192;                 // clamp ceiling
 static const int MID       = 128;                 // count threshold
 static const int RUNS      = 5;
 
+// Results-header label.  These files used to hardcode "-O2" in their output no
+// matter how they were built.  There is no predefined macro for the -O level
+// (__OPTIMIZE__ is set for -O1 and up without distinguishing them), so report
+// only what is detectable; pass -DBUILD_LABEL='"-O3"' to be specific.
+#ifndef BUILD_LABEL
+#  ifdef __FAST_MATH__
+#    define BUILD_LABEL "-ffast-math"
+#  elif defined(__OPTIMIZE__)
+#    define BUILD_LABEL "optimized"
+#  else
+#    define BUILD_LABEL "-O0"
+#  endif
+#endif
+
+
 // Misprediction penalty on Apple M-series ≈ 15 cycles.
 // x86-64 (Skylake): ≈ 15–20 cycles.
 static const int MISPREDICT_PENALTY = 15;
@@ -112,15 +127,32 @@ static const double CPU_GHZ = 4.0;
 template <typename T>
 static void sink(T const& val) { asm volatile("" : : "m"(val) : "memory"); }
 
+// Compiler barrier.  Fences the timed region only -- it says nothing about the
+// code inside the kernels, which is the whole point.
+static void clobber() { asm volatile("" ::: "memory"); }
+
+// Min-of-RUNS wall time in milliseconds, at sub-millisecond resolution.
+//
+// The lambda returns its kernel's result and every one is accumulated into
+// `acc`, so no call is ever dead.  An earlier version timed in whole
+// milliseconds, which rounded real effects away -- differences under ~1 ms
+// showed up as exact ties.  See ../ILP/speculative_execution.md.
 template <typename Func>
-long long bench(Func f) {
-    long long best = LLONG_MAX;
+double bench(Func f, double& acc) {
+    double best = 1e300;
     for (int r = 0; r < RUNS; r++) {
-        asm volatile("" ::: "memory");
+        clobber();
         auto t0 = high_resolution_clock::now();
-        f();
+        clobber();
+
+        acc += (double)f();
+
+        clobber();
         auto t1 = high_resolution_clock::now();
-        best = min(best, (long long)duration_cast<milliseconds>(t1 - t0).count());
+        clobber();
+
+        double ms = duration<double, milli>(t1 - t0).count();
+        if (ms < best) best = ms;
     }
     return best;
 }
@@ -296,23 +328,24 @@ int main() {
     cout << "\nExpected misprediction overhead (random): "
          << fixed << setprecision(0) << expected_overhead_ms << " ms\n";
 
+    double acc = 0.0;
     // ---- Random data ----
-    auto tb_r = bench([&]{ auto r = process_branchy(data_rand.data(), N); sink(r.sum); });
-    auto tt_r = bench([&]{ auto r = process_ternary(data_rand.data(), N); sink(r.sum); });
-    auto ta_r = bench([&]{ auto r = process_arith  (data_rand.data(), N); sink(r.sum); });
+    auto tb_r = bench([&]{ return process_branchy(data_rand.data(), N).sum; }, acc);
+    auto tt_r = bench([&]{ return process_ternary(data_rand.data(), N).sum; }, acc);
+    auto ta_r = bench([&]{ return process_arith  (data_rand.data(), N).sum; }, acc);
 
     // ---- Sorted data ----
-    auto tb_s = bench([&]{ auto r = process_branchy(data_sorted.data(), N); sink(r.sum); });
-    auto tt_s = bench([&]{ auto r = process_ternary(data_sorted.data(), N); sink(r.sum); });
-    auto ta_s = bench([&]{ auto r = process_arith  (data_sorted.data(), N); sink(r.sum); });
+    auto tb_s = bench([&]{ return process_branchy(data_sorted.data(), N).sum; }, acc);
+    auto tt_s = bench([&]{ return process_ternary(data_sorted.data(), N).sum; }, acc);
+    auto ta_s = bench([&]{ return process_arith  (data_sorted.data(), N).sum; }, acc);
 
-    auto cpe = [&](long long ms) {
-        return (double)ms * CPU_GHZ * 1e6 / (double)N;
+    auto cpe = [&](double ms) {
+        return ms * CPU_GHZ * 1e6 / (double)N;
     };
 
     cout << "\n" << string(76, '-') << "\n";
     cout << "N=" << N/(1024*1024) << "M bytes   LO=" << LO << " HI=" << HI
-         << " MID=" << MID << "   -O2                      CPU=" << CPU_GHZ << " GHz\n";
+         << " MID=" << MID << "   " << BUILD_LABEL << "   CPU=" << CPU_GHZ << " GHz\n";
     cout << string(76, '-') << "\n";
     cout << left  << setw(18) << "version"
          << right << setw(14) << "random (ms)"
@@ -322,7 +355,7 @@ int main() {
          << right << setw(10) << "speedup" << "\n";
     cout << string(76, '-') << "\n";
 
-    struct Row { const char* name; long long rand_ms; long long sort_ms; };
+    struct Row { const char* name; double rand_ms; double sort_ms; };
     Row rows[3] = {
         { "branchy (3 ifs)",  tb_r, tb_s },
         { "ternary (csel)",   tt_r, tt_s },
@@ -330,11 +363,11 @@ int main() {
     };
     for (auto& row : rows) {
         cout << left  << setw(18) << row.name
-             << right << setw(12) << row.rand_ms << " ms"
+             << right << setw(12) << fixed << setprecision(1) << row.rand_ms << " ms"
              << right << setw(9)  << fixed << setprecision(2) << cpe(row.rand_ms)
-             << right << setw(9)  << fixed << setprecision(2) << (double)tb_r / max(1LL, row.rand_ms) << "x"
-             << right << setw(12) << row.sort_ms << " ms"
-             << right << setw(9)  << fixed << setprecision(2) << (double)tb_s / max(1LL, row.sort_ms) << "x"
+             << right << setw(9)  << fixed << setprecision(2) << tb_r / row.rand_ms << "x"
+             << right << setw(12) << fixed << setprecision(1) << row.sort_ms << " ms"
+             << right << setw(9)  << fixed << setprecision(2) << tb_s / row.sort_ms << "x"
              << "\n";
     }
 
@@ -347,5 +380,6 @@ int main() {
             "      when writing SIMD intrinsics or targeting architectures\n"
             "      without a conditional-select instruction.\n";
 
+    volatile double keep = acc; (void)keep;
     return 0;
 }

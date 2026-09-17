@@ -8,6 +8,86 @@ is independent of data pattern.
 
 [branch_free.cpp](branch_free.cpp)
 
+## The three versions
+
+All three do the same work over 32M bytes: clamp each value into `[LO, HI]` =
+`[64, 192]`, count how many exceed `MID` = 128, and sum them. They differ only
+in how the conditionals are expressed.
+
+**`process_branchy`** — the obvious version, three `if`s per element:
+
+```cpp
+Result process_branchy(const uint8_t* data, int n) {
+    int64_t sum = 0, count = 0;
+    for (int i = 0; i < n; i++) {
+        int v = data[i];
+        if (v < LO)  { KEEP_BRANCH(); v = LO; }
+        if (v > HI)  { KEEP_BRANCH(); v = HI; }
+        if (v > MID) { KEEP_BRANCH(); count++; }
+        sum += v;
+    }
+    return {sum, count};
+}
+```
+
+`KEEP_BRANCH()` is an empty `asm volatile` with a memory clobber. It emits no
+instructions; it exists to stop the compiler converting these branches into
+conditional selects, which it will otherwise do from `-O1` up — leaving nothing
+to measure. See [Build](#build) for why that matters.
+
+**`process_ternary`** — the same logic written as `?:` expressions:
+
+```cpp
+Result process_ternary(const uint8_t* data, int n) {
+    int64_t sum = 0, count = 0;
+    for (int i = 0; i < n; i++) {
+        int v = data[i];
+        v = v < LO ? LO : v;
+        v = v > HI ? HI : v;
+        count += (v > MID);
+        sum += v;
+    }
+    return {sum, count};
+}
+```
+
+No barrier, and no branches in the generated code — the compiler lowers each
+ternary to a conditional select on its own. That makes this the zero-effort
+branchless version, and raises the obvious question of why anyone would write
+the third one; see [The ternary shortcut](#the-ternary-shortcut).
+
+**`process_arith`** — branchless by construction, using signed-shift masks:
+
+```cpp
+Result process_arith(const uint8_t* data, int n) {
+    int64_t sum = 0, count = 0;
+    for (int i = 0; i < n; i++) {
+        int v = data[i];
+
+        // max(v, LO): clamp low — no branch
+        int diff_lo = v - LO;
+        v -= diff_lo & (diff_lo >> 31);
+
+        // min(v, HI): clamp high — no branch
+        int diff_hi = v - HI;
+        v -= diff_hi & ~(diff_hi >> 31);
+
+        // count threshold — no branch
+        count += (v > MID);
+
+        sum += v;
+    }
+    return {sum, count};
+}
+```
+
+The arithmetic is explained in [The three branchless techniques](#the-three-branchless-techniques)
+below. `diff >> 31` on a negative `int` yields all-ones, on a non-negative one
+yields zero — a mask you can AND with to make a conditional subtraction
+unconditional.
+
+---
+
 ## The problem with branches
 
 Every conditional branch requires the CPU to predict which path to take.
