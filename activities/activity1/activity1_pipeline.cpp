@@ -16,23 +16,20 @@ using namespace std::chrono;
 
 const int ARRAY_SIZE = 100000000;
 
-static void clobber()
-{
+static void clobber() {
     asm volatile("" ::: "memory");
 }
 
 // ============================================================
 // GIVEN: single accumulator, real RAW hazard
 // ============================================================
-unsigned long long noTempVars(vector<int> &data)
-{
+unsigned long long noTempVars(vector<int>& data) {
     unsigned long long x = 1;
-    for (int i = 0; i < ARRAY_SIZE; i += 4)
-    {
-        x = x * ((unsigned long long)data[i] | 1ull);     // stall: reads x just written
-        x = x * ((unsigned long long)data[i + 1] | 1ull); // stall: depends on line above
-        x = x * ((unsigned long long)data[i + 2] | 1ull); // stall: depends on line above
-        x = x * ((unsigned long long)data[i + 3] | 1ull); // stall: depends on line above
+    for (int i = 0; i < ARRAY_SIZE; i += 4) {
+        x = x * ((unsigned long long)data[i]     | 1ull);   // stall: reads x just written
+        x = x * ((unsigned long long)data[i + 1] | 1ull);   // stall: depends on line above
+        x = x * ((unsigned long long)data[i + 2] | 1ull);   // stall: depends on line above
+        x = x * ((unsigned long long)data[i + 3] | 1ull);   // stall: depends on line above
     }
     return x;
 }
@@ -43,8 +40,7 @@ unsigned long long noTempVars(vector<int> &data)
 // four multiplies of an unrolled iteration instead of serializing
 // them one at a time.
 // ============================================================
-unsigned long long withTempVars(vector<int> &data)
-{
+unsigned long long withTempVars(vector<int>& data) {
     // Create four independent accumulators. Think about what value to
     // seed them with so the four partial products, multiplied together
     // at the end, equal what the single accumulator produced.
@@ -53,8 +49,7 @@ unsigned long long withTempVars(vector<int> &data)
     unsigned long long x2 = 1;
     unsigned long long x3 = 1;
 
-    for (int i = 0; i < ARRAY_SIZE; i += 4)
-    {
+    for (int i = 0; i < ARRAY_SIZE; i += 4) {
         // LOAD PHASE: four independent operands from data (remember | 1ull)
         unsigned long long op0 = (unsigned long long)data[i] | 1ull;
         unsigned long long op1 = (unsigned long long)data[i + 1] | 1ull;
@@ -75,13 +70,11 @@ unsigned long long withTempVars(vector<int> &data)
 // Benchmark harness — do not modify
 // ============================================================
 template <typename Func>
-pair<long long, unsigned long long> benchmark(Func func, vector<int> &data, int runs = 5)
-{
+pair<long long, unsigned long long> benchmark(Func func, vector<int>& data, int runs = 5) {
     long long minTime = LLONG_MAX;
     unsigned long long result = 0;
 
-    for (int r = 0; r < runs; r++)
-    {
+    for (int r = 0; r < runs; r++) {
         clobber();
         auto start = high_resolution_clock::now();
         clobber();
@@ -106,15 +99,12 @@ pair<long long, unsigned long long> benchmark(Func func, vector<int> &data, int 
     return {minTime, result};
 }
 
-int main()
-{
+int main() {
     cout << "=== Activity 1: Independent Accumulators ===" << endl;
-    cout << "Array size: " << ARRAY_SIZE << " elements\n"
-         << endl;
+    cout << "Array size: " << ARRAY_SIZE << " elements\n" << endl;
 
     vector<int> data(ARRAY_SIZE);
-    for (int i = 0; i < ARRAY_SIZE; i++)
-    {
+    for (int i = 0; i < ARRAY_SIZE; i++) {
         data[i] = (i % 100) + 1;
     }
     clobber();
@@ -124,7 +114,7 @@ int main()
     w += withTempVars(data);
     (void)w;
 
-    auto [timeA, resA] = benchmark(noTempVars, data);
+    auto [timeA, resA] = benchmark(noTempVars,   data);
     auto [timeB, resB] = benchmark(withTempVars, data);
 
     cout << "One chain (stalled):        " << setw(5) << timeA << " ms" << endl;
