@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  Loop-carried dependency — a one-screen cartoon for Lecture 06.
+
+  Two loops over the same eight numbers on one shared clock.  The dependent
+  loop passes a baton (the running total `s`) from box to box and needs eight
+  ticks; the independent loop has no baton and finishes on tick one, then sits
+  idle for seven ticks while the other one crawls.
+
+  Double-click to open.  No server, no build, no dependencies beyond the
+  Google Fonts link (it degrades to system fonts offline).
+
+  Companion to: ../../course_materials/06.loops.md  and  README.loops.md
+  Data behind the claim: loop_unrolling.md (1.0 cycles/element for the chain,
+  1.65x once it is split across four accumulators)
+-->
+<title>Pass the Baton</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap">
+</head>
+<body>
+<style>
+  :root {
+    --bg:      #FBF7F0;
+    --card:    #FFFFFF;
+    --ink:     #241F1B;
+    --soft:    #6E655C;
+    --edge:    #E2D9CC;
+    --hot:     #E8543F;
+    --hot-bg:  #FDE9E4;
+    --cool:    #17A67A;
+    --cool-bg: #DFF4EC;
+    --idle:    #EFE8DD;
+    --shadow:  0 2px 0 var(--edge);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:      #1B1815;
+      --card:    #262220;
+      --ink:     #F4EEE6;
+      --soft:    #A79C90;
+      --edge:    #3B3531;
+      --hot:     #FF7A63;
+      --hot-bg:  #3D241F;
+      --cool:    #35C795;
+      --cool-bg: #14332A;
+      --idle:    #322C28;
+      --shadow:  0 2px 0 #14100E;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:      #1B1815;
+    --card:    #262220;
+    --ink:     #F4EEE6;
+    --soft:    #A79C90;
+    --edge:    #3B3531;
+    --hot:     #FF7A63;
+    --hot-bg:  #3D241F;
+    --cool:    #35C795;
+    --cool-bg: #14332A;
+    --idle:    #322C28;
+    --shadow:  0 2px 0 #14100E;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 0 18px 70px;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: Fredoka, "Trebuchet MS", system-ui, sans-serif;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; }
+
+  h1 {
+    font-size: clamp(1.9rem, 5vw, 2.7rem);
+    font-weight: 600; letter-spacing: -.01em;
+    margin: 46px 0 8px; text-wrap: balance;
+  }
+  .sub { color: var(--soft); font-size: 1.08rem; margin: 0 0 26px; max-width: 46ch; }
+
+  /* ---- clock bar ---- */
+  .clock {
+    position: sticky; top: 0; z-index: 5;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    background: var(--card);
+    border: 2px solid var(--edge);
+    border-radius: 14px;
+    padding: 13px 16px;
+    margin-bottom: 26px;
+    box-shadow: var(--shadow);
+  }
+  .tick-read {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 1.05rem; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    margin-right: auto;
+  }
+  .tick-read span { color: var(--soft); font-weight: 400; }
+  button {
+    font-family: Fredoka, system-ui, sans-serif;
+    font-size: 1rem; font-weight: 500;
+    color: var(--ink); background: var(--bg);
+    border: 2px solid var(--edge); border-radius: 10px;
+    padding: 8px 18px; cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: transform .08s ease;
+  }
+  button:hover { border-color: var(--soft); }
+  button:active { transform: translateY(2px); box-shadow: none; }
+  button:focus-visible { outline: 3px solid var(--cool); outline-offset: 2px; }
+  button.go { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+  /* ---- loop cards ---- */
+  .card {
+    background: var(--card);
+    border: 2px solid var(--edge);
+    border-radius: 16px;
+    padding: 20px 22px 24px;
+    margin-bottom: 22px;
+    box-shadow: var(--shadow);
+  }
+  .card.hot  { border-color: var(--hot); }
+  .card.cool { border-color: var(--cool); }
+
+  .card-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+  .tag {
+    font-size: .8rem; font-weight: 600;
+    letter-spacing: .06em; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 20px;
+  }
+  .tag.hot  { background: var(--hot-bg);  color: var(--hot); }
+  .tag.cool { background: var(--cool-bg); color: var(--cool); }
+  .card-title { font-size: 1.22rem; font-weight: 600; }
+  .why { color: var(--soft); font-size: .98rem; margin: 2px 0 16px; }
+
+  code.line {
+    display: block;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 1.02rem;
+    background: var(--bg);
+    border: 2px solid var(--edge);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 20px;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  code.line b { font-weight: 700; }
+  .hot  code.line b { color: var(--hot); }
+  .cool code.line b { color: var(--cool); }
+
+  /* ---- the row of tiles ---- */
+  .stage { overflow-x: auto; padding-top: 34px; }
+  .row { position: relative; display: flex; gap: 10px; width: max-content; }
+  .tile {
+    width: 56px; height: 56px; flex: none;
+    border-radius: 12px;
+    background: var(--idle);
+    border: 2px solid var(--edge);
+    display: flex; align-items: center; justify-content: center;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 1.15rem; font-weight: 700;
+    color: var(--soft);
+    transition: background .2s ease, color .2s ease, border-color .2s ease, transform .2s ease;
+  }
+  .hot  .tile.done { background: var(--hot-bg);  border-color: var(--hot);  color: var(--hot); }
+  .cool .tile.done { background: var(--cool-bg); border-color: var(--cool); color: var(--cool); transform: translateY(-4px); }
+  .hot  .tile.now  { background: var(--hot);  border-color: var(--hot);  color: #fff; transform: translateY(-4px); }
+
+  /* the baton — only the dependent loop has one */
+  .baton {
+    position: absolute; top: -34px; left: 0;
+    width: 56px; text-align: center;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: .82rem; font-weight: 700;
+    color: #fff; background: var(--hot);
+    border-radius: 20px; padding: 3px 0;
+    transition: transform .22s cubic-bezier(.4,1.3,.5,1);
+  }
+  .baton::after {
+    content: ""; position: absolute; left: 50%; bottom: -6px;
+    margin-left: -5px; border: 5px solid transparent;
+    border-top-color: var(--hot); border-bottom: 0;
+  }
+  .baton.hide { opacity: 0; }
+
+  .readout {
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    margin-top: 20px;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 1rem; font-variant-numeric: tabular-nums;
+  }
+  .readout .lbl { font-family: Fredoka, sans-serif; color: var(--soft); }
+  .badge {
+    margin-left: auto;
+    font-family: Fredoka, sans-serif; font-weight: 600;
+    font-size: .95rem; padding: 5px 13px; border-radius: 20px;
+    background: var(--idle); color: var(--soft);
+  }
+  .badge.fin-hot  { background: var(--hot-bg);  color: var(--hot); }
+  .badge.fin-cool { background: var(--cool-bg); color: var(--cool); }
+
+  .punch {
+    background: var(--card);
+    border: 2px dashed var(--edge);
+    border-radius: 16px;
+    padding: 22px;
+    text-align: center;
+    font-size: 1.16rem;
+    line-height: 1.55;
+  }
+  .punch b.hot  { color: var(--hot); }
+  .punch b.cool { color: var(--cool); }
+  .punch .small { display: block; color: var(--soft); font-size: .96rem; margin-top: 10px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tile, .baton, button { transition: none; }
+  }
+</style>
+
+<div class="wrap">
+
+  <h1>Pass the Baton</h1>
+  <p class="sub">Two loops. Same eight numbers. Same computer. Press play and watch one of them wait.</p>
+
+  <div class="clock">
+    <div class="tick-read">tick <span id="tk">0</span></div>
+    <button class="go" id="play">▶ Play</button>
+    <button id="step">Step</button>
+    <button id="reset">Reset</button>
+  </div>
+
+  <!-- ===================== DEPENDENT ===================== -->
+  <div class="card hot" id="cardA">
+    <div class="card-top">
+      <span class="tag hot">Dependent</span>
+      <span class="card-title">One running total</span>
+    </div>
+    <p class="why">Every box needs the answer from the box before it. Only one can work at a time.</p>
+
+    <code class="line">for (i = 0; i &lt; 8; i++)
+    <b>s</b> = <b>s</b> + a[i];</code>
+
+    <div class="stage">
+      <div class="row" id="rowA">
+        <div class="baton" id="baton">s=0</div>
+      </div>
+    </div>
+
+    <div class="readout">
+      <span class="lbl">s =</span> <span id="sumA">0</span>
+      <span class="badge" id="badgeA">working…</span>
+    </div>
+  </div>
+
+  <!-- ===================== INDEPENDENT ===================== -->
+  <div class="card cool" id="cardB">
+    <div class="card-top">
+      <span class="tag cool">Independent</span>
+      <span class="card-title">Eight separate answers</span>
+    </div>
+    <p class="why">No box needs anything from any other box. They can all go at once.</p>
+
+    <code class="line">for (i = 0; i &lt; 8; i++)
+    <b>b[i]</b> = a[i] * 2;</code>
+
+    <div class="stage">
+      <div class="row" id="rowB"></div>
+    </div>
+
+    <div class="readout">
+      <span class="lbl">b =</span> <span id="sumB">…</span>
+      <span class="badge" id="badgeB">waiting to start</span>
+    </div>
+  </div>
+
+  <div class="punch">
+    The dependent loop took <b class="hot"><span id="finA">8</span> ticks</b>.
+    The independent loop took <b class="cool">1 tick</b>.
+    <span class="small">Nothing about the machine changed. The only difference is whether a box has to wait for its neighbour.</span>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  var A = [3, 7, 2, 8, 1, 5, 9, 4];
+  var MAX = 8, PITCH = 66, tick = 0, timer = null;
+
+  var rowA = document.getElementById('rowA');
+  var rowB = document.getElementById('rowB');
+  var tilesA = [], tilesB = [];
+
+  for (var i = 0; i < 8; i++) {
+    var ta = document.createElement('div');
+    ta.className = 'tile';
+    ta.textContent = A[i];
+    rowA.appendChild(ta);
+    tilesA.push(ta);
+
+    var tb = document.createElement('div');
+    tb.className = 'tile';
+    tb.textContent = A[i];
+    rowB.appendChild(tb);
+    tilesB.push(tb);
+  }
+
+  var baton = document.getElementById('baton');
+  var tk = document.getElementById('tk');
+  var sumAEl = document.getElementById('sumA'), sumBEl = document.getElementById('sumB');
+  var badgeA = document.getElementById('badgeA'), badgeB = document.getElementById('badgeB');
+  var playBtn = document.getElementById('play');
+
+  function render() {
+    tk.textContent = tick;
+
+    // --- dependent: one tile per tick, baton slides along ---
+    var running = 0;
+    for (var i = 0; i < 8; i++) {
+      var done = i < tick;
+      tilesA[i].classList.toggle('done', done && i !== tick - 1);
+      tilesA[i].classList.toggle('now', i === tick - 1);
+      if (done) running += A[i];
+    }
+    sumAEl.textContent = running;
+    baton.textContent = 's=' + running;
+    baton.style.transform = 'translateX(' + Math.max(0, tick - 1) * PITCH + 'px)';
+    baton.classList.toggle('hide', tick === 0);
+    if (tick >= MAX) {
+      badgeA.textContent = 'done at tick 8';
+      badgeA.className = 'badge fin-hot';
+    } else {
+      badgeA.textContent = tick === 0 ? 'waiting to start' : 'waiting on the baton…';
+      badgeA.className = 'badge';
+    }
+
+    // --- independent: all eight on the very first tick ---
+    var go = tick >= 1;
+    for (var j = 0; j < 8; j++) tilesB[j].classList.toggle('done', go);
+    if (go) {
+      tilesB.forEach(function (t, k) { t.textContent = A[k] * 2; });
+      sumBEl.textContent = A.map(function (v) { return v * 2; }).join(' ');
+      badgeB.textContent = 'done at tick 1';
+      badgeB.className = 'badge fin-cool';
+    } else {
+      tilesB.forEach(function (t, k) { t.textContent = A[k]; });
+      sumBEl.textContent = '…';
+      badgeB.textContent = 'waiting to start';
+      badgeB.className = 'badge';
+    }
+  }
+
+  function step() {
+    if (tick < MAX) tick++;
+    render();
+    if (tick >= MAX) stop();
+  }
+  function stop() {
+    if (timer) { clearInterval(timer); timer = null; }
+    playBtn.textContent = '▶ Play';
+  }
+  function start() {
+    if (tick >= MAX) { tick = 0; render(); }
+    timer = setInterval(step, 620);
+    playBtn.textContent = '❚❚ Pause';
+  }
+
+  playBtn.addEventListener('click', function () { timer ? stop() : start(); });
+  document.getElementById('step').addEventListener('click', function () { stop(); step(); });
+  document.getElementById('reset').addEventListener('click', function () { stop(); tick = 0; render(); });
+
+  render();
+})();
+</script>
+
+</body>
+</html>

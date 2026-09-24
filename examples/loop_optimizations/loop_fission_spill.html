@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  Register spilling — an interactive panel for the loop fission example.
+
+  Two register banks drawn as slots (16 xmm, 16 general-purpose, minus %rsp).
+  Choose how many accumulators the loop body keeps alive and watch the banks
+  fill and then overflow into stack slots.  Nothing spills at 8 accumulators;
+  spills appear at 16 -- which is exactly where the measured knee is.
+
+  Double-click to open.  No server, no build, no dependencies beyond the
+  Google Fonts link (it degrades to system fonts offline).
+
+  Companion to: loop_fission.md  and  README.loops.md
+  Numbers from: loop_fission.cpp, g++ -O1, pinned and warmed.
+    32 accumulators -> 134 stack refs (90 xmm), 237.9 ms, 1.00x
+    16              ->  57 (12),                 92.0 ms, 2.59x
+     8              ->   0,                      55.6 ms, 4.28x
+     4              ->   0,                      53.1 ms, 4.48x
+-->
+<title>Out of Registers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+</head>
+<body>
+<style>
+  :root {
+    --ground:    #F6F7FA;
+    --panel:     #FFFFFF;
+    --inset:     #EDEFF4;
+    --ink:       #191C22;
+    --ink-2:     #3D4451;
+    --muted:     #646C7E;
+    --rule:      #DCE0E8;
+    --rule-2:    #C3C9D6;
+    --resident:  #1E9B88;
+    --resident-b:#D8F0EB;
+    --spill:     #CE7514;
+    --spill-b:   #FAEBD8;
+    --empty:     #E3E7EE;
+    --shadow:    0 1px 2px rgba(25,28,34,.05), 0 10px 26px rgba(25,28,34,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:    #13151B;
+      --panel:     #1B1E26;
+      --inset:     #171A21;
+      --ink:       #E8EAF0;
+      --ink-2:     #C2C8D4;
+      --muted:     #8A93A5;
+      --rule:      #272C36;
+      --rule-2:    #39404E;
+      --resident:  #3ECBB2;
+      --resident-b:#123029;
+      --spill:     #F0972F;
+      --spill-b:   #3A2810;
+      --empty:     #232833;
+      --shadow:    0 1px 2px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:    #13151B;
+    --panel:     #1B1E26;
+    --inset:     #171A21;
+    --ink:       #E8EAF0;
+    --ink-2:     #C2C8D4;
+    --muted:     #8A93A5;
+    --rule:      #272C36;
+    --rule-2:    #39404E;
+    --resident:  #3ECBB2;
+    --resident-b:#123029;
+    --spill:     #F0972F;
+    --spill-b:   #3A2810;
+    --empty:     #232833;
+    --shadow:    0 1px 2px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.35);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 0 20px 80px;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: Archivo, "Helvetica Neue", system-ui, sans-serif;
+    font-size: 16.5px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap  { max-width: 920px; margin: 0 auto; }
+  .spine { max-width: 64ch; }
+
+  h1 {
+    font-size: clamp(1.9rem, 4.6vw, 2.6rem);
+    font-weight: 700; letter-spacing: -.022em; line-height: 1.1;
+    margin: 52px 0 10px; text-wrap: balance;
+  }
+  .sub { color: var(--muted); margin: 0 0 30px; max-width: 56ch; }
+  h2 {
+    font-size: 1.32rem; font-weight: 600; letter-spacing: -.01em;
+    margin: 40px 0 10px; text-wrap: balance;
+  }
+  p { margin: 0 0 16px; }
+  .m, code {
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .89em;
+  }
+  code { background: var(--inset); padding: .12em .38em; border-radius: 3px; }
+  strong { font-weight: 600; }
+
+  /* ---------- controls ---------- */
+  .controls {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    margin-bottom: 18px;
+  }
+  .controls .lbl {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--muted); margin-right: 4px;
+  }
+  button {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px; font-weight: 500;
+    color: var(--ink-2); background: var(--panel);
+    border: 1px solid var(--rule-2); border-radius: 4px;
+    padding: 8px 15px; cursor: pointer;
+    transition: background .14s ease, color .14s ease, border-color .14s ease;
+  }
+  button:hover { border-color: var(--muted); }
+  button:focus-visible { outline: 2px solid var(--resident); outline-offset: 2px; }
+  button[aria-pressed="true"] {
+    background: var(--ink); color: var(--ground); border-color: var(--ink);
+  }
+
+  /* ---------- the machine panel ---------- */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+  .demand {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--inset);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12.5px; line-height: 1.85;
+    color: var(--ink-2);
+    overflow-x: auto;
+  }
+  .demand b { color: var(--ink); font-weight: 700; }
+  .demand .tot { color: var(--spill); font-weight: 700; }
+
+  .banks {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  }
+  @media (max-width: 640px) { .banks { grid-template-columns: 1fr; } }
+  .bank { padding: 18px 20px; }
+  .bank + .bank { border-left: 1px solid var(--rule); }
+  @media (max-width: 640px) { .bank + .bank { border-left: 0; border-top: 1px solid var(--rule); } }
+
+  .bank-head {
+    display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px;
+  }
+  .bank-name {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: .14em; text-transform: uppercase;
+  }
+  .bank-fit {
+    margin-left: auto;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11.5px; font-variant-numeric: tabular-nums;
+    color: var(--muted);
+  }
+  .bank-fit.over { color: var(--spill); font-weight: 700; }
+
+  .slots { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; }
+  .slot {
+    aspect-ratio: 1 / 1;
+    border-radius: 3px;
+    background: var(--empty);
+    border: 1px solid transparent;
+    display: flex; align-items: center; justify-content: center;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 9.5px; font-weight: 500;
+    color: var(--muted);
+    transition: background .22s ease, color .22s ease, border-color .22s ease;
+  }
+  .slot.live {
+    background: var(--resident-b);
+    border-color: var(--resident);
+    color: var(--resident);
+    font-weight: 700;
+  }
+
+  /* ---------- stack ---------- */
+  .stack {
+    border-top: 1px solid var(--rule);
+    padding: 18px 20px 20px;
+    background: var(--inset);
+  }
+  .stack-head {
+    display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px;
+  }
+  .stack-name {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: .14em; text-transform: uppercase;
+  }
+  .stack-cost {
+    margin-left: auto;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11.5px; font-variant-numeric: tabular-nums;
+    color: var(--muted);
+  }
+  .spills { display: flex; flex-wrap: wrap; gap: 5px; min-height: 30px; align-items: flex-start; }
+  .chip {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px; font-weight: 500;
+    color: var(--spill);
+    background: var(--spill-b);
+    border: 1px solid var(--spill);
+    border-radius: 3px;
+    padding: 4px 7px;
+    white-space: nowrap;
+    animation: drop .26s ease both;
+  }
+  @keyframes drop { from { opacity: 0; transform: translateY(-9px); } to { opacity: 1; transform: none; } }
+  .none {
+    font-family: Archivo, sans-serif;
+    font-size: .92rem; color: var(--resident); font-weight: 600;
+  }
+
+  .verdict {
+    display: flex; flex-wrap: wrap; gap: 26px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--rule);
+    background: var(--panel);
+  }
+  .stat .k {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px; letter-spacing: .13em; text-transform: uppercase;
+    color: var(--muted); display: block; margin-bottom: 2px;
+  }
+  .stat .v {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 1.1rem; font-weight: 700; font-variant-numeric: tabular-nums;
+  }
+  .stat .v.good { color: var(--resident); }
+  .stat .v.bad  { color: var(--spill); }
+
+  /* ---------- asm + table ---------- */
+  pre {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12.5px; line-height: 1.7;
+    background: var(--inset);
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    margin: 0 0 18px;
+  }
+  pre .cm { color: var(--muted); }
+  pre .hot { color: var(--spill); font-weight: 700; }
+
+  .tbl-wrap { overflow-x: auto; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  th, td { padding: 9px 12px; text-align: right; border-bottom: 1px solid var(--rule); }
+  th:first-child, td:first-child { text-align: left; }
+  th {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+  }
+  td { font-variant-numeric: tabular-nums; font-family: "JetBrains Mono", monospace; font-size: .86rem; }
+  tr.knee td { background: var(--resident-b); }
+  tr.knee td:first-child { font-weight: 700; }
+  td.z { color: var(--resident); font-weight: 700; }
+  td.n { color: var(--spill); font-weight: 700; }
+
+  footer {
+    margin-top: 40px; padding-top: 18px;
+    border-top: 1px solid var(--rule);
+    font-size: .86rem; color: var(--muted);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .slot, .chip { transition: none; animation: none; }
+  }
+</style>
+
+<div class="wrap">
+
+  <h1>Out of Registers</h1>
+  <p class="sub">A processor has a fixed number of registers. Ask a loop body to keep more values alive than that, and the compiler starts parking the overflow in memory — paying a load and a store, every value, every iteration.</p>
+
+  <div class="controls">
+    <span class="lbl">accumulators per loop</span>
+    <button data-c="32" aria-pressed="true">32</button>
+    <button data-c="16" aria-pressed="false">16</button>
+    <button data-c="8"  aria-pressed="false">8</button>
+    <button data-c="4"  aria-pressed="false">4</button>
+  </div>
+
+  <div class="panel">
+    <div class="demand" id="demand"></div>
+
+    <div class="banks">
+      <div class="bank">
+        <div class="bank-head">
+          <span class="bank-name" style="color:var(--resident)">xmm &mdash; floating point</span>
+          <span class="bank-fit" id="fit-x"></span>
+        </div>
+        <div class="slots" id="slots-x"></div>
+      </div>
+      <div class="bank">
+        <div class="bank-head">
+          <span class="bank-name" style="color:var(--resident)">general purpose</span>
+          <span class="bank-fit" id="fit-g"></span>
+        </div>
+        <div class="slots" id="slots-g"></div>
+      </div>
+    </div>
+
+    <div class="stack">
+      <div class="stack-head">
+        <span class="stack-name" style="color:var(--spill)">stack frame &mdash; the overflow</span>
+        <span class="stack-cost" id="cost"></span>
+      </div>
+      <div class="spills" id="spills"></div>
+    </div>
+
+    <div class="verdict">
+      <div class="stat"><span class="k">stack refs in the loop</span><span class="v" id="v-refs"></span></div>
+      <div class="stat"><span class="k">time</span><span class="v" id="v-time"></span></div>
+      <div class="stat"><span class="k">vs one loop</span><span class="v" id="v-spd"></span></div>
+    </div>
+  </div>
+
+  <div class="spine">
+    <h2>What you are looking at</h2>
+    <p>The kernel computes 32 cross-correlations of one signal against 32 reference vectors. Splitting that one wide loop into several narrower ones is <strong>loop fission</strong>, and the buttons choose how wide each piece is.</p>
+    <p>Each slot is one architectural register. x86-64 gives you <strong>16 <span class="m">xmm</span></strong> registers for floating point and <strong>16 general-purpose</strong> ones, of which about 15 are usable — <span class="m">%rsp</span> is the stack pointer and is spoken for.</p>
+    <p>The loop body has to keep alive one accumulator per correlation, one pointer per reference vector, plus the signal pointer, the loop counter, and the current sample. At 32 correlations that is 67 values competing for 31 slots.</p>
+    <p>The compiler does not really assign accumulator <span class="m">k</span> to register <span class="m">k</span> — it allocates registers globally and evicts whatever it judges least valuable. But the counting argument holds regardless: more live values than registers means something goes to memory.</p>
+    <p>Note that the chips above count <em>values</em> with nowhere to live, while the counter beside them counts <em>instructions</em> that touch the stack. One spilled value costs more than one instruction — at minimum a store and a reload each time round the loop — which is why the instruction count runs well ahead of the overflow count.</p>
+
+    <h2>What it costs, in the actual assembly</h2>
+    <p>A spilled accumulator is written to a stack slot and read back inside the hot loop, on every iteration:</p>
+  </div>
+
+  <pre><span class="cm">; one spilled accumulator, 32-accumulator version</span>
+movss   %xmm1, <span class="hot">-52(%rsp)</span>     <span class="cm">; park it in memory</span>
+...
+addss   <span class="hot">-52(%rsp)</span>, %xmm15   <span class="cm">; fetch it back to accumulate</span></pre>
+
+  <div class="spine">
+    <p>Count those and you have measured the problem directly. <span class="m">grep -c '(%rsp)'</span> on the generated assembly turns the whole question into an observation — and the speedup tracks the count exactly.</p>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th>accumulators</th><th>loops</th><th>stack refs</th><th>of which xmm</th><th>time</th><th>speedup</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>32</td><td>1</td><td class="n">134</td><td>90</td><td>237.9 ms</td><td>1.00x</td></tr>
+        <tr><td>16</td><td>2</td><td class="n">57</td><td>12</td><td>92.0 ms</td><td>2.59x</td></tr>
+        <tr class="knee"><td>8</td><td>4</td><td class="z">0</td><td>0</td><td>55.6 ms</td><td>4.28x</td></tr>
+        <tr><td>4</td><td>8</td><td class="z">0</td><td>0</td><td>53.1 ms</td><td>4.48x</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="spine">
+    <p>The curve bends exactly where the spills reach zero. Splitting further buys nothing measurable — there is nothing left to remove, and eight passes over the signal instead of four cancel the rest.</p>
+
+    <h2>Two things worth taking away</h2>
+    <p><strong>Sixteen accumulators is not enough here, and the breakdown says why.</strong> At 16 only 12 of the 57 stack references are spilled accumulators; the other 45 are spilled <em>pointers</em>. Sixteen accumulators nearly fit the 16 <span class="m">xmm</span> registers, and in doing so they squeeze the reference pointers out of the general-purpose file instead. The pressure moved rather than disappeared.</p>
+    <p><strong>The right split is a property of the chip, not the algorithm.</strong> On an instruction set with 32 floating-point registers, 16 accumulators per loop would fit and the half-split would be correct. Re-measure whenever you change targets.</p>
+  </div>
+
+  <footer>
+    Measured on an AMD Ryzen AI 9 HX 370 (Zen 5), Linux, g++ 13.3 <span class="m">-O1</span>, pinned to one core with the clock warmed before timing. Source and full sweep in <span class="m">examples/loop_optimizations/loop_fission.cpp</span>.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  var XMM = 16, GP = 16, GP_USABLE = 15;
+
+  // Measured on the course machine; see the table.
+  var DATA = {
+    32: { refs: 134, xmmSpill: 90, time: "237.9 ms", spd: "1.00x" },
+    16: { refs: 57,  xmmSpill: 12, time: "92.0 ms",  spd: "2.59x" },
+    8:  { refs: 0,   xmmSpill: 0,  time: "55.6 ms",  spd: "4.28x" },
+    4:  { refs: 0,   xmmSpill: 0,  time: "53.1 ms",  spd: "4.48x" }
+  };
+
+  var slotsX = document.getElementById('slots-x');
+  var slotsG = document.getElementById('slots-g');
+  for (var i = 0; i < XMM; i++) {
+    var e = document.createElement('div');
+    e.className = 'slot'; e.textContent = 'x' + i;
+    slotsX.appendChild(e);
+  }
+  var gpNames = ['ax','bx','cx','dx','si','di','bp','sp','r8','r9','r10','r11','r12','r13','r14','r15'];
+  for (var j = 0; j < GP; j++) {
+    var g = document.createElement('div');
+    g.className = 'slot'; g.textContent = gpNames[j];
+    if (gpNames[j] === 'sp') g.title = 'stack pointer — not available';
+    slotsG.appendChild(g);
+  }
+  var cellsX = slotsX.children, cellsG = slotsG.children;
+
+  function render(C) {
+    var d = DATA[C];
+    // what the body must keep alive
+    var wantX = C + 1;          // accumulators + current sample
+    var wantG = C + 2;          // reference pointers + signal pointer + counter
+    var fitX  = Math.min(wantX, XMM);
+    var fitG  = Math.min(wantG, GP_USABLE);
+
+    document.getElementById('demand').innerHTML =
+      '<b>' + C + '</b> accumulators  +  <b>' + C + '</b> reference pointers  +  ' +
+      'signal ptr  +  loop counter  +  current sample  =  ' +
+      '<span class="tot">' + (2 * C + 3) + ' values live</span>, against ' +
+      (XMM + GP_USABLE) + ' registers';
+
+    for (var i = 0; i < XMM; i++) cellsX[i].classList.toggle('live', i < fitX);
+    var litG = 0;
+    for (var j = 0; j < GP; j++) {
+      var usable = gpNames[j] !== 'sp';
+      var on = usable && litG < fitG;
+      if (on) litG++;
+      cellsG[j].classList.toggle('live', on);
+    }
+
+    var overX = Math.max(0, wantX - XMM), overG = Math.max(0, wantG - GP_USABLE);
+    var fx = document.getElementById('fit-x'), fg = document.getElementById('fit-g');
+    fx.textContent = wantX + ' wanted / ' + XMM + ' available';
+    fg.textContent = wantG + ' wanted / ' + GP_USABLE + ' usable';
+    fx.className = 'bank-fit' + (overX ? ' over' : '');
+    fg.className = 'bank-fit' + (overG ? ' over' : '');
+
+    // the overflow
+    var sp = document.getElementById('spills');
+    sp.innerHTML = '';
+    if (!overX && !overG) {
+      sp.innerHTML = '<span class="none">Nothing spills &mdash; every live value stays on the chip.</span>';
+    } else {
+      var off = -4, n = 0;
+      for (var a = 0; a < overX; a++, n++)
+        sp.insertAdjacentHTML('beforeend',
+          '<span class="chip" style="animation-delay:' + (n * 8) + 'ms">acc ' + (XMM + a) + ' &rarr; ' + (off -= 4) + '(%rsp)</span>');
+      for (var b = 0; b < overG; b++, n++)
+        sp.insertAdjacentHTML('beforeend',
+          '<span class="chip" style="animation-delay:' + (n * 8) + 'ms">ptr ' + (GP_USABLE + b) + ' &rarr; ' + (off -= 8) + '(%rsp)</span>');
+    }
+    document.getElementById('cost').textContent =
+      (overX + overG) + ' values with nowhere on the chip to live';
+
+    var refs = document.getElementById('v-refs');
+    refs.textContent = d.refs;
+    refs.className = 'v ' + (d.refs ? 'bad' : 'good');
+    document.getElementById('v-time').textContent = d.time;
+    var s = document.getElementById('v-spd');
+    s.textContent = d.spd;
+    s.className = 'v ' + (d.refs ? '' : 'good');
+  }
+
+  var btns = document.querySelectorAll('button[data-c]');
+  btns.forEach(function (b) {
+    b.addEventListener('click', function () {
+      btns.forEach(function (o) { o.setAttribute('aria-pressed', 'false'); });
+      b.setAttribute('aria-pressed', 'true');
+      render(parseInt(b.dataset.c, 10));
+    });
+  });
+
+  render(32);
+})();
+</script>
+
+</body>
+</html>

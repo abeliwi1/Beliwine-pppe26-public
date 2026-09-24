@@ -22,6 +22,7 @@ img,svg{max-width:100%}
 pre sup{font-size:.72em;line-height:0}
 
 :root{
+  color-scheme:light;   /* this page is light by design */
   --bg:#EEF1F5;
   --surface:#FFFFFF;
   --sunken:#E3E8EE;
@@ -37,42 +38,6 @@ pre sup{font-size:.72em;line-height:0}
   --cost:#9E2C4A;
   --cost-soft:#F3DAE1;
   --shadow:0 1px 2px rgba(20,27,36,.06), 0 8px 24px rgba(20,27,36,.06);
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --bg:#0D1218;
-    --surface:#151D26;
-    --sunken:#101820;
-    --ink:#E7EDF4;
-    --ink-2:#9FAEC0;
-    --ink-3:#6E7E92;
-    --rule:#2B3743;
-    --grid:#222D38;
-    --zen5:#E0A05C;
-    --zen5-soft:#2A2018;
-    --zen5c:#4FBFB7;
-    --zen5c-soft:#12262A;
-    --cost:#E9758F;
-    --cost-soft:#2B1720;
-    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
-  }
-}
-:root[data-theme="dark"]{
-  --bg:#0D1218;
-  --surface:#151D26;
-  --sunken:#101820;
-  --ink:#E7EDF4;
-  --ink-2:#9FAEC0;
-  --ink-3:#6E7E92;
-  --rule:#2B3743;
-  --grid:#222D38;
-  --zen5:#E0A05C;
-  --zen5-soft:#2A2018;
-  --zen5c:#4FBFB7;
-  --zen5c-soft:#12262A;
-  --cost:#E9758F;
-  --cost-soft:#2B1720;
-  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
 }
 
 *{box-sizing:border-box}
@@ -239,7 +204,7 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
     <h1>The TLB Cliff</h1>
     <p class="standfirst">
       A 12&nbsp;MB array fits comfortably in this machine&rsquo;s 16&nbsp;MB L3. Walking it randomly
-      still costs <strong>31.9 ns per access</strong> &mdash; three times the L3 hit latency. The
+      still costs <strong>37.2 ns per access</strong> &mdash; three times the L3 hit latency. The
       cache is not the problem. The problem is that before any cache can be consulted, the address
       has to be <em>translated</em>, and the hardware that does the translating ran out of room
       long before the cache did.
@@ -306,7 +271,7 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
           <rect x="560" y="108" width="200" height="46" rx="2" class="st-z5" stroke-width="1.25"/>
           <text x="660" y="128" text-anchor="middle" class="lbl sv-ink w600">physical address</text>
           <text x="660" y="144" text-anchor="middle" class="mono-sm sv-z5">no extra memory access</text>
-          <text x="775" y="135" class="mono sv-z5 w600">0.78 ns total</text>
+          <text x="775" y="135" class="mono sv-z5 w600">0.79 ns total</text>
 
           <!-- miss path -->
           <path d="M275,154 L275,186" class="st-cost" stroke-width="1.5" marker-end="url(#t1c)"/>
@@ -436,7 +401,7 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
     <figure>
       <div class="canvas">
         <svg viewBox="0 0 1040 330" role="img"
-             aria-label="Latency against number of pages touched. With 4 kilobyte pages the curve is flat at 0.78 nanoseconds up to 96 pages, then steps to 2.14 nanoseconds at 112 pages, locating the level-one data TLB at 96 entries. The 2 megabyte curve is identical until a 2 megabyte span, where huge pages become possible and it drops back to 0.78, after which the two curves diverge, peaking at a 3.1 times gap at a 32 megabyte span.">
+             aria-label="Latency against number of pages touched. With 4 kilobyte pages the curve is flat at 0.78 nanoseconds up to 96 pages, then steps to 2.14 nanoseconds at 112 pages, locating the level-one data TLB at 96 entries. The 2 megabyte curve is identical until a 2 megabyte span, where huge pages become possible and it drops back to 0.78, after which the two curves diverge, peaking at a 3.2 times gap at a 32 megabyte span.">
           <defs>
             <marker id="t3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5"
                     orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="sv-faint"/></marker>
@@ -488,9 +453,9 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
           <text x="462" y="174" class="lbl-sm sv-z5">huge pages first possible</text>
 
           <!-- series: 4 KB -->
-          <polyline class="st-cost fill-none" stroke-width="2" points="110,242.6 150.5,242.6 179.2,242.6 219.6,242.6 248.3,242.6 270.6,242.6 288.8,242.6 304.2,229.6 317.5,229.6 339.8,229.6 358,229.6 386.7,229.6 427.1,229.6 455.8,229.6 496.3,229.5 525,211.0 565.5,203.8 594.2,206.6 634.6,199.8 663.3,187.3 703.8,176.1 732.5,165.9 773,134.6 801.7,90.6 842.1,75.6 870.8,70.3 911.3,52.9 940,42.9"/>
+          <polyline class="st-cost fill-none" stroke-width="2" points="110.0,242.6 150.5,242.6 179.2,242.6 219.6,242.6 248.3,242.6 270.6,242.6 288.8,242.6 304.2,229.6 317.5,229.6 339.8,229.6 358.0,229.6 386.7,229.6 427.1,229.6 455.9,229.6 496.3,229.5 525.0,211.0 565.5,211.0 594.2,210.4 634.7,207.9 663.4,205.1 703.8,177.2 732.5,165.2 773.0,132.0 801.7,79.8 842.2,74.5 870.9,61.8 911.3,54.5 940.0,40.5"/>
           <!-- series: 2 MB -->
-          <polyline class="st-z5 fill-none" stroke-width="2" points="110,242.6 150.5,242.6 179.2,242.6 219.6,242.6 248.3,242.6 270.6,242.6 288.8,242.6 304.2,229.6 317.5,229.6 339.8,229.6 358,229.6 386.7,229.6 427.1,229.6 455.8,242.6 496.3,238.2 525,223.9 565.5,224.0 594.2,223.9 634.6,224.0 663.3,223.6 703.8,223.3 732.5,222.8 773,194.6 801.7,170.5 842.1,155.9 870.8,155.6 911.3,141.4 940,130.0"/>
+          <polyline class="st-z5 fill-none" stroke-width="2" points="110.0,242.6 150.5,242.6 179.2,242.6 219.6,242.6 248.3,242.6 270.6,242.6 288.8,242.6 304.2,229.6 317.5,229.6 339.8,229.6 358.0,229.5 386.7,229.5 427.1,229.6 455.9,242.6 496.3,238.2 525.0,224.0 565.5,224.0 594.2,224.0 634.7,223.4 663.4,223.4 703.8,223.5 732.5,223.1 773.0,188.5 801.7,167.7 842.2,156.9 870.9,152.6 911.3,122.2 940.0,82.6"/>
 
           <circle cx="288.8" cy="242.6" r="3" class="sv-cost"/>
           <circle cx="304.2" cy="229.6" r="3" class="sv-cost"/>
@@ -499,9 +464,9 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
           <text x="948" y="130" class="mono sv-z5 w600">2 MB</text>
 
           <!-- peak gap -->
-          <line x1="732.5" y1="165.9" x2="732.5" y2="222.8" class="st-dim" stroke-width="1"
+          <line x1="732.5" y1="165.2" x2="732.5" y2="223.1" class="st-dim" stroke-width="1"
                 marker-start="url(#t3)" marker-end="url(#t3)"/>
-          <text x="740" y="200" class="mono-sm sv-ink w600">3.1&times;</text>
+          <text x="740.5" y="194" class="mono-sm sv-ink w600">3.2&times;</text>
 
           <text x="110" y="322" class="mono-sm sv-faint">
             Below a 2 MB span the two runs are identical, because a transparent huge page cannot back a region smaller than itself &mdash; the &ldquo;2 MB&rdquo; run is still on 4 KB pages there.
@@ -509,7 +474,7 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
         </svg>
       </div>
       <figcaption>
-        <b>The step from 96 to 112 pages is the whole measurement.</b> 0.778 ns becomes 2.141 ns
+        <b>The step from 96 to 112 pages is the whole measurement.</b> 0.779 ns becomes 2.142 ns
         with no change in the amount of data touched &mdash; six kilobytes, comfortably L1-resident,
         in both cases. The only thing that overflowed was the translation cache.
       </figcaption>
@@ -524,13 +489,13 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
           </tr>
         </thead>
         <tbody>
-          <tr><td>80</td><td>320 KB</td><td>5 KB</td><td>0.779 ns</td><td>0.779 ns</td><td>1.00&times;</td></tr>
-          <tr class="good"><td>96</td><td>384 KB</td><td>6 KB</td><td>0.778 ns</td><td>0.779 ns</td><td>1.00&times;</td></tr>
-          <tr class="bad"><td>112</td><td>448 KB</td><td>7 KB</td><td>2.141 ns</td><td>2.142 ns</td><td>1.00&times;</td></tr>
-          <tr><td>512</td><td>2 MB</td><td>32 KB</td><td>2.140 ns</td><td>0.779 ns</td><td>2.75&times;</td></tr>
-          <tr><td>4096</td><td>16 MB</td><td>256 KB</td><td>6.564 ns</td><td>2.761 ns</td><td>2.38&times;</td></tr>
-          <tr class="bad"><td>8192</td><td>32 MB</td><td>512 KB</td><td>8.814 ns</td><td>2.849 ns</td><td>3.09&times;</td></tr>
-          <tr><td>65536</td><td>256 MB</td><td>4 MB</td><td>21.697 ns</td><td>12.573 ns</td><td>1.73&times;</td></tr>
+          <tr><td>80</td><td>320 KB</td><td>5 KB</td><td>0.778 ns</td><td>0.779 ns</td><td>1.00&times;</td></tr>
+          <tr class="good"><td>96</td><td>384 KB</td><td>6 KB</td><td>0.779 ns</td><td>0.779 ns</td><td>1.00&times;</td></tr>
+          <tr class="bad"><td>112</td><td>448 KB</td><td>7 KB</td><td>2.142 ns</td><td>2.142 ns</td><td>1.00&times;</td></tr>
+          <tr><td>512</td><td>2 MB</td><td>32 KB</td><td>2.142 ns</td><td>0.778 ns</td><td>2.75&times;</td></tr>
+          <tr><td>4096</td><td>16 MB</td><td>256 KB</td><td>4.699 ns</td><td>2.786 ns</td><td>1.69&times;</td></tr>
+          <tr class="bad"><td>8192</td><td>32 MB</td><td>512 KB</td><td>8.888 ns</td><td>2.813 ns</td><td>3.16&times;</td></tr>
+          <tr><td>65536</td><td>256 MB</td><td>4 MB</td><td>21.949 ns</td><td>17.539 ns</td><td>1.25&times;</td></tr>
         </tbody>
       </table>
     </div>
@@ -553,7 +518,7 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
         <span class="n">1</span>
         <div class="body">
           <h3>It fits in cache with room to spare</h3>
-          <p>12 MB against this complex&rsquo;s 16 MB L3. Nothing about the data is too big; an L3 hit here costs about 11.9 ns.</p>
+          <p>12 MB against this complex&rsquo;s 16 MB L3. Nothing about the data is too big; an L3 hit here costs about 12 ns.</p>
         </div>
       </li>
       <li>
@@ -573,8 +538,8 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
       <li>
         <span class="n">4</span>
         <div class="body">
-          <h3>Measured: 31.9 ns instead of 13.5 ns</h3>
-          <p>The same 12 MB on 2 MB pages needs only <strong>6 translations</strong> &mdash; they never leave the TLB, and the access costs what an L3 hit should cost. <strong>2.4&times;, entirely in address translation.</strong></p>
+          <h3>Measured: 37.2 ns instead of 12.5 ns</h3>
+          <p>The same 12 MB on 2 MB pages needs only <strong>6 translations</strong> &mdash; they never leave the TLB, and the access costs what an L3 hit should cost. <strong>3.0&times;, entirely in address translation.</strong></p>
         </div>
       </li>
     </ol>
@@ -655,7 +620,8 @@ grep -A20 $(printf %x $a) /proc/self/smaps | grep AnonHugePages</pre>
       tax column is the honest reading there.
     </p>
     <p>
-      Also in this series: <a href="cache_map.html">Strix Point Cache Map</a> for the full hierarchy, and
+      Also in this series: <a href="cache_map.html">Strix Point Cache Map</a> for the full hierarchy,
+      <a href="1_core_cache.html">What One Core Sees</a> for the cache from a single core&rsquo;s point of view, and
       <a href="why_1024_is_slow.html">Why 1024 Is Slow</a> for what happens when addresses collide instead.
       Sources and raw results are in this directory; the full write-up is
       <a href="cache_hierarchy.ipynb">cache_hierarchy.ipynb</a>.

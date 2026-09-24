@@ -2,7 +2,7 @@
 
 The reorder buffer — what it does, why it is near-sighted rather than blocked,
 and roughly how big the window is — is covered in
-[README.md](README.md#the-reorder-buffer). This
+[README.ILP.md](README.ILP.md#the-reorder-buffer). This
  is the measurement: three versions of the same computation, what each
 costs, and what the generated code shows.
 

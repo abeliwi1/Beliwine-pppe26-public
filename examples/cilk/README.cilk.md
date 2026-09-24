@@ -78,5 +78,5 @@ scheduler wins or loses against OpenMP's static and dynamic scheduling.
 **Write-ups** — `cilk_primitives.md`, `work_span.md`, `work_stealing_vs_static.md`, `dynamic_vs_work_stealing.md`, `sparse_col_sum.md`
 **Figures** — `fib_dag.html`, `work_stealing.html` (standalone pages — open in any browser)
 
-See also [../openmp/cilk_prefix_sum.c](../openmp/cilk_prefix_sum.c) for a larger
+See also [../openmp/omp_scheduling_prefix_sum/cilk_prefix_sum.c](../openmp/omp_scheduling_prefix_sum/cilk_prefix_sum.c) for a larger
 `cilk_for` example.

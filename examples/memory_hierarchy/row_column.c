@@ -25,18 +25,10 @@
  * (-fno-tree-vectorize because GCC vectorizes the row-order loop into wide
  *  stores at -O2 and the comparison stops being about access order alone.)
  */
-#define _GNU_SOURCE
+#include "harness.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
-#include <sched.h>
-
-static double now_s(void) {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ts.tv_sec + 1e-9 * ts.tv_nsec;
-}
 
 static void run(int n, int lda) {
     size_t elems = (size_t)n * lda;
@@ -73,8 +65,7 @@ static void run(int n, int lda) {
 
 int main(int argc, char **argv) {
     int cpu = (argc > 1) ? atoi(argv[1]) : 0;
-    cpu_set_t set; CPU_ZERO(&set); CPU_SET(cpu, &set);
-    sched_setaffinity(0, sizeof(set), &set);
+    harness_begin(cpu, "row_column");
 
     printf("n,lda,row_ns,col_ns,ratio\n");
     for (int n = 256; n <= 8192; n *= 2) {

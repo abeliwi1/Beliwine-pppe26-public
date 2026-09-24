@@ -1,109 +1,94 @@
-# Loop Tiling Example
+# Loop Tiling
 
-Demonstrates loop tiling (loop blocking) for matrix transpose, including the
-process of finding the right example and the surprising cache set-conflict
-result that emerges when the matrix dimension is a power of 2.
+Loop tiling (loop blocking) applied to a matrix transpose — a kernel with **no
+data reuse**, where it turns out that padding the leading dimension beats every
+tile size without restructuring the loop at all.
+
+That result is specific to this kernel, and the reason is worth stating up
+front: a transpose reads every element exactly once, so there is no temporal
+reuse for a tile to capture. For the case tiling actually exists for — a kernel
+that reads the same data many times — see
+[matmul_tiling.md](matmul_tiling.md), where blocking wins ~3x and padding
+cannot substitute for it.
+
+**Start with the picture.**
+[tiling_iteration_order.html](tiling_iteration_order.html) walks a 16&times;16
+iteration space two ways on one clock — row by row, and in 4&times;4 tiles —
+with the row and column operands drawn along the edges so you can see how much
+has to stay in cache during each. Over one unit of work the unblocked walk
+needs 1 row + 16 columns live; the blocked walk needs 4 + 4. That is the
+transformation, before any of the numbers below. Standalone; double-click it.
 
 ## Source
 
 [loop_tiling.cpp](loop_tiling.cpp)
 
+## Machine
+
+AMD Ryzen AI 9 HX 370 (Zen 5, "Strix Point"), Linux, g++ 13.3.
+
+| | |
+|---|---|
+| L1d | 48 KB per core, **12-way**, **64 sets**, **64-byte lines** |
+| L2 | 1 MB per core |
+| L3 | 16 MB shared by the four Zen 5 cores |
+| core clock | 5.13 GHz (cpu0–3) |
+
+The associativity is measured, not looked up: a pointer chase over `W` lines
+that all map to one set is flat at 1.12 ns through `W=12` and jumps 3.5x to
+3.9 ns at `W=13`. The line size comes from a stride sweep — cost per access
+grows linearly to stride 64 and is flat from 64 to 256.
+
 ## What is loop tiling?
 
-Loop tiling (also called loop blocking) restructures a loop's iteration space
-into smaller rectangular blocks so that the working set for each block fits in
-a fast cache level (L1 or L2).  Without tiling, the same data may be loaded
-from DRAM O(N) times as the cache evicts it before it is reused.  With tiling,
-data is loaded once per block and reused as many times as the block allows.
+Tiling restructures a loop's iteration space into rectangular blocks so the
+working set of each block fits in a fast cache level. Without it, data may be
+loaded from DRAM O(N) times as the cache evicts it before reuse; with it, data
+is loaded once per block and reused as many times as the block allows.
 
----
+## Why transpose
 
-## Finding the right example
+Matrix transpose has a miss pattern the hardware prefetcher **cannot** fix:
 
-### Attempt 1 — Matrix multiplication
+- Reading `in[i][j]` with `j` incrementing — stride-1, prefetchable.
+- Writing `out[j][i]` with `j` incrementing — stride `lda`, a different cache
+  line every time, and nothing for a stride-1 prefetcher to work with.
 
-The classic loop tiling textbook example.  The naive triple loop (`i,j,k`
-order) accesses `B[k][j]` down a column of B — stride N — causing cache misses.
-
-**What we found:** most of the benefit came from loop *reordering* (switching
-to `i,k,j` order, which turns the column access into a row access), not from
-blocking itself.  Adding a reordered-but-not-tiled baseline showed:
-
-| version | time | vs naive |
-|---------|------|----------|
-| naive (i,j,k) | 811 ms | 1.00x |
-| reordered (i,k,j, no tiling) | 265 ms | **3.06x** |
-| tiled (best) | 286 ms | 2.82x |
-
-The tiled version never beat the reordered baseline.  The hardware prefetcher
-handles sequential row access of B regardless of tile size, so blocking into
-L1 added nothing beyond what reordering already achieved.
-
-**Lesson:** matrix multiply is a poor isolation example because the loop-order
-transformation is conflated with the blocking transformation.
-
-### Attempt 2 — 2D box-filter smoothing (stencil)
-
-A 2D stencil over a 2048×2048 matrix with 3×3, 5×5, and 7×7 kernels.  Each
-output element reads a `(2r+1)×(2r+1)` neighborhood of input.
-
-**What we found:** tiling was uniformly *slower* than naive for all three
-kernel sizes.  The naive inner loop scans `in[i+ki][j+kj]` with `j`
-incrementing — that is `2r+1` simultaneous stride-1 streams (one per kernel
-row).  The Apple M-series prefetcher handles up to ~8 simultaneous streams,
-covering all three kernel sizes (3, 5, 7 streams).  There were no cold misses
-for tiling to eliminate.
-
-**Lesson:** the 2D box filter is the wrong stencil for demonstrating tiling on
-modern hardware with aggressive hardware prefetchers.  The textbook motivation
-(avoid repeated row reloads) does not apply when the prefetcher pre-empts
-those misses.
-
-### Attempt 3 — Matrix transpose ✓
-
-Matrix transpose has a cache miss problem that the hardware prefetcher
-**cannot** fix:
-
-- Reading `in[i][j]` with `j` incrementing: stride-1, prefetchable.
-- Writing `out[j][i]` with `j` incrementing: stride N (one full row per
-  write), a different cache line each time, **unpredictable** for a stride-1
-  prefetcher.
-
-For a 4096×4096 double matrix (128 MB), every write to the output evicts a
-cache line that was never fully used.  Tiling fixes this by processing a B×B
-block: the B output rows of the tile stay in cache and receive B writes each
-before eviction.
-
----
+Transpose is a clean way to *isolate* blocking, because it has no useful loop
+reordering available — whatever tiling buys is tiling's. What it cannot show is
+what tiling is normally for, since it has no reuse. Matrix multiply does have a
+loop-order question tangled up with the blocking one, but that is handled by
+measuring against an already-interchanged `i,k,j` baseline rather than by
+avoiding the kernel; see [matmul_tiling.md](matmul_tiling.md).
 
 ## How it works
 
-**Naive transpose — reads stride-1, writes stride-N:**
+**Naive — reads stride-1, writes stride-`lda`:**
 
 ```cpp
 for (int i = 0; i < N; i++)
     for (int j = 0; j < N; j++)
-        out[j][i] = in[i][j];   // write jumps N doubles per step
+        out[j*lda + i] = in[i*lda + j];   // write jumps a full row per step
 ```
 
-**Tiled transpose — B×B blocks:**
+**Tiled — B×B blocks:**
 
 ```cpp
-for (int ii = 0; ii < N; ii += tile)
-for (int jj = 0; jj < N; jj += tile) {
-    int ilim = min(ii + tile, N);
-    int jlim = min(jj + tile, N);
+for (int ii = 0; ii < N; ii += B)
+for (int jj = 0; jj < N; jj += B) {
+    int ilim = min(ii + B, N), jlim = min(jj + B, N);
     for (int i = ii; i < ilim; i++)
     for (int j = jj; j < jlim; j++)
-        out[j][i] = in[i][j];   // output rows stay in cache for the tile
+        out[j*lda + i] = in[i*lda + j];
 }
 ```
 
-Within each tile the B writes to the output all target the same B-row block of
-the output matrix.  That block stays in L1 for the duration of the tile, so
-each output cache line is written B times before eviction.
+Within a tile the writes land in B rows of one B×B block of the output, so
+those rows can stay in L1 for the duration of the tile and each output line is
+written several times before eviction.
 
----
+Both kernels take an explicit leading dimension `lda`, which is what makes the
+second experiment below a single-variable change.
 
 ## Build
 
@@ -111,92 +96,170 @@ each output cache line is written B times before eviction.
 g++ -O1 -o tiling_O1 loop_tiling.cpp && ./tiling_O1
 ```
 
----
+## Results
 
-## Results (Apple M-series, N=4096, L1=64 KB)
+### Table 1 — tile size, at the natural `lda = N = 4096`
 
-| tile | work.set | L1 | time | speedup |
-|------|----------|----|------|---------|
-| naive | — | — | 74 ms | 1.00x |
-| 8 | 1 KB | yes | 25 ms | **2.96x** |
-| 16 | 4 KB | yes | 42 ms | 1.76x |
-| 32 | 16 KB | yes | 64 ms | 1.16x |
-| 48 | 36 KB | yes | 66 ms | 1.12x |
-| 64 | 64 KB | yes | 66 ms | 1.12x |
-| 80 | 100 KB | — | 36 ms | 2.06x |
-| 128 | 256 KB | — | 75 ms | 0.99x |
-| 256+ | >1 MB | — | ~75 ms | ~1.00x |
+4096×4096 doubles, 128 MB per matrix.
 
----
+| tile | work. set | fits L1 | time | speedup |
+|---|---|---|---:|---:|
+| naive | — | — | 188.4 ms | 1.00x |
+| 2 | 0 KB | yes | 109.3 ms | 1.72x |
+| 4 | 0 KB | yes | 62.4 ms | 3.02x |
+| 8 | 1 KB | yes | 40.1 ms | 4.70x |
+| 10 | 1 KB | yes | 42.0 ms | 4.48x |
+| 12 | 2 KB | yes | 36.8 ms | 5.12x |
+| 14 | 3 KB | yes | 34.7 ms | 5.43x |
+| **16** | **4 KB** | **yes** | **34.2 ms** | **5.51x** |
+| 18 | 5 KB | yes | 38.9 ms | 4.84x |
+| 20 | 6 KB | yes | 44.9 ms | 4.19x |
+| 24 | 9 KB | yes | 58.2 ms | 3.24x |
+| 32 | 16 KB | yes | 74.9 ms | 2.51x |
+| 48 | 36 KB | yes | 116.4 ms | 1.62x |
+| 64 | 64 KB | no | 144.9 ms | 1.30x |
+| 80 | 100 KB | no | 175.6 ms | 1.07x |
+| 128 | 256 KB | no | 196.0 ms | 0.94x |
+| 256 | 1024 KB | no | 194.2 ms | 0.95x |
 
-## The cache set-conflict surprise
+### Table 2 — leading dimension, same N=4096 transpose
 
-The naive working-set formula predicts B=64 as the optimal tile:
+Nothing changes but the row stride. The loops, the logical matrix size, and
+the element count are identical.
 
-```
-2 × B² × 8 bytes ≤ L1
-2 × 64² × 8 = 65536 bytes = 64 KB  ✓
-```
+| lda | row bytes | L1 sets a column reaches | naive | tiled B=16 | naive vs lda=4096 |
+|---|---:|---:|---:|---:|---:|
+| 4096 | 32768 | **1** | 188.7 ms | 34.8 ms | 1.0x |
+| 4097 | 32776 | *fractional* | 29.2 ms | 33.4 ms | 6.5x |
+| **4104** | 32832 | **64** | **24.1 ms** | 35.0 ms | **7.8x** |
+| 4112 | 32896 | 32 | 26.6 ms | 34.6 ms | 7.1x |
+| 4128 | 33024 | 16 | 23.5 ms | 34.5 ms | 8.0x |
+| 4160 | 33280 | 8 | 40.0 ms | 38.3 ms | 4.7x |
+| 4224 | 33792 | 4 | 61.0 ms | 39.0 ms | 3.1x |
+| 4352 | 34816 | 2 | 73.2 ms | 38.8 ms | 2.6x |
 
-But the empirical best is **B=8**, and performance degrades from B=8 to B=64
-despite all those tiles fitting in L1 by raw byte count.
+## Analysis
 
-### Why: power-of-2 set aliasing
+### The set-conflict mechanism
 
-The output write stride is `N × 8 = 4096 × 8 = 32768 bytes = 32 KB`.
-
-With a 64 KB, 8-way set-associative L1 (64-byte lines):
-
-```
-L1 sets           = 64 KB / (8 ways × 64 bytes) = 128 sets
-Lines per stride  = 32768 / 64 = 512
-512 mod 128       = 0  ← full set aliasing
-```
-
-Because `N = 4096` is a power of 2, the row stride is an exact multiple of the
-cache size.  Every output row maps to the **same** 128 cache sets.  With 8-way
-associativity, at most **8 output rows** can coexist in L1 simultaneously
-before the least-recently-used row is evicted.
-
-B=8 places exactly 8 output rows in the tile — a perfect fit for the 8-way
-limit.  B=16 needs 16 rows; rows 9–16 evict rows 1–8 before they are finished,
-undoing the benefit of tiling.
-
-### The simple formula is necessary but not sufficient
-
-`2×B²×8 ≤ L1` only accounts for raw byte capacity.  When the access stride is
-a large power-of-2 multiple of the cache line size, the correct constraint is:
+A line's L1 set here is `(address / 64) % 64`. Walking down a column steps one
+row = `lda × 8` bytes = `lda / 8` lines, so the set index advances by
+`(lda / 8) % 64` per step, and a column reaches
 
 ```
-B ≤ cache associativity   (for full-aliasing strides)
+sets_reachable = 64 / gcd((lda / 8) % 64, 64)
 ```
 
-Here that gives B ≤ 8, matching the empirical result exactly.  The anomalous
-B=80 result (2.06x) occurs because 80 is not a power of 2 — it disrupts the
-aliasing pattern and partially avoids the conflict.
+distinct sets. At `lda = 4096` that advance is **0**: every element of a column
+lands in **one** set. That set has 12 ways, so a 4096-element column evicts
+itself continuously — which is the entire reason the naive transpose costs
+188 ms instead of 24 ms.
 
-### Avoiding the problem in practice
+Table 2 is the controlled version of that claim. The naive time tracks
+`sets_reachable` monotonically, and collapses once a column reaches **16**
+sets. Sixteen is not arbitrary: 16 sets × 12 ways is enough to hold the
+column's working set. The same threshold appears in
+[`set_conflict.c`](../memory_hierarchy/set_conflict.c) in the memory hierarchy
+directory, reached with a completely different kernel.
 
-- **Pad the matrix width** to a non-power-of-2 (e.g., N+8) so the row stride
-  breaks the aliasing.  This is why BLAS and NumPy often pad array dimensions.
-- **Use non-power-of-2 tile sizes** when N is a power of 2.
+### Padding beats tiling
 
----
+The best tile size on the unpadded array gets to 34.2 ms. The naive loop on a
+padded array gets to **23.5 ms** — 1.4x faster than the best tiling ever
+achieves, with no change to the loop at all.
+
+And once the stride is padded, tiling stops helping and starts *hurting*: the
+B=16 column in Table 2 is flat at ~35 ms while the naive column drops to 24 ms.
+Tiling is a way to cope with a bad leading dimension. Fixing the leading
+dimension is a way not to have one.
+
+**For a kernel with no reuse, the order of operations is the reverse of the
+usual advice: pad first, and reach for tiling only if the problem still doesn't
+fit.** This is why BLAS and NumPy pad array dimensions.
+
+The qualifier matters. Where there *is* reuse, tiling is the primary
+transformation and padding is a secondary cleanup on top of it —
+[matmul_tiling.md](matmul_tiling.md) measures both and finds them independent:
+blocking wins ~3x with or without padding, and padding helps only the blocked
+version. The question to ask first is not "tile or pad" but **"how many times
+does this kernel read the same byte?"**
+
+### Neither rule picks the tile
+
+For the record, on the unpadded array:
+
+- **The capacity rule**, `2 × B² × 8 ≤ 48 KB`, predicts `B ≤ 55`. Badly wrong —
+  B=48 and B=64 are near the bottom of Table 1.
+- **The associativity rule**, `B ≤ 12`, at least lands in the right
+  neighbourhood, but the measured optimum is B=16 and the rule does not pick
+  it. Associativity also varies by machine, so the rule does not transfer.
+
+The curve is not even smooth: **B=10 is reproducibly worse than B=8**, because
+8 doubles is exactly one 64-byte line and 10 straddles two. If you need a tile
+size, sweep for it; don't derive it.
+
+### "Avoid powers of two" is not the rule
+
+`lda = 4352` is not a power of two and is still 3.1x off the best.
+`lda = 4097` is odd, so the row stride is not a whole number of cache lines,
+the set index drifts across the whole array, and it performs like the
+well-padded cases.
+
+The rule is **how many factors of two the row length contains when measured in
+cache lines** — which is exactly what the `gcd` formula above counts.
+
+### Huge pages make it worse
+
+Backing the unpadded matrices with 2 MB pages instead of 4 KB pages takes the
+naive transpose from ~184 ms to ~355 ms. With 4 KB pages the OS scatters the
+virtual-to-physical mapping, which partially breaks up congruence further down
+the hierarchy; a huge page makes the physical addresses exactly as congruent as
+the virtual ones. Worth knowing before reaching for `MADV_HUGEPAGE` as a
+general-purpose speedup.
+
+## Measurement notes
+
+Two machine properties will corrupt these numbers if ignored, and both are
+handled in the source:
+
+1. **Heterogeneous cores.** cpu0–3 are Zen 5 at 5.13 GHz, cpu4–11 are Zen 5c
+   at 3.17 GHz — a 1.6x spread depending on where the scheduler puts you. The
+   benchmark pins to cpu0.
+
+2. **The clock only boosts on high IPC.** `amd-pstate-epp` raises the clock in
+   response to instructions-per-cycle, not to the core being busy. The
+   transpose is memory-bound and low-IPC, so left alone it runs the entire way
+   at ~3.59 GHz: **263 ms on all 8 repetitions cold, 184 ms on all 8 after a
+   warm-up spin.** Min-of-N does not help — every repetition is equally slow,
+   and the wrong answer looks perfectly stable. The benchmark spins on a
+   high-IPC loop first and prints the clock at both ends of the run.
 
 ## Key takeaways
 
-1. **Loop reordering and loop tiling are distinct transformations.**  Matrix
-   multiply conflates them; matrix transpose isolates the blocking benefit.
+1. **Ask the reuse question first.** A transpose reads every element once, so
+   tiling has no reuse to capture and can only improve spatial locality. That is
+   what makes this kernel's answer come out the way it does — and why it does not
+   transfer. [matmul_tiling.md](matmul_tiling.md) is the same transformation on a
+   kernel that reads each element N times, and there tiling wins outright.
 
-2. **Hardware prefetchers can eliminate the motivation for tiling.** The 2D
-   box filter showed no benefit because the prefetcher handled all simultaneous
-   row streams.  Tiling helps only when there are cold misses the prefetcher
-   cannot predict.
+2. **In this kernel, tile size is the wrong variable.** The leading dimension
+   governs the whole effect; sweeping tile sizes on a pathological `lda`
+   optimises the symptom. Pad first — it is a one-line change, it beat the best
+   tile size by 1.4x, and once it is done tiling here is a net loss.
 
-3. **The working-set formula ignores cache set conflicts.**  For power-of-2
-   strides, the effective capacity is `associativity × cache_line`, not
-   `L1_size`.  The empirical sweep is the only reliable way to find the true
-   sweet spot.
+3. **The rule is factors of two in the row length measured in cache lines**,
+   not "avoid powers of two." `sets_reachable = 64 / gcd((lda/8) % 64, 64)`,
+   and you want at least 16.
 
-4. **The speedup is real and significant (3x) but at a much smaller tile size
-   than theory predicts.**  B=8 rather than B=64.
+4. **The capacity formula ignores set conflicts entirely.** When a stride
+   aliases, effective capacity is `associativity × line_size`, not `L1_size` —
+   and even then the formula only brackets the answer. Sweep for the tile.
+
+5. **Tiling is still real when you cannot fix the layout.** 5.5x at B=16 on a
+   stride you are stuck with is worth having; in *this* kernel it is just the
+   second thing to try, not the first.
+
+6. **Tiling and conflict-avoidance are independent.** They fix different
+   problems and compose — measured in [matmul_tiling.md](matmul_tiling.md),
+   where padding helps the blocked version and does nothing for the unblocked
+   one, while blocking wins ~3x either way.

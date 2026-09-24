@@ -66,6 +66,7 @@ examples/memory_hierarchy/storage_latency
 examples/memory_hierarchy/spin_cost
 examples/memory_hierarchy/set_conflict
 examples/memory_hierarchy/tlb_walk
+examples/memory_hierarchy/vector_width
 
 # virtual_memory build artifacts (the .csv/.txt measurements ARE tracked)
 examples/virtual_memory/address_space
@@ -165,3 +166,10 @@ examples/java_rag_pipeline/corpus4/
 
 # local files not intended for sync with remote repository
 local/
+
+# not_presented build artifacts (measurements and sources ARE tracked)
+not_presented/strong_scaling/scaling_bench
+
+# JupyterLab LSP scratch copies
+.virtual_documents/
+**/.virtual_documents/

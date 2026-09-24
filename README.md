@@ -21,10 +21,15 @@ Each number session does not necessarily corerspond to a single day of class. We
 | [00.Intro.ipynb](course_materials/00.Intro.ipynb) | why performance is hard; modern processors |
 | [01.pipeline.compiler_optimization.md](course_materials/01.pipeline.compiler_optimization.md) | the processor pipeline, RAW hazards, and what `-O0`–`-O3` actually do |
 | [02.speedup.ipynb](course_materials/02.speedup.ipynb) | speedup and Amdahl's law |
+| [03.ILP.md](course_materials/03.ILP.md) | instruction-level parallelism, CPI/IPC, the reorder buffer, branch prediction |
+| [04.branch_optimization.md](course_materials/04.branch_optimization.md) | branchless code, lookup tables, and the two shapes of "the compiler will not do this" |
+| [05.memoryhierarchy.md](course_materials/05.memoryhierarchy.md) | caches, lines, sets and the cost of a miss |
+| [06.loops.md](course_materials/06.loops.md) | the five loop transformations, and naming the bottleneck before picking one |
+| [07.vectorization.md](course_materials/07.vectorization.md) | vector registers, lanes, and the three ways to program a SIMD unit |
 
 ### Examples
 
-Each directory stands alone: a `README.md` explaining the idea, source you can compile,
+Each directory stands alone: a `README.<topic>.md` explaining the idea, source you can compile,
 and (where it matters) measured numbers.
 
 **Single core**

@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  Blocked versus unblocked iteration order — the front-door figure for tiling.
+
+  A 16x16 iteration space walked two ways on one clock: row by row, and in
+  4x4 tiles.  Both visit all 256 points and do identical arithmetic.  The
+  strips on the top and left edges are the DATA -- point (i,j) reads one row
+  operand and one column operand -- and a strip cell is lit while its operand
+  is still needed by the unit of work in flight.
+
+  Over one unit of work (a row sweep on the left, a tile on the right):
+
+      unblocked    1 row  + 16 cols = 17 operands live
+      blocked 4x4  4 rows +  4 cols =  8 operands live
+
+  which generalises to 1+N against 2B.  Those scale differently, and that is
+  the whole of loop tiling: the iteration space is reordered so the working
+  set stops growing with the problem.
+
+  Note the window is aligned to the unit of work, not a sliding window of the
+  last 16 iterations -- a sliding window straddles row and tile boundaries and
+  reports two live rows through most of a single row sweep.
+
+  Double-click to open.  No server, no build, no dependencies beyond the
+  Google Fonts link (it degrades to system fonts offline).
+
+  Companion to: loop_tiling.md, matmul_tiling.md
+-->
+<title>Sixteen Columns or Four</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&family=Sora:wght@400;500;600;700&display=swap">
+</head>
+<body>
+<style>
+  :root {
+    --bg:      #F7F7FB;
+    --card:    #FFFFFF;
+    --sunk:    #EFEFF5;
+    --ink:     #1A1A24;
+    --ink-2:   #42424F;
+    --muted:   #6E6E80;
+    --rule:    #E0E0E9;
+    --rule-2:  #C8C8D5;
+    --idle:    #E6E6EE;
+    --done:    #BFC0CE;
+    --live:    #E08A2B;
+    --live-bg: #FBEBD6;
+    --now:     #0F9CB5;
+    --shadow:  0 1px 2px rgba(26,26,36,.05), 0 10px 26px rgba(26,26,36,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:      #131319;
+      --card:    #1C1C24;
+      --sunk:    #17171E;
+      --ink:     #EFEFF4;
+      --ink-2:   #C6C6D2;
+      --muted:   #8E8EA0;
+      --rule:    #2B2B36;
+      --rule-2:  #3D3D4A;
+      --idle:    #25252F;
+      --done:    #4A4B5C;
+      --live:    #F2A44C;
+      --live-bg: #3A2A14;
+      --now:     #2ABFD8;
+      --shadow:  0 1px 2px rgba(0,0,0,.4), 0 12px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:      #131319;
+    --card:    #1C1C24;
+    --sunk:    #17171E;
+    --ink:     #EFEFF4;
+    --ink-2:   #C6C6D2;
+    --muted:   #8E8EA0;
+    --rule:    #2B2B36;
+    --rule-2:  #3D3D4A;
+    --idle:    #25252F;
+    --done:    #4A4B5C;
+    --live:    #F2A44C;
+    --live-bg: #3A2A14;
+    --now:     #2ABFD8;
+    --shadow:  0 1px 2px rgba(0,0,0,.4), 0 12px 30px rgba(0,0,0,.35);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0; padding: 0 18px 70px;
+    background: var(--bg); color: var(--ink);
+    font-family: Sora, system-ui, -apple-system, sans-serif;
+    font-size: 16px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  .spine { max-width: 64ch; }
+  h1 {
+    font-size: clamp(1.8rem, 4.4vw, 2.45rem); font-weight: 700;
+    letter-spacing: -.025em; line-height: 1.12;
+    margin: 46px 0 10px; text-wrap: balance;
+  }
+  .sub { color: var(--muted); margin: 0 0 24px; max-width: 56ch; }
+  h2 { font-size: 1.2rem; font-weight: 600; margin: 34px 0 8px; letter-spacing: -.01em; }
+  p { margin: 0 0 14px; }
+  .m { font-family: "Roboto Mono", ui-monospace, Menlo, monospace; font-size: .88em; }
+
+  /* ---- controls ---- */
+  .bar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 9px;
+    background: var(--card); border: 1px solid var(--rule); border-radius: 10px;
+    padding: 11px 13px; margin-bottom: 20px; box-shadow: var(--shadow);
+  }
+  button {
+    font-family: "Roboto Mono", monospace; font-size: 12.5px; font-weight: 500;
+    color: var(--ink); background: var(--bg);
+    border: 1px solid var(--rule-2); border-radius: 6px;
+    padding: 7px 14px; cursor: pointer;
+  }
+  button:hover { border-color: var(--muted); }
+  button:focus-visible { outline: 2px solid var(--now); outline-offset: 2px; }
+  button.go { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .bar .rd {
+    margin-left: auto; font-family: "Roboto Mono", monospace; font-size: 12.5px;
+    font-variant-numeric: tabular-nums; color: var(--muted);
+  }
+  .bar .rd b { color: var(--ink); }
+  label.sp { display: flex; align-items: center; gap: 7px; font-size: .84rem; color: var(--muted); }
+  input[type=range] { width: 110px; accent-color: var(--now); }
+
+  /* ---- panels ---- */
+  .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 760px) { .panels { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--card); border: 1px solid var(--rule); border-radius: 10px;
+    padding: 16px 16px 14px; box-shadow: var(--shadow);
+  }
+  .ptitle { font-weight: 600; font-size: 1.02rem; margin: 0 0 2px; }
+  .pcode {
+    font-family: "Roboto Mono", monospace; font-size: 11.5px; line-height: 1.6;
+    color: var(--muted); white-space: pre; margin: 0 0 12px; overflow-x: auto;
+  }
+
+  .board { display: grid; grid-template-columns: auto auto; gap: 4px; width: max-content; }
+  .corner { width: 16px; height: 16px; }
+  .colstrip { display: grid; grid-template-columns: repeat(16, 16px); gap: 2px; }
+  .rowstrip { display: grid; grid-template-rows: repeat(16, 16px); gap: 2px; }
+  .grid { display: grid; grid-template-columns: repeat(16, 16px); gap: 2px; }
+
+  .op, .cell { width: 16px; height: 16px; border-radius: 3px; background: var(--idle); }
+  .op { border: 1px solid var(--rule-2); }
+  .op.live { background: var(--live); border-color: var(--live); }
+  .cell.done { background: var(--done); }
+  .cell.win  { background: var(--live-bg); }
+  .cell.now  { background: var(--now); }
+
+  /* tile boundaries, drawn only on the blocked board */
+  .grid.tiled .cell.tb-r { border-right: 2px solid var(--rule-2); }
+  .grid.tiled .cell.tb-b { border-bottom: 2px solid var(--rule-2); }
+
+  .readout {
+    display: flex; gap: 18px; flex-wrap: wrap;
+    margin-top: 13px; padding-top: 11px; border-top: 1px solid var(--rule);
+  }
+  .rd2 .k {
+    display: block; font-size: .68rem; font-weight: 600; letter-spacing: .09em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .rd2 .v {
+    font-family: "Roboto Mono", monospace; font-size: 1.15rem; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .rd2 .v.hot { color: var(--live); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 18px 0 0; font-size: .86rem; color: var(--ink-2); }
+  .legend span { display: flex; align-items: center; gap: 7px; }
+  .sw { width: 14px; height: 14px; border-radius: 3px; flex: none; border: 1px solid var(--rule-2); }
+  .sw.l { background: var(--live); border-color: var(--live); }
+  .sw.n { background: var(--now);  border-color: var(--now); }
+  .sw.d { background: var(--done); border-color: var(--done); }
+
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; margin-top: 6px; }
+  th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--rule); }
+  th:first-child, td:first-child { text-align: left; }
+  th { font-size: .68rem; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+  td { font-family: "Roboto Mono", monospace; font-size: .86rem; font-variant-numeric: tabular-nums; }
+  td.good { color: var(--now); font-weight: 700; }
+  td.bad  { color: var(--live); font-weight: 700; }
+
+  footer { margin-top: 32px; padding-top: 15px; border-top: 1px solid var(--rule); font-size: .84rem; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+
+  <h1>Sixteen Columns or Four</h1>
+  <p class="sub">A 16&times;16 iteration space, walked two ways. Both visit all 256 points and do identical arithmetic. What differs is how much has to stay in cache while they do it.</p>
+
+  <div class="bar">
+    <button class="go" id="play">&#9654; Play</button>
+    <button id="step">Step</button>
+    <button id="reset">Reset</button>
+    <label class="sp">speed <input type="range" id="speed" min="1" max="12" value="7"></label>
+    <span class="rd">iteration <b id="it">0</b> / 256</span>
+  </div>
+
+  <div class="panels">
+    <div class="panel">
+      <p class="ptitle">Unblocked</p>
+      <p class="pcode">for i in 0..15:
+  for j in 0..15:
+    use row[i], col[j]</p>
+      <div class="board" id="board-u"></div>
+      <div class="readout">
+        <div class="rd2"><span class="k">rows this sweep</span><span class="v" id="u-r">0</span></div>
+        <div class="rd2"><span class="k">cols this sweep</span><span class="v" id="u-c">0</span></div>
+        <div class="rd2"><span class="k">operands live</span><span class="v hot" id="u-t">0</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <p class="ptitle">Blocked, 4&times;4 tiles</p>
+      <p class="pcode">for ii in 0,4,8,12:
+  for jj in 0,4,8,12:
+    for i in ii..ii+3:
+      for j in jj..jj+3: …</p>
+      <div class="board" id="board-b"></div>
+      <div class="readout">
+        <div class="rd2"><span class="k">rows this tile</span><span class="v" id="b-r">0</span></div>
+        <div class="rd2"><span class="k">cols this tile</span><span class="v" id="b-c">0</span></div>
+        <div class="rd2"><span class="k">operands live</span><span class="v hot" id="b-t">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><i class="sw n"></i> current iteration</span>
+    <span><i class="sw l"></i> operand needed right now</span>
+    <span><i class="sw d"></i> already done</span>
+  </div>
+
+  <div class="spine">
+    <h2>What the strips are</h2>
+    <p>The cells along the top and left edges are the <em>data</em>, not the iteration space. Point <span class="m">(i,&nbsp;j)</span> reads one row operand and one column operand — in a matrix multiply, a row of A and a column of B. A strip cell lights amber while its operand is still needed by the work in flight.</p>
+    <p>Both walks light exactly one grid cell at a time. Count the amber instead.</p>
+    <p>The counters reset at each unit of work — one row sweep on the left, one
+    tile on the right — and climb as that unit proceeds. Watch where each one
+    tops out: the left panel reaches sixteen live columns, the right panel never
+    passes four.</p>
+
+    <h2>Why the counts differ</h2>
+    <p>The unblocked walk finishes a whole row of <span class="m">j</span> before moving to the next <span class="m">i</span>. By the time it comes back to <span class="m">j=0</span>, it has swept all sixteen columns — so every column operand has to have survived, or be fetched again.</p>
+    <p>The blocked walk stays inside a 4&times;4 tile. It needs four rows and four columns, and it reuses each of them four times before moving on.</p>
+  </div>
+
+  <table>
+    <thead><tr><th>while working on 16 consecutive iterations</th><th>rows</th><th>cols</th><th>operands live</th></tr></thead>
+    <tbody>
+      <tr><td>Unblocked</td><td>1</td><td class="bad">16</td><td class="bad">17</td></tr>
+      <tr><td>Blocked 4&times;4</td><td>4</td><td class="good">4</td><td class="good">8</td></tr>
+    </tbody>
+  </table>
+
+  <div class="spine">
+    <p>At this size the saving is about half. The shape of it is what matters: unblocked needs <span class="m">1 + N</span> operands live, blocked needs <span class="m">2B</span>. Those scale completely differently — at <span class="m">N = 4096</span> with <span class="m">B = 64</span> that is 4097 against 128, which is the difference between missing cache on every pass and fitting comfortably inside it.</p>
+    <p>That is the whole of loop tiling: the iteration space is reordered so the working set stops growing with the problem.</p>
+  </div>
+
+  <footer>
+    Companion to <span class="m">examples/loop_optimizations/matmul_tiling.md</span>, where blocking a 2048&times;2048 matrix multiply is measured at 2.98&times; over the best unblocked loop order. Note that tiling only pays when there is reuse to capture — a transpose reads each element once, and there padding the leading dimension beats it.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  var N = 16, B = 4, TOTAL = N * N, WIN = 16;   // WIN = one tile's worth of work
+  var step = 0, timer = null;
+
+  function build(id, tiled) {
+    var board = document.getElementById(id);
+    board.innerHTML = '';
+    var corner = document.createElement('div'); corner.className = 'corner';
+    var col = document.createElement('div'); col.className = 'colstrip';
+    var row = document.createElement('div'); row.className = 'rowstrip';
+    var grid = document.createElement('div'); grid.className = 'grid' + (tiled ? ' tiled' : '');
+    var cols = [], rows = [], cells = [];
+    for (var c = 0; c < N; c++) { var e = document.createElement('div'); e.className = 'op'; col.appendChild(e); cols.push(e); }
+    for (var r = 0; r < N; r++) { var e2 = document.createElement('div'); e2.className = 'op'; row.appendChild(e2); rows.push(e2); }
+    for (var i = 0; i < N; i++) for (var j = 0; j < N; j++) {
+      var g = document.createElement('div');
+      g.className = 'cell';
+      if (tiled) {
+        if (j % B === B - 1 && j !== N - 1) g.classList.add('tb-r');
+        if (i % B === B - 1 && i !== N - 1) g.classList.add('tb-b');
+      }
+      grid.appendChild(g); cells.push(g);
+    }
+    board.appendChild(corner); board.appendChild(col);
+    board.appendChild(row);   board.appendChild(grid);
+    return { cols: cols, rows: rows, cells: cells };
+  }
+
+  var U = build('board-u', false);
+  var K = build('board-b', true);
+
+  // iteration n -> (i,j)
+  function posUnblocked(n) { return [Math.floor(n / N), n % N]; }
+  function posBlocked(n) {
+    var per = B * B, t = Math.floor(n / per), k = n % per;
+    var tr = Math.floor(t / (N / B)), tc = t % (N / B);
+    return [tr * B + Math.floor(k / B), tc * B + (k % B)];
+  }
+
+  function paint(view, posFn, pre) {
+    // The live set is what the CURRENT unit of work needs -- one row sweep
+    // for the unblocked walk, one tile for the blocked one.  Both units are
+    // WIN iterations long, so the window starts at the last WIN boundary.
+    // A plain sliding window would straddle those boundaries and report, for
+    // instance, two live rows through most of a single row sweep.
+    var liveR = {}, liveC = {}, lo = Math.floor(Math.max(0, step - 1) / WIN) * WIN;
+    for (var s = 0; s < step; s++) {
+      var p = posFn(s), el = view.cells[p[0] * N + p[1]];
+      if (s >= lo) { liveR[p[0]] = 1; liveC[p[1]] = 1; el.classList.add('win'); }
+      else el.classList.add('done');
+    }
+    if (step > 0) {
+      var cur = posFn(step - 1), ce = view.cells[cur[0] * N + cur[1]];
+      ce.classList.remove('win', 'done');
+      ce.classList.add('now');
+    }
+    for (var r = 0; r < N; r++) view.rows[r].classList.toggle('live', !!liveR[r]);
+    for (var c = 0; c < N; c++) view.cols[c].classList.toggle('live', !!liveC[c]);
+
+    var nr = Object.keys(liveR).length, nc = Object.keys(liveC).length;
+    document.getElementById(pre + '-r').textContent = nr;
+    document.getElementById(pre + '-c').textContent = nc;
+    document.getElementById(pre + '-t').textContent = nr + nc;
+  }
+
+  function render() {
+    [U, K].forEach(function (v) {
+      v.cells.forEach(function (c) { c.classList.remove('done', 'win', 'now'); });
+    });
+    paint(U, posUnblocked, 'u');
+    paint(K, posBlocked, 'b');
+    document.getElementById('it').textContent = step;
+  }
+
+  function advance() { if (step < TOTAL) step++; render(); if (step >= TOTAL) stop(); }
+  function stop() { if (timer) { clearInterval(timer); timer = null; }
+                    document.getElementById('play').innerHTML = '&#9654; Play'; }
+  function delay() { return 420 / parseInt(document.getElementById('speed').value, 10); }
+  function start() {
+    if (step >= TOTAL) { step = 0; render(); }
+    timer = setInterval(advance, delay());
+    document.getElementById('play').innerHTML = '&#10074;&#10074; Pause';
+  }
+
+  document.getElementById('play').addEventListener('click', function () { timer ? stop() : start(); });
+  document.getElementById('step').addEventListener('click', function () { stop(); advance(); });
+  document.getElementById('reset').addEventListener('click', function () { stop(); step = 0; render(); });
+  document.getElementById('speed').addEventListener('input', function () { if (timer) { stop(); start(); } });
+
+  render();
+})();
+</script>
+
+</body>
+</html>

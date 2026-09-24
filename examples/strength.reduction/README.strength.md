@@ -28,7 +28,7 @@ OPTNONE long long div_shift_after()  { /* uses i >> 2 */ }
 `optnone` blocks the compiler from doing the substitution itself, so the
 BEFORE/AFTER gap can't be erased by the optimizer — it stays meaningful from
 `-O0` through `-O3`. That's also *why* a single source file works here,
-unlike the [loop_optimizations](../loop_optimizations/README.md) examples,
+unlike the [loop_optimizations](../loop_optimizations/README.loops.md) examples,
 which need the optimizer active to show their effect: strength reduction is
 a hardware-instruction-cost question, not a compiler-transformation
 question, so pinning both sides to `optnone` isolates exactly that.

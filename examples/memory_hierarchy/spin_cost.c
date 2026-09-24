@@ -15,31 +15,15 @@
  *
  * Usage: spin_cost [cpu]        Feeds section 04 of cache_map.html.
  */
-#define _GNU_SOURCE
+#include "harness.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
-#include <time.h>
-#include <sched.h>
-
-static double now_s(void){ struct timespec t; clock_gettime(CLOCK_MONOTONIC,&t);
-                           return t.tv_sec + 1e-9*t.tv_nsec; }
-
-static double measure_ghz(double sec){
-    long n = 100L*1000*1000;
-    for(;;){ uint64_t x=0; double t0=now_s();
-        for(long i=0;i<n;i++) __asm__ volatile("addq $1, %0":"+r"(x));
-        double dt=now_s()-t0; __asm__ volatile(""::"r"(x));
-        if(dt>=sec) return n/dt/1e9; n*=2; }
-}
 
 static _Alignas(64) volatile long line;
 
 int main(int argc, char **argv){
     int cpu = (argc > 1) ? atoi(argv[1]) : 0;
-    cpu_set_t s; CPU_ZERO(&s); CPU_SET(cpu,&s); sched_setaffinity(0,sizeof s,&s);
-    measure_ghz(1.0);
-    double ghz = measure_ghz(0.1);
+    double ghz = harness_begin(cpu, "spin_cost");
     printf("cpu%d, core clock: %.2f GHz\n\n", cpu, ghz);
 
     const long N = 20L*1000*1000;

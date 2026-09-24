@@ -14,7 +14,8 @@ still tells the truth if you run it somewhere else.
 
 | If you want | Open | |
 |---|---|---|
-| The full treatment, with the code that produced each plot | [cache_hierarchy.ipynb](cache_hierarchy.ipynb) | 12 sections, 6 figures |
+| Just what one core sees — for loop and vectorisation lectures | [1_core_cache.ipynb](1_core_cache.ipynb) | capacity, line, latency, width, alignment |
+| The full treatment, including threads and coherence | [cache_hierarchy.ipynb](cache_hierarchy.ipynb) | 12 sections, 6 figures |
 | The same ground visually, in a browser, no server | [cache_map.html](cache_map.html) | floorplan, latency ladder, coherence map |
 | Why a 1024×1024 matrix is slow down its columns | [why_1024_is_slow.html](why_1024_is_slow.html) | four bits of an address |
 | Why an array that fits in L3 still misses | [tlb_cliff.html](tlb_cliff.html) | address translation and huge pages |
@@ -29,14 +30,16 @@ other and need no network beyond web fonts, which fall back to system faces.
 | | Measured | Where |
 |---|---|---|
 | Cache line | **64 bytes** at every level | §6 |
-| Latency, L1 → DRAM | **4 → 530 cycles** (0.78 ns → 104 ns) | §3 |
-| Hardware prefetching | worth up to **77×** on a predictable pattern | §4 |
-| Address translation | **2.4×** on an L3-resident random pattern | §5 |
+| Latency, L1 → DRAM | **4 → 507 cycles** (0.79 ns → 103 ns) | §3 |
+| Hardware prefetching | worth up to **66×** on a predictable pattern | §4 |
+| Address translation | **3.0×** on an L3-resident random pattern | §5 |
 | Line utilization | **8×** swing between stride-8 and stride-64 | §6 |
-| DRAM bandwidth | **38.5 GB/s** from one core — and 38.8 from twelve | §7 |
+| DRAM bandwidth | **37.5 GB/s** from one core — and 38.8 from twelve | §7 |
 | Array dimensions | a power-of-two row length costs up to **32×** | §8 |
-| Sharing one cache line | **18 ns** SMT, ~20 ns intra-complex, **~167 ns** across | §9 |
-| Below DRAM | NVMe SSD at **45.8 µs** — 59,000 L1 hits | §10 |
+| Sharing one cache line | **21 ns** SMT, ~20 ns intra-complex, **~100 ns** across | §9 |
+| Vector width, L1-resident | 512-bit is **5.3×** scalar — and **1.0×** out in DRAM | 1-core §5 |
+| Load alignment | 64-byte aligned 317 GB/s vs **1.45× slower** at any other offset | 1-core §6 |
+| Below DRAM | NVMe SSD at **43.3 µs** — 55,000 L1 hits | §10 |
 
 The chip is not the uniform 12-core part its spec sheet implies. It is two core
 complexes with different core types and separate L3 slices — 4 × Zen 5 on 16 MB,
@@ -65,7 +68,7 @@ on what it measures and, more usefully, which measurement traps it had to avoid.
 The last two support the HTML pages rather than the notebook.
 
 ```
-make            # build all nine
+make            # build all ten
 make data       # run them all and overwrite the .csv files
 ```
 
@@ -81,12 +84,22 @@ regenerate them from the notebook instead.
 These are the transferable part. Two of the benchmarks here had to be rewritten
 after their first run produced confident, reproducible, wrong answers.
 
-**The clock moves.** This part runs between 0.6 and 5.16 GHz. Measuring it once at
-startup and converting nanoseconds to cycles for the rest of the run silently
-corrupts every number — an early `cache_latency` reported L1 at 2.8 cycles and L2 at
-9.8, when the true values are 4 and 14, because the core boosted from 3.58 to
-5.07 GHz partway through. Every program here re-measures the clock with a dependent
-add chain immediately before each data point.
+**The governor reacts to IPC, not to being busy.** `amd-pstate-epp` raises the clock in
+response to how much work is retiring, so a core that has been idle starts near 3.5 GHz
+and a measurement taken there is a stable, reproducible, wrong number.
+[`harness.h`](harness.h) warms every core with **eight independent add chains**
+(~4 ops/cycle) before anything is timed; a single *dependent* chain is low-IPC and warms
+it far less reliably. Measured here: 3.56 GHz cold → 5.12 GHz warmed.
+
+**But measure the clock with a dependent chain.** One chain retires exactly one add per
+cycle by construction, so its rate is the frequency. The independent version reports
+~20 G adds/s on this part — throughput, not frequency — and must never be used for the
+cycle conversion.
+
+**Bracket every data point.** Each measurement is timed between two clock readings; the
+cycle column uses their mean and `latency.csv` carries the drift, so a moving clock shows
+up instead of silently corrupting the result. Nanosecond results never depend on any of
+this; only the cycle conversions do.
 
 **A fixed stride measures the prefetcher, not the cache.** LMBench's constant-stride
 walk is the easiest possible pattern for hardware to predict. Latency here comes from
@@ -118,9 +131,9 @@ the most useful thing it has to say.
 
 | Topic | Directory |
 |---|---|
-| Loop interchange, tiling, fusion, fission | [../loop_optimizations/](../loop_optimizations/README.md) |
-| False sharing, measured at 19× | [../false_sharing/](../false_sharing/false_sharing_ryzen.md) |
-| Software prefetching for gathers | [../prefetch.example/](../prefetch.example/prefetch.md) |
+| Loop interchange, tiling, fusion, fission | [../loop_optimizations/](../loop_optimizations/README.loops.md) |
+| False sharing, measured at 19× | [../false_sharing/](../false_sharing/README.false_sharing.md) |
+| Software prefetching for gathers | [../prefetch.example/](../prefetch.example/README.prefetch.md) |
 | Arithmetic intensity and the bandwidth ceiling | [../roofline/](../roofline/) |
-| Vectorization, which multiplies the cost of a bad layout | [../vectorization/](../vectorization/README.md) |
-| Sorting: the canonical cache-sensitive algorithm | [../sorting/](../sorting/intro.md) |
+| Vectorization, which multiplies the cost of a bad layout | [../vectorization/](../vectorization/README.vectorization.md) |
+| Sorting: the canonical cache-sensitive algorithm | [../sorting/](../sorting/README.sorting.md) |
