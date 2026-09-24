@@ -44,10 +44,7 @@ unsigned long long withTempVars(vector<int>& data) {
     // Create four independent accumulators. Think about what value to
     // seed them with so the four partial products, multiplied together
     // at the end, equal what the single accumulator produced.
-    unsigned long long x0 = 1;
-    unsigned long long x1 = 1;
-    unsigned long long x2 = 1;
-    unsigned long long x3 = 1;
+    unsigned long long x0 = 1, x1 = 1, x2 = 1, x3 = 1;
 
     for (int i = 0; i < ARRAY_SIZE; i += 4) {
         // LOAD PHASE: four independent operands from data (remember | 1ull)
