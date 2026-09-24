@@ -1,17 +1,23 @@
-# Loop Fusion Example
+# Loop Fusion
 
-Demonstrates computing mean and variance in two separate loops versus one
-fused loop, using the computational formula to eliminate the data dependency
-that forces a second pass in the naive version.
+Computing mean and variance in two separate passes versus one fused pass,
+using the computational formula to break the data dependency that forces the
+second pass. Worth **2.0x** — which is the theoretical ceiling, because this
+loop is limited by memory bandwidth and fusion halves the memory traffic.
 
 ## Source
 
 [loop_fusion.cpp](loop_fusion.cpp)
 
+## Machine
+
+AMD Ryzen AI 9 HX 370 (Zen 5, "Strix Point"), Linux, g++ 13.3. L3 is 16 MB;
+the array here is 381 MB, so it is DRAM-resident and every pass is a cold read.
+
 ## The problem with two loops
 
-Variance requires mean, and mean requires a full pass over the data.  The
-naive implementation is therefore forced into two sequential passes:
+Variance needs the mean, and the mean needs a full pass. The naive
+implementation is therefore forced into two sequential passes over the data:
 
 ```cpp
 // Pass 1: mean
@@ -28,14 +34,14 @@ for (int i = 0; i < n; i++) {
 double variance = m2 / n;
 ```
 
-With N = 50M ints (200 MB), the array far exceeds L3 cache.  Pass 2 forces a
-full cold-cache reload of the data.
+With N = 50M ints the array is 381 MB, far past the 16 MB L3. Pass 2 is a full
+cold reload from DRAM.
 
-## Fused version — computational formula
+## Fused — computational formula
 
-Uses the identity **Var(X) = E[X²] - E[X]²** to accumulate `sum` and
-`sum_sq` in a single loop.  Both mean and variance are derived after the loop
-with no extra data reads.
+The identity **Var(X) = E[X²] − E[X]²** lets `sum` and `sum_sq` accumulate
+together in one loop. Both statistics are derived afterwards, with no second
+read:
 
 ```cpp
 double sum = 0.0, sum_sq = 0.0;
@@ -54,100 +60,97 @@ double variance = (sum_sq / n) - mean * mean;
 g++ -O1 -o fusion_O1 loop_fusion.cpp && ./fusion_O1
 ```
 
-## Results (Apple M-series, 50M elements)
+## Results
 
-| Flag | Unfused (2 passes) | Fused (1 pass) | Speedup |
-|------|--------------------|----------------|---------|
-| `-O1` | 69 ms | 39 ms | **1.77x** |
+N = 50M ints (381 MB), `g++ -O1`.
 
-Theoretical ceiling is 2x (2 reads → 1 read).  The 1.77x result is close;
-the gap is the extra `x * x` multiply per element in the fused loop.
+| Version | Passes | Time | vs unfused |
+|---|---:|---:|---:|
+| Unfused (two loops) | 2 | 59.2 ms | baseline |
+| **Fused (computational formula)** | **1** | **29.3 ms** | **2.02x** |
+| Fused (Welford's algorithm) | 1 | 191.4 ms | 0.31x |
 
-## Numerical accuracy
+## Analysis
 
-The computational formula accumulates large `x * x` values and subtracts two
-large numbers at the end, which can lose precision for datasets with large
-values and small variance (catastrophic cancellation).  For this example the
-delta between the two methods is ~0.88 on a variance of ~3.6 × 10⁸ — about
-2.5 × 10⁻⁹ relative error, acceptable for demonstration purposes.
+### Why 2.0x and not less
 
-For production use on large or high-dynamic-range datasets, prefer the
-two-pass formula (numerically exact) or Welford's algorithm (stable and
-single-pass, but slower due to per-element division).
+The theoretical ceiling is exactly 2x: two reads become one. Reaching it
+means the loop is *purely* bandwidth-bound — the extra `x * x` multiply per
+element in the fused version is free, absorbed by the out-of-order engine while
+it waits on memory.
 
-## Attempted fusion with Welford's algorithm
+That is the regime fusion is for. The transformation does not reduce
+arithmetic; it reduces trips to DRAM. If the loop were compute-bound, fusing it
+would buy nothing.
 
-Before landing on the computational formula we tried Welford's online
-algorithm, which is the textbook single-pass approach for computing mean and
-variance without knowing the mean in advance.
+**A useful diagnostic falls out of this.** Warming the core's clock before
+measuring changes the cache-bound examples in this directory by ~1.4x, and
+changes these numbers by almost nothing. A loop whose time does not respond to
+core frequency is running at the speed of the memory system, not the core.
 
-### How Welford's works
+### Why Welford's is 3x slower, not faster
 
-At each step, given a new element `x` and the current count `k`:
-
-```
-delta  = x - mean          // deviation from current running mean
-mean  += delta / k         // update running mean
-delta2 = x - mean          // deviation from *updated* mean
-M2    += delta * delta2    // accumulate sum of squared deviations
-```
-
-After n elements: `variance = M2 / n`.  The algorithm is numerically stable
-because deviations are always computed relative to the current running mean
-rather than a fixed estimate computed upfront.
-
-### The implementation
+Welford's online algorithm is the textbook numerically-stable single-pass
+method:
 
 ```cpp
-Stats compute_fused_welford(const int* data, int n) {
-    double mean = 0.0;
-    double m2   = 0.0;
-    for (int i = 0; i < n; i++) {
-        double delta = data[i] - mean;
-        mean += delta / (i + 1);
-        m2   += delta * (data[i] - mean);
-    }
-    return {mean, m2 / n};
+for (int i = 0; i < n; i++) {
+    double delta = data[i] - mean;
+    mean += delta / (i + 1);
+    m2   += delta * (data[i] - mean);
 }
 ```
 
-### Results
+It reads the array once — the same memory traffic as the fused version — and is
+**6.5x slower than that version** and 3.2x slower than doing two passes. Two
+reasons, both about the loop body rather than the memory:
 
-| Version | Time | vs unfused |
-|---------|------|------------|
-| Unfused (2 passes) | 71 ms | baseline |
-| Fused — Welford's  | 176 ms | **0.40x (slower)** |
-| Fused — computational formula | 39 ms | **1.77x (faster)** |
+1. **A division per element.** `delta / (i + 1)` is a floating-point divide on
+   every iteration, roughly 15–20 cycles against 4–5 for a multiply. At 50M
+   iterations that alone dominates.
 
-### Why it was slower
+2. **A loop-carried dependency.** Each iteration's `mean` update depends on the
+   previous iteration's `mean`. The out-of-order engine cannot overlap
+   iterations, so the divides serialise instead of pipelining.
 
-Welford's is compute-bound, not memory-bound, for three reasons:
+The result is a loop that halves the memory traffic and still loses badly,
+because it turned a memory-bound loop into a compute-bound one. **Fusion is
+only a win if the fused body stays cheap enough to remain memory-bound.**
 
-**1. Division inside the loop.**  `delta / (i + 1)` executes a floating-point
-divide on every single iteration.  Division is ~15–20 cycles on modern
-hardware versus ~4–5 cycles for multiply.  With 50M iterations that adds up.
+### Numerical accuracy
 
-**2. Sequential data dependency.**  Each iteration's `mean` update depends on
-the previous iteration's result (`mean += delta / k` uses the previous
-`mean` to compute `delta`).  This is a loop-carried dependency that prevents
-the CPU from executing multiple iterations in parallel.
+The computational formula accumulates large `x²` values and subtracts two large
+numbers at the end, which risks catastrophic cancellation when the values are
+large and the variance is small. Here the delta against the two-pass result is
+~0.88 on a variance of ~3.58 × 10⁸ — about 2.5 × 10⁻⁹ relative error, fine for
+demonstration.
 
-The result: Welford's reads the 200 MB array once (good) but processes each
-element ~4× more slowly (bad), and the compute overhead outweighs the
-memory savings by a factor of 2.5.
+For production on large or high-dynamic-range data, prefer the two-pass formula
+(numerically exact) or Welford's (stable), and accept the cost. The 2x here is
+bought partly with precision, and that is an honest part of the trade.
 
 ### When Welford's is the right choice
 
-Welford's wins when memory bandwidth is *not* the bottleneck — for example,
-when the data is already in cache, when n is small, or when numerical
-stability matters more than throughput.  For a streaming computation over
-data that arrives one element at a time (and cannot be stored for a second
-pass), it is also the only option.
+When bandwidth is not the bottleneck: data already in cache, small `n`, or
+stability mattering more than throughput. It is also the only option for a
+streaming computation where elements arrive one at a time and cannot be stored
+for a second pass.
 
-## Key takeaway
+## Key takeaways
 
-Loop fusion eliminates redundant memory reads by restructuring what is
-accumulated in the loop body.  The obstacle here was a real data dependency
-(variance needs mean), which the computational formula resolves by deferring
-the derivation of both statistics to after the loop.  The speedup (~1.77x)
-approaches the theoretical 2x memory-bandwidth limit.
+1. **Fusion trades memory passes for a wider loop body.** It wins when the loop
+   is memory-bound and the wider body stays cheap.
+
+2. **The ceiling is the pass count.** Two reads to one is 2x and no more; hitting
+   2.02x means nothing was left on the table.
+
+3. **A real data dependency can often be restructured rather than obeyed.**
+   Variance genuinely needs the mean — but not the *same* formulation of the
+   variance. Changing the algebra removed the dependency.
+
+4. **Check that the fused body is still cheap.** Welford's fuses perfectly and
+   loses 3.2x, because a divide and a serial dependency per element cost more
+   than the DRAM pass it saved.
+
+5. **If warming the clock doesn't change your timings, you are memory-bound.**
+   Cheap to test and it tells you which optimisations can possibly help.

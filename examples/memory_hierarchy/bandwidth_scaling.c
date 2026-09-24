@@ -17,21 +17,12 @@
  *
  * Build: gcc -O3 -march=native -pthread -o bandwidth_scaling bandwidth_scaling.c
  */
-#define _GNU_SOURCE
+#include "harness.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include <time.h>
 #include <pthread.h>
-#include <sched.h>
 #include <sys/mman.h>
-
-static double now_s(void) {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ts.tv_sec + 1e-9 * ts.tv_nsec;
-}
 
 #define TOTAL_BYTES (1024UL << 20)      /* 1 GB: far past the 24 MB of L3 */
 
@@ -51,7 +42,9 @@ static void *worker(void *v) {
     size_t chunk = total_elems / a->nthreads;
     uint64_t *base = arr + (size_t)a->id * chunk;
 
-    for (int warm = 0; warm < 2; warm++) {          /* touch + raise the clock */
+    warm_core(0.15);          /* raise this core's clock: the read loop below is
+                                 low-IPC and will not do it on its own */
+    for (int warm = 0; warm < 2; warm++) {          /* fault the pages in */
         uint64_t s = 0;
         for (size_t i = 0; i < chunk; i += 8) s += base[i];
         sink = s;

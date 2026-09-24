@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  Row-major vs column-major traversal — a cartoon for the loop interchange
+  example.
+
+  One 8x8 array shown twice: as the grid you picture, and as the flat run of
+  memory it actually occupies, divided into 64-byte cache lines of eight
+  doubles.  Step through either traversal and watch the tally:
+
+    across a row  -> 8 elements,  1 line,   64 bytes fetched,  0%   wasted
+    down a column -> 8 elements,  8 lines, 512 bytes fetched, 87.5% wasted
+
+  Same eight numbers, same arithmetic, eight times the memory traffic.
+
+  Double-click to open.  No server, no build, no dependencies beyond the
+  Google Fonts link (it degrades to system fonts offline).
+
+  Companion to: loop_interchange.md  and  README.loops.md
+-->
+<title>Down a Column</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;500;600;700&display=swap">
+</head>
+<body>
+<style>
+  :root {
+    --paper:   #FBFAF7;
+    --card:    #FFFFFF;
+    --ink:     #20201D;
+    --ink-2:   #4A4A44;
+    --muted:   #7C7C72;
+    --rule:    #E4E1D9;
+    --rule-2:  #CFCBC0;
+    --idle:    #EDEAE3;
+    --used:    #17996B;
+    --used-bg: #DCF2E8;
+    --waste:   #E85D75;
+    --waste-bg:#FBE2E6;
+    --now:     #E8A317;
+    --shadow:  0 2px 0 var(--rule-2);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:   #16161C;
+      --card:    #202028;
+      --ink:     #F2F0EA;
+      --ink-2:   #CFCCC4;
+      --muted:   #97948C;
+      --rule:    #32323C;
+      --rule-2:  #43434F;
+      --idle:    #2A2A33;
+      --used:    #37C58F;
+      --used-bg: #10301F;
+      --waste:   #FF7E93;
+      --waste-bg:#3A1A21;
+      --now:     #FFBE3D;
+      --shadow:  0 2px 0 #0E0E12;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:   #16161C;
+    --card:    #202028;
+    --ink:     #F2F0EA;
+    --ink-2:   #CFCCC4;
+    --muted:   #97948C;
+    --rule:    #32323C;
+    --rule-2:  #43434F;
+    --idle:    #2A2A33;
+    --used:    #37C58F;
+    --used-bg: #10301F;
+    --waste:   #FF7E93;
+    --waste-bg:#3A1A21;
+    --now:     #FFBE3D;
+    --shadow:  0 2px 0 #0E0E12;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0; padding: 0 18px 70px;
+    background: var(--paper); color: var(--ink);
+    font-family: Outfit, "Trebuchet MS", system-ui, sans-serif;
+    font-size: 16.5px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  h1 {
+    font-size: clamp(1.9rem, 5vw, 2.6rem); font-weight: 700;
+    letter-spacing: -.02em; line-height: 1.1;
+    margin: 46px 0 10px; text-wrap: balance;
+  }
+  .sub { color: var(--muted); margin: 0 0 26px; max-width: 52ch; }
+  .m { font-family: "DM Mono", ui-monospace, Menlo, monospace; font-size: .9em; }
+
+  /* ---- controls ---- */
+  .bar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 9px;
+    background: var(--card); border: 2px solid var(--rule);
+    border-radius: 13px; padding: 12px 14px; margin-bottom: 22px;
+    box-shadow: var(--shadow);
+  }
+  button {
+    font-family: Outfit, sans-serif; font-size: .96rem; font-weight: 500;
+    color: var(--ink); background: var(--paper);
+    border: 2px solid var(--rule-2); border-radius: 9px;
+    padding: 7px 15px; cursor: pointer;
+    transition: transform .08s ease;
+  }
+  button:hover { border-color: var(--muted); }
+  button:active { transform: translateY(2px); }
+  button:focus-visible { outline: 3px solid var(--used); outline-offset: 2px; }
+  button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .bar .sep { flex: 1 1 auto; }
+  .stepread {
+    font-family: "DM Mono", monospace; font-size: .95rem;
+    font-variant-numeric: tabular-nums; color: var(--muted);
+  }
+  .stepread b { color: var(--ink); }
+
+  /* ---- the two views ---- */
+  .card {
+    background: var(--card); border: 2px solid var(--rule);
+    border-radius: 13px; padding: 18px 20px 20px;
+    box-shadow: var(--shadow); margin-bottom: 20px;
+  }
+  .cap {
+    font-size: .82rem; font-weight: 600; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--muted); margin: 0 0 4px;
+  }
+  .cap-sub { font-size: .95rem; color: var(--ink-2); margin: 0 0 16px; }
+
+  .gridwrap { overflow-x: auto; }
+  .grid { display: grid; grid-template-columns: repeat(8, 40px); gap: 5px; width: max-content; }
+  .cell {
+    width: 40px; height: 40px; border-radius: 7px;
+    background: var(--idle); border: 2px solid transparent;
+    display: flex; align-items: center; justify-content: center;
+    font-family: "DM Mono", monospace; font-size: 11px; color: var(--muted);
+    transition: background .2s ease, color .2s ease, border-color .2s ease, transform .2s ease;
+  }
+  .cell.used  { background: var(--used-bg);  border-color: var(--used);  color: var(--used);  font-weight: 500; }
+  .cell.waste { background: var(--waste-bg); border-color: var(--waste); color: var(--waste); }
+  .cell.now   { background: var(--now); border-color: var(--now); color: #20201D; font-weight: 500; transform: scale(1.1); }
+
+  /* ---- memory strip ---- */
+  .strip { display: flex; gap: 12px; width: max-content; }
+  .line {
+    display: flex; gap: 3px; padding: 6px;
+    border: 2px dashed var(--rule-2); border-radius: 9px;
+    position: relative;
+  }
+  .line.fetched { border-style: solid; border-color: var(--ink-2); }
+  .line-tag {
+    position: absolute; top: -9px; left: 7px;
+    background: var(--card); padding: 0 5px;
+    font-family: "DM Mono", monospace; font-size: 9.5px; color: var(--muted);
+  }
+  .line.fetched .line-tag { color: var(--ink-2); }
+  .mcell {
+    width: 26px; height: 34px; border-radius: 5px;
+    background: var(--idle); border: 2px solid transparent;
+    display: flex; align-items: center; justify-content: center;
+    font-family: "DM Mono", monospace; font-size: 9px; color: var(--muted);
+    transition: background .2s ease, color .2s ease, border-color .2s ease;
+  }
+  .mcell.used  { background: var(--used-bg);  border-color: var(--used);  color: var(--used); }
+  .mcell.waste { background: var(--waste-bg); border-color: var(--waste); color: var(--waste); }
+  .mcell.now   { background: var(--now); border-color: var(--now); color: #20201D; }
+
+  /* ---- scoreboard ---- */
+  .score { display: flex; flex-wrap: wrap; gap: 26px; }
+  .sc .k {
+    display: block; font-size: .74rem; font-weight: 600;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+  }
+  .sc .v {
+    font-family: "DM Mono", monospace; font-size: 1.32rem; font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .sc .v.good { color: var(--used); }
+  .sc .v.bad  { color: var(--waste); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 14px; font-size: .88rem; color: var(--ink-2); }
+  .legend span { display: flex; align-items: center; gap: 7px; }
+  .sw { width: 15px; height: 15px; border-radius: 4px; border: 2px solid; flex: none; }
+  .sw.u { background: var(--used-bg);  border-color: var(--used); }
+  .sw.w { background: var(--waste-bg); border-color: var(--waste); }
+  .sw.n { background: var(--now); border-color: var(--now); }
+
+  table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+  th, td { padding: 9px 10px; text-align: right; border-bottom: 1px solid var(--rule); }
+  th:first-child, td:first-child { text-align: left; }
+  th { font-size: .74rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  td { font-family: "DM Mono", monospace; font-size: .88rem; font-variant-numeric: tabular-nums; }
+  td.good { color: var(--used); font-weight: 500; }
+  td.bad  { color: var(--waste); font-weight: 500; }
+
+  p.note { color: var(--ink-2); max-width: 62ch; }
+  footer { margin-top: 34px; padding-top: 16px; border-top: 1px solid var(--rule); font-size: .85rem; color: var(--muted); }
+
+  @media (prefers-reduced-motion: reduce) { .cell, .mcell, button { transition: none; } }
+</style>
+
+<div class="wrap">
+
+  <h1>Down a Column</h1>
+  <p class="sub">The same 8&times;8 array, read two ways. One of them asks the memory system for eight times as much work — and the array never moves.</p>
+
+  <div class="bar">
+    <button id="b-row" aria-pressed="true">Across a row</button>
+    <button id="b-col" aria-pressed="false">Down a column</button>
+    <span class="sep"></span>
+    <span class="stepread">step <b id="st">0</b> / 8</span>
+    <button id="play">&#9654; Play</button>
+    <button id="step">Step</button>
+    <button id="reset">Reset</button>
+  </div>
+
+  <div class="card">
+    <p class="cap">How you picture it</p>
+    <p class="cap-sub" id="cap-grid">a[row][col] &mdash; 8 rows, 8 columns of <span class="m">double</span></p>
+    <div class="gridwrap"><div class="grid" id="grid"></div></div>
+  </div>
+
+  <div class="card">
+    <p class="cap">Where it actually is</p>
+    <p class="cap-sub">One flat run of memory, row after row. The dashed boxes are 64-byte cache lines &mdash; eight <span class="m">double</span>s each. Memory is fetched a whole line at a time, never one element.</p>
+    <div class="gridwrap"><div class="strip" id="strip"></div></div>
+    <div class="legend">
+      <span><i class="sw n"></i> reading now</span>
+      <span><i class="sw u"></i> fetched and used</span>
+      <span><i class="sw w"></i> fetched and thrown away</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="score">
+      <div class="sc"><span class="k">elements read</span><span class="v" id="v-el">0</span></div>
+      <div class="sc"><span class="k">cache lines fetched</span><span class="v" id="v-ln">0</span></div>
+      <div class="sc"><span class="k">bytes fetched</span><span class="v" id="v-bf">0</span></div>
+      <div class="sc"><span class="k">bytes wasted</span><span class="v" id="v-bw">0</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="cap">After all eight steps</p>
+    <table>
+      <thead><tr><th></th><th>elements</th><th>lines</th><th>bytes fetched</th><th>wasted</th></tr></thead>
+      <tbody>
+        <tr><td>Across a row</td><td>8</td><td class="good">1</td><td class="good">64</td><td class="good">0%</td></tr>
+        <tr><td>Down a column</td><td>8</td><td class="bad">8</td><td class="bad">512</td><td class="bad">87.5%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="note">Same eight numbers, same arithmetic. Reading across a row, one fetched line answers all eight requests. Reading down a column, every element lands in a different line, so eight lines come in and seven eighths of every one is thrown away untouched.</p>
+  <p class="note">That is the whole of loop interchange: swap the two loops so the inner one runs along the direction memory is laid out in. Nothing else about the program changes.</p>
+
+  <footer>
+    In the course examples this is a 4096&times;4096 matrix, where one row is 32&nbsp;KB and a column step jumps that far every time. Measured on a Ryzen AI 9 HX 370: 67.2&nbsp;ms down columns, 10.7&nbsp;ms along rows &mdash; 6.3&times;, with identical results to the last bit.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  var N = 8, LANES = 8, BYTES = 8;   // 8x8 doubles; 8 doubles per 64-byte line
+  var mode = 'row', step = 0, timer = null;
+
+  var grid = document.getElementById('grid');
+  var strip = document.getElementById('strip');
+  var cells = [], mcells = [], lineEls = [];
+
+  for (var r = 0; r < N; r++) {
+    for (var c = 0; c < N; c++) {
+      var e = document.createElement('div');
+      e.className = 'cell';
+      e.textContent = r + ',' + c;
+      grid.appendChild(e);
+      cells.push(e);
+    }
+  }
+  for (var L = 0; L < N; L++) {
+    var box = document.createElement('div');
+    box.className = 'line';
+    var tag = document.createElement('span');
+    tag.className = 'line-tag';
+    tag.textContent = 'line ' + L;
+    box.appendChild(tag);
+    for (var k = 0; k < LANES; k++) {
+      var mc = document.createElement('div');
+      mc.className = 'mcell';
+      mc.textContent = L * LANES + k;
+      box.appendChild(mc);
+      mcells.push(mc);
+    }
+    strip.appendChild(box);
+    lineEls.push(box);
+  }
+
+  // which flat memory index does access number s touch?
+  function idxAt(s) {
+    return mode === 'row' ? (0 * N + s)      // a[0][s]  -> 0,1,2,...
+                          : (s * N + 0);     // a[s][0]  -> 0,8,16,...
+  }
+
+  function render() {
+    var read = [], lines = {};
+    for (var s = 0; s < step; s++) {
+      var ix = idxAt(s);
+      read.push(ix);
+      lines[Math.floor(ix / LANES)] = true;
+    }
+    var cur = step > 0 ? idxAt(step - 1) : -1;
+    var readSet = {};
+    read.forEach(function (x) { readSet[x] = true; });
+
+    for (var i = 0; i < N * N; i++) {
+      var L = Math.floor(i / LANES);
+      var fetched = !!lines[L], isRead = !!readSet[i], isNow = (i === cur);
+      [cells[i], mcells[i]].forEach(function (el) {
+        el.classList.toggle('now', isNow);
+        el.classList.toggle('used', isRead && !isNow);
+        el.classList.toggle('waste', fetched && !isRead && !isNow);
+      });
+    }
+    for (var L2 = 0; L2 < N; L2++) lineEls[L2].classList.toggle('fetched', !!lines[L2]);
+
+    var nl = Object.keys(lines).length;
+    var bf = nl * LANES * BYTES, bu = step * BYTES;
+    document.getElementById('st').textContent = step;
+    document.getElementById('v-el').textContent = step;
+    var ln = document.getElementById('v-ln');
+    ln.textContent = nl;
+    ln.className = 'v ' + (step === 0 ? '' : (nl === 1 ? 'good' : 'bad'));
+    document.getElementById('v-bf').textContent = bf;
+    var bw = document.getElementById('v-bw');
+    bw.textContent = (bf - bu) + (bf ? '  (' + Math.round((bf - bu) / bf * 100) + '%)' : '');
+    bw.className = 'v ' + (step === 0 ? '' : (bf - bu === 0 ? 'good' : 'bad'));
+
+    document.getElementById('cap-grid').innerHTML = mode === 'row'
+      ? 'Reading <span class="m">a[0][0..7]</span> &mdash; across one row'
+      : 'Reading <span class="m">a[0..7][0]</span> &mdash; down one column';
+  }
+
+  function advance() { if (step < N) step++; render(); if (step >= N) stop(); }
+  function stop() {
+    if (timer) { clearInterval(timer); timer = null; }
+    document.getElementById('play').innerHTML = '&#9654; Play';
+  }
+  function start() {
+    if (step >= N) { step = 0; render(); }
+    timer = setInterval(advance, 620);
+    document.getElementById('play').innerHTML = '&#10074;&#10074; Pause';
+  }
+  function setMode(m) {
+    stop(); mode = m; step = 0;
+    document.getElementById('b-row').setAttribute('aria-pressed', String(m === 'row'));
+    document.getElementById('b-col').setAttribute('aria-pressed', String(m === 'col'));
+    render();
+  }
+
+  document.getElementById('b-row').addEventListener('click', function () { setMode('row'); });
+  document.getElementById('b-col').addEventListener('click', function () { setMode('col'); });
+  document.getElementById('play').addEventListener('click', function () { timer ? stop() : start(); });
+  document.getElementById('step').addEventListener('click', function () { stop(); advance(); });
+  document.getElementById('reset').addEventListener('click', function () { stop(); step = 0; render(); });
+
+  render();
+})();
+</script>
+
+</body>
+</html>

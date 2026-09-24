@@ -24,47 +24,17 @@
  *
  * Build: gcc -O3 -march=native -o stride_bandwidth stride_bandwidth.c
  */
-#define _GNU_SOURCE
+#include "harness.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include <time.h>
-#include <sched.h>
 #include <sys/mman.h>
-
-static double now_s(void) {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ts.tv_sec + 1e-9 * ts.tv_nsec;
-}
-
-static void pin(int cpu) {
-    cpu_set_t set; CPU_ZERO(&set); CPU_SET(cpu, &set);
-    sched_setaffinity(0, sizeof(set), &set);
-}
-
-static double measure_ghz(double seconds) {
-    long n = 100L * 1000 * 1000;
-    for (;;) {
-        uint64_t x = 0;
-        double t0 = now_s();
-        for (long i = 0; i < n; i++) __asm__ volatile ("addq $1, %0" : "+r"(x));
-        double dt = now_s() - t0;
-        __asm__ volatile ("" :: "r"(x));
-        if (dt >= seconds) return n / dt / 1e9;
-        n *= 2;
-    }
-}
 
 volatile uint64_t sink;
 
 int main(int argc, char **argv) {
     int cpu = (argc > 1) ? atoi(argv[1]) : 0;
-    pin(cpu);
-    measure_ghz(1.0);                        /* boost the core before measuring */
-    double ghz = measure_ghz(0.1);
-    fprintf(stderr, "cpu%d at %.2f GHz\n", cpu, ghz);
+    harness_begin(cpu, "stride_bandwidth");
 
     /* ---------------- Part A: stride sweep ---------------- */
     const size_t N = 128UL << 20;            /* 128 MB: far beyond L3 */

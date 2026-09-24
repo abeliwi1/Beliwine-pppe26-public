@@ -18,22 +18,17 @@
  *
  * Feeds why_1024_is_slow.html.
  */
-#define _GNU_SOURCE
+#include "harness.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
-#include <sched.h>
 
 #define N 1024
-
-static double now_s(void){ struct timespec t; clock_gettime(CLOCK_MONOTONIC,&t);
-                           return t.tv_sec + 1e-9*t.tv_nsec; }
 
 static long gcd(long a,long b){ while(b){ long t=a%b; a=b; b=t; } return a; }
 
 int main(void){
-    cpu_set_t s; CPU_ZERO(&s); CPU_SET(0,&s); sched_setaffinity(0,sizeof s,&s);
+    harness_begin(0, "set_conflict");
 
     int ldas[] = {1024, 1152, 1088, 1056, 1040, 1032, 1025};
     printf("%6s %10s %8s %8s %10s   %s\n",

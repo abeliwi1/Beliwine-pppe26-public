@@ -18,20 +18,12 @@
  *
  * Build: gcc -O2 -o storage_latency storage_latency.c
  */
-#define _GNU_SOURCE
+#include "harness.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include <time.h>
 #include <fcntl.h>
 #include <unistd.h>
-
-static double now_s(void) {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ts.tv_sec + 1e-9 * ts.tv_nsec;
-}
 
 static uint64_t rng_state = 987654321987654321ULL;
 static uint64_t rng(void) {
@@ -42,6 +34,8 @@ static uint64_t rng(void) {
 int main(int argc, char **argv) {
     if (argc < 2) { fprintf(stderr, "usage: %s <path> [size_mb]\n", argv[0]); return 1; }
     const char *path = argv[1];
+    harness_begin(0, "storage_latency");   /* the device is the subject, but a
+                                              migrating submitter adds jitter */
     size_t size_mb = (argc > 2) ? strtoul(argv[2], NULL, 10) : 2048;
     size_t bytes = size_mb << 20;
 

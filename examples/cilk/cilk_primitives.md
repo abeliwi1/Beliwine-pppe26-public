@@ -41,6 +41,6 @@ CILK_NWORKERS=8 ./fib 40      # 8 workers
 
 ## See also
 
-[../openmp/cilk_prefix_sum.c](../openmp/cilk_prefix_sum.c) — a fuller example using
+[../openmp/omp_scheduling_prefix_sum/cilk_prefix_sum.c](../openmp/omp_scheduling_prefix_sum/cilk_prefix_sum.c) — a fuller example using
 `cilk_for` for a three-pass parallel prefix sum, including a work-stealing-aware
 software barrier.

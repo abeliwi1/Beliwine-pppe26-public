@@ -32,39 +32,21 @@
  *
  * Build: gcc -O2 -o tlb_walk tlb_walk.c
  */
-#define _GNU_SOURCE
+#include "harness.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include <time.h>
-#include <sched.h>
 #include <sys/mman.h>
 
 #define PAGE 4096
 #define LINE 64
-
-static double now_s(void){ struct timespec t; clock_gettime(CLOCK_MONOTONIC,&t);
-                           return t.tv_sec + 1e-9*t.tv_nsec; }
-
-static double measure_ghz(double sec){
-    long n = 100L*1000*1000;
-    for(;;){ uint64_t x=0; double t0=now_s();
-        for(long i=0;i<n;i++) __asm__ volatile("addq $1, %0":"+r"(x));
-        double dt=now_s()-t0; __asm__ volatile(""::"r"(x));
-        if(dt>=sec) return n/dt/1e9;
-        n*=2;
-    }
-}
 
 static uint64_t rs = 88172645463325252ULL;
 static uint64_t rng(void){ rs^=rs<<13; rs^=rs>>7; rs^=rs<<17; return rs; }
 
 int main(int argc, char **argv){
     int cpu = (argc>1)?atoi(argv[1]):0;
-    cpu_set_t s; CPU_ZERO(&s); CPU_SET(cpu,&s); sched_setaffinity(0,sizeof s,&s);
-    measure_ghz(1.0);
-    fprintf(stderr,"cpu%d warmed, clock %.2f GHz\n", cpu, measure_ghz(0.1));
+    harness_begin(cpu, "tlb_walk");
 
     printf("pages,span_kb,data_kb,ns_4k,ns_2m,ratio\n");
 

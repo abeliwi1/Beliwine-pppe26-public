@@ -13,10 +13,11 @@
  *   huge    -- random, on 2MB transparent huge pages: removes TLB misses
  *
  * Two measurement details matter on a mobile part like Strix Point:
- *   1. The core clock moves (3.5 GHz cold, 5.1 GHz boosted, less when hot), so
- *      the clock is re-measured immediately before every single data point with
- *      a serial dependent-add chain.  A clock measured once at startup is stale
- *      by the end of the run and silently corrupts every cycle count.
+ *   1. The core clock moves (3.5 GHz cold, 5.1 GHz boosted, less when hot).
+ *      The core is warmed with high-IPC work before the run, and every data
+ *      point is bracketed by a clock reading at each end -- see harness.h.
+ *      The cycle column uses the mean and the csv carries the drift, so a
+ *      moving clock is visible instead of silently corrupting the result.
  *   2. Modes are interleaved within each size, so thermal drift affects all
  *      three modes at a given size equally.
  *
@@ -24,45 +25,12 @@
  *
  * Build: gcc -O2 -o cache_latency cache_latency.c
  */
-#define _GNU_SOURCE
-#include <stdio.h>
+#include "harness.h"
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include <time.h>
-#include <sched.h>
 #include <sys/mman.h>
 
 #define LINE 64
-
-static double now_s(void) {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ts.tv_sec + 1e-9 * ts.tv_nsec;
-}
-
-/* Core clock from a serial dependent add chain: each addq depends on the
- * previous one, so the chain retires at exactly one per cycle. */
-static double measure_ghz(double seconds) {
-    long n = 100L * 1000 * 1000;
-    for (;;) {
-        uint64_t x = 0;
-        double t0 = now_s();
-        for (long i = 0; i < n; i++)
-            __asm__ volatile ("addq $1, %0" : "+r"(x));
-        double dt = now_s() - t0;
-        __asm__ volatile ("" :: "r"(x));
-        if (dt >= seconds) return n / dt / 1e9;
-        n *= 2;
-    }
-}
-
-static void pin(int cpu) {
-    cpu_set_t set;
-    CPU_ZERO(&set);
-    CPU_SET(cpu, &set);
-    sched_setaffinity(0, sizeof(set), &set);
-}
 
 static uint64_t rng_state = 88172645463325252ULL;
 static uint64_t rng(void) {
@@ -91,8 +59,12 @@ static double chase(char *buf, size_t n, long accesses) {
     void **p = (void **)buf;
     for (size_t i = 0; i < n; i++) p = (void **)*p;   /* warm every line */
 
+    /* best-of-N: contention can only ever make a pass slower, so the minimum
+     * is the robust estimator.  More passes at the DRAM sizes, where another
+     * process touching memory costs far more than it does in cache. */
+    int reps = (n * 64 > (16UL << 20)) ? 7 : 3;
     double best = 1e30;
-    for (int rep = 0; rep < 3; rep++) {
+    for (int rep = 0; rep < reps; rep++) {
         double t0 = now_s();
         for (long i = 0; i < accesses; i++) p = (void **)*p;
         double ns = (now_s() - t0) * 1e9 / accesses;
@@ -123,15 +95,9 @@ static long anon_huge_kb(void *addr) {
 
 int main(int argc, char **argv) {
     int cpu = (argc > 1) ? atoi(argv[1]) : 0;
-    pin(cpu);
+    harness_begin(cpu, "cache_latency");
 
-    /* Spin for a second so the core is out of its low-power state before the
-     * first data point; otherwise 8KB is measured at 3.5 GHz and everything
-     * after it at 5.1 GHz. */
-    fprintf(stderr, "warming up core %d...\n", cpu);
-    measure_ghz(1.0);
-
-    printf("mode,bytes,ns,cycles,ghz\n");
+    printf("mode,bytes,ns,cycles,ghz,drift_pct\n");
 
     size_t sizes[64]; int nsizes = 0;
     for (size_t s = 8UL << 10; s <= 256UL << 20; s = s * 3 / 2)
@@ -158,10 +124,19 @@ int main(int argc, char **argv) {
             if (bytes > (32UL << 20)) accesses = 4L * 1000 * 1000;
             if ((size_t)accesses < 4 * n) accesses = 4 * n;
 
-            double ghz = measure_ghz(0.05);   /* right before, not once at startup */
+            /* A reading at each end, not one before: the cycle count is only
+             * as good as the assumption that the clock held across the chase. */
+            clock_window w;
+            w.before = measure_ghz(0.05);
             double ns = chase(buf, n, accesses);
-            printf("%s,%zu,%.3f,%.2f,%.3f\n", name, bytes, ns, ns * ghz, ghz);
+            w.after  = measure_ghz(0.05);
+            double ghz = cw_mean(w);
+            printf("%s,%zu,%.3f,%.2f,%.3f,%+.1f\n",
+                   name, bytes, ns, ns * ghz, ghz, cw_drift(w));
             fflush(stdout);
+            if (cw_drift(w) > 3.0 || cw_drift(w) < -3.0)
+                fprintf(stderr, "  clock moved %+.1f%% across %s/%zu KB\n",
+                        cw_drift(w), name, bytes >> 10);
 
             if (m == 2 && bytes >= (4UL << 20))
                 fprintf(stderr, "  %zu MB: AnonHugePages=%ld kB\n",

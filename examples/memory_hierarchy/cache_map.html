@@ -20,6 +20,7 @@ ul,ol{margin:0}
 img,svg{max-width:100%}
 
 :root{
+  color-scheme:light;   /* this page is light by design */
   --bg:#EEF1F5;
   --surface:#FFFFFF;
   --sunken:#E3E8EE;
@@ -35,42 +36,6 @@ img,svg{max-width:100%}
   --cost:#9E2C4A;
   --cost-soft:#F3DAE1;
   --shadow:0 1px 2px rgba(20,27,36,.06), 0 8px 24px rgba(20,27,36,.06);
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --bg:#0D1218;
-    --surface:#151D26;
-    --sunken:#101820;
-    --ink:#E7EDF4;
-    --ink-2:#9FAEC0;
-    --ink-3:#6E7E92;
-    --rule:#2B3743;
-    --grid:#222D38;
-    --zen5:#E0A05C;
-    --zen5-soft:#2A2018;
-    --zen5c:#4FBFB7;
-    --zen5c-soft:#12262A;
-    --cost:#E9758F;
-    --cost-soft:#2B1720;
-    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
-  }
-}
-:root[data-theme="dark"]{
-  --bg:#0D1218;
-  --surface:#151D26;
-  --sunken:#101820;
-  --ink:#E7EDF4;
-  --ink-2:#9FAEC0;
-  --ink-3:#6E7E92;
-  --rule:#2B3743;
-  --grid:#222D38;
-  --zen5:#E0A05C;
-  --zen5-soft:#2A2018;
-  --zen5c:#4FBFB7;
-  --zen5c-soft:#12262A;
-  --cost:#E9758F;
-  --cost-soft:#2B1720;
-  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
 }
 
 *{box-sizing:border-box}
@@ -301,7 +266,7 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
     <figure>
       <div class="canvas">
         <svg viewBox="0 0 1160 545" role="img"
-             aria-label="Floorplan of the Ryzen AI 9 HX 370. Complex zero holds four Zen 5 cores over a 16 megabyte L3, giving 4 megabytes per core. Complex one holds eight Zen 5c cores over an 8 megabyte L3, giving 1 megabyte per core. The two complexes are joined by the Infinity Fabric at 167 nanoseconds per cache-line handoff. Both miss to shared LPDDR5X at 104 nanoseconds, and below that an NVMe SSD at 45.8 microseconds.">
+             aria-label="Floorplan of the Ryzen AI 9 HX 370. Complex zero holds four Zen 5 cores over a 16 megabyte L3, giving 4 megabytes per core. Complex one holds eight Zen 5c cores over an 8 megabyte L3, giving 1 megabyte per core. The two complexes are joined by the Infinity Fabric at about 100 nanoseconds per cache-line handoff. Both miss to shared LPDDR5X at 103 nanoseconds, and below that an NVMe SSD at 43.3 microseconds.">
           <defs>
             <marker id="ar-ink" viewBox="0 0 10 10" refX="9" refY="5"
                     markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -314,19 +279,19 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
           </defs>
 
           <!-- ---------- left gutter: what each tier costs ---------- -->
-          <text x="140" y="127" text-anchor="end" class="mono sv-ink w500">L1d hit &nbsp;4 cyc &middot; 0.78 ns</text>
+          <text x="140" y="127" text-anchor="end" class="mono sv-ink w500">L1d hit &nbsp;4 cyc &middot; 0.79 ns</text>
           <line x1="146" y1="123" x2="160" y2="123" class="st-grid" stroke-width="1"/>
 
           <text x="140" y="159" text-anchor="end" class="mono sv-ink w500">L2 hit &nbsp;14 cyc &middot; 2.73 ns</text>
           <line x1="146" y1="155" x2="160" y2="155" class="st-grid" stroke-width="1"/>
 
-          <text x="140" y="236" text-anchor="end" class="mono sv-ink w500">L3 hit &nbsp;27&ndash;60 cyc</text>
+          <text x="140" y="236" text-anchor="end" class="mono sv-ink w500">L3 hit &nbsp;27&ndash;70 cyc</text>
           <line x1="146" y1="232" x2="160" y2="232" class="st-grid" stroke-width="1"/>
 
-          <text x="140" y="366" text-anchor="end" class="mono sv-ink w500">DRAM &nbsp;530 cyc &middot; 104 ns</text>
+          <text x="140" y="366" text-anchor="end" class="mono sv-ink w500">DRAM &nbsp;507 cyc &middot; 103 ns</text>
           <line x1="146" y1="362" x2="160" y2="362" class="st-grid" stroke-width="1"/>
 
-          <text x="140" y="474" text-anchor="end" class="mono sv-ink w500">SSD &nbsp;232,000 cyc &middot; 45.8 &micro;s</text>
+          <text x="140" y="474" text-anchor="end" class="mono sv-ink w500">SSD &nbsp;220,000 cyc &middot; 43.3 &micro;s</text>
           <line x1="146" y1="470" x2="160" y2="470" class="st-grid" stroke-width="1"/>
 
           <!-- ================= CCX 0 ================= -->
@@ -471,7 +436,7 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
           <line x1="582" y1="228" x2="698" y2="228" class="st-cost" stroke-width="2"
                 marker-start="url(#ar-cost)" marker-end="url(#ar-cost)"/>
           <text x="640" y="208" text-anchor="middle" class="mono sv-cost w600">Infinity Fabric</text>
-          <text x="640" y="250" text-anchor="middle" class="mono-sm sv-cost">167 ns / handoff</text>
+          <text x="640" y="250" text-anchor="middle" class="mono-sm sv-cost">~100 ns / handoff</text>
 
           <!-- ---------- DRAM ---------- -->
           <line x1="375" y1="260" x2="375" y2="328" class="st-dim" stroke-width="1.25" marker-end="url(#ar-ink)"/>
@@ -482,19 +447,19 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
           <rect x="160" y="330" width="960" height="64" rx="2" class="fill-sunken"/>
           <rect x="160" y="330" width="960" height="64" rx="2" class="st-rule" stroke-width="1.25"/>
           <text x="180" y="356" class="lbl sv-ink w600">LPDDR5X &nbsp;&middot;&nbsp; 14 GB &nbsp;&middot;&nbsp; shared by all 12 cores</text>
-          <text x="180" y="376" class="mono-sm sv-dim">38.5 GB/s with one thread &mdash; and 38.8 GB/s with twelve</text>
-          <text x="1100" y="356" text-anchor="end" class="mono sv-ink w500">104 ns</text>
-          <text x="1100" y="376" text-anchor="end" class="mono-sm sv-dim">530 cycles</text>
+          <text x="180" y="376" class="mono-sm sv-dim">37.5 GB/s with one thread &mdash; and 38.8 GB/s with twelve</text>
+          <text x="1100" y="356" text-anchor="end" class="mono sv-ink w500">103 ns</text>
+          <text x="1100" y="376" text-anchor="end" class="mono-sm sv-dim">507 cycles</text>
 
           <!-- ---------- SSD ---------- -->
           <line x1="640" y1="394" x2="640" y2="438" class="st-dim" stroke-width="1.25" marker-end="url(#ar-ink)"/>
-          <text x="650" y="420" class="mono-sm sv-dim">page fault &middot; 440&times; DRAM</text>
+          <text x="650" y="420" class="mono-sm sv-dim">page fault &middot; 420&times; DRAM</text>
 
           <rect x="160" y="440" width="960" height="56" rx="2" class="fill-sunken"/>
           <rect x="160" y="440" width="960" height="56" rx="2" class="st-rule" stroke-width="1.25"/>
           <text x="180" y="464" class="lbl sv-ink w600">NVMe SSD &nbsp;&middot;&nbsp; 931 GB</text>
-          <text x="180" y="482" class="mono-sm sv-dim">2.95 GB/s sequential, O_DIRECT</text>
-          <text x="1100" y="464" text-anchor="end" class="mono sv-ink w500">45.8 &micro;s</text>
+          <text x="180" y="482" class="mono-sm sv-dim">3.14 GB/s sequential, O_DIRECT</text>
+          <text x="1100" y="464" text-anchor="end" class="mono sv-ink w500">43.3 &micro;s</text>
           <text x="1100" y="482" text-anchor="end" class="mono-sm sv-dim">random 4 KB read</text>
         </svg>
       </div>
@@ -520,7 +485,7 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
     <figure>
       <div class="canvas">
         <svg viewBox="0 0 1040 250" role="img"
-             aria-label="Logarithmic latency scale from 0.1 nanoseconds to 100 microseconds, marking a register at 0.2 nanoseconds, L1 at 0.78, L2 at 2.73, L3 at 11.9, DRAM at 104 nanoseconds, and the SSD at 45.8 microseconds. Rescaled so an L1 hit is one second, L2 is 3.5 seconds, L3 is 15 seconds, DRAM is 2.2 minutes and the SSD is 16.3 hours.">
+             aria-label="Logarithmic latency scale from 0.1 nanoseconds to 100 microseconds, marking a register at 0.2 nanoseconds, L1 at 0.79, L2 at 2.73, L3 at 14.0, DRAM at 103 nanoseconds, and the SSD at 43.3 microseconds. Rescaled so an L1 hit is one second, L2 is 3.5 seconds, L3 is 18 seconds, DRAM is 2.2 minutes and the SSD is 15.3 hours.">
           <!-- axis -->
           <line x1="70" y1="120" x2="990" y2="120" class="st-rule" stroke-width="1.25"/>
 
@@ -550,7 +515,7 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
           <line x1="201" y1="120" x2="201" y2="52" class="st-z5" stroke-width="1.5"/>
           <circle cx="201" cy="120" r="4.5" class="sv-z5"/>
           <text x="201" y="44" text-anchor="middle" class="lbl sv-ink w600">L1d</text>
-          <text x="201" y="32" text-anchor="middle" class="mono-sm sv-z5">0.78 ns</text>
+          <text x="201" y="32" text-anchor="middle" class="mono-sm sv-z5">0.79 ns</text>
 
           <!-- L2 -->
           <line x1="281" y1="120" x2="281" y2="86" class="st-z5" stroke-width="1.5"/>
@@ -562,19 +527,19 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
           <line x1="375" y1="120" x2="375" y2="52" class="st-z5" stroke-width="1.5"/>
           <circle cx="375" cy="120" r="4.5" class="sv-z5"/>
           <text x="375" y="44" text-anchor="middle" class="lbl sv-ink w600">L3</text>
-          <text x="375" y="32" text-anchor="middle" class="mono-sm sv-z5">11.9 ns</text>
+          <text x="375" y="32" text-anchor="middle" class="mono-sm sv-z5">14.0 ns</text>
 
           <!-- DRAM -->
           <line x1="513" y1="120" x2="513" y2="86" class="st-cost" stroke-width="1.5"/>
           <circle cx="513" cy="120" r="4.5" class="sv-cost"/>
           <text x="513" y="78" text-anchor="middle" class="lbl sv-ink w600">DRAM</text>
-          <text x="513" y="66" text-anchor="middle" class="mono-sm sv-cost">104 ns</text>
+          <text x="513" y="66" text-anchor="middle" class="mono-sm sv-cost">103 ns</text>
 
           <!-- SSD -->
           <line x1="901" y1="120" x2="901" y2="52" class="st-cost" stroke-width="1.5"/>
           <circle cx="901" cy="120" r="4.5" class="sv-cost"/>
           <text x="901" y="44" text-anchor="middle" class="lbl sv-ink w600">NVMe SSD</text>
-          <text x="901" y="32" text-anchor="middle" class="mono-sm sv-cost">45.8 &micro;s</text>
+          <text x="901" y="32" text-anchor="middle" class="mono-sm sv-cost">43.3 &micro;s</text>
 
           <!-- human scale row -->
           <line x1="70" y1="186" x2="990" y2="186" class="st-grid" stroke-width="1" stroke-dasharray="3 4"/>
@@ -583,9 +548,9 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
           <text x="113" y="206" text-anchor="middle" class="mono-sm sv-faint">0.25 s</text>
           <text x="201" y="206" text-anchor="middle" class="mono sv-ink w500">1 s</text>
           <text x="281" y="206" text-anchor="middle" class="mono sv-dim">3.5 s</text>
-          <text x="375" y="206" text-anchor="middle" class="mono sv-dim">15 s</text>
+          <text x="375" y="206" text-anchor="middle" class="mono sv-dim">18 s</text>
           <text x="513" y="206" text-anchor="middle" class="mono sv-cost w500">2.2 min</text>
-          <text x="901" y="206" text-anchor="middle" class="mono sv-cost w500">16.3 h</text>
+          <text x="901" y="206" text-anchor="middle" class="mono sv-cost w500">15.3 h</text>
 
           <text x="70" y="236" class="mono-sm sv-faint">
             Random pointer chase, one dependent access at a time &mdash; nothing the prefetcher can hide.
@@ -594,7 +559,7 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
       </div>
       <figcaption>
         <b>Two minutes versus one second.</b> The gap that matters is not L1 to L2, it is cache to
-        DRAM: 133 L1 hits, or roughly 500 instructions this core could have retired instead of
+        DRAM: 130 L1 hits, or roughly 500 instructions this core could have retired instead of
         waiting. Every optimization on the parent notebook exists to keep accesses to the left of
         that DRAM mark.
       </figcaption>
@@ -641,13 +606,13 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
           <line x1="120" y1="222.3" x2="343.8" y2="40" class="st-dim" stroke-width="1.5"
                 stroke-dasharray="6 4"/>
           <text x="352" y="52" class="mono-sm sv-dim w500">perfect scaling</text>
-          <text x="352" y="66" class="lbl-sm sv-faint">would reach 462 GB/s at 12 threads</text>
+          <text x="352" y="66" class="lbl-sm sv-faint">would reach 450 GB/s at 12 threads</text>
 
           <!-- one-thread reference -->
           <line x1="120" y1="222.3" x2="930" y2="222.3" class="st-z5" stroke-width="1"
                 stroke-dasharray="3 4"/>
           <text x="936" y="215" class="mono-sm sv-z5">one thread</text>
-          <text x="936" y="227" class="mono-sm sv-z5">38.5 GB/s</text>
+          <text x="936" y="227" class="mono-sm sv-z5">37.5 GB/s</text>
 
           <!-- Zen 5c boundary -->
           <line x1="368" y1="240" x2="368" y2="280" class="st-grid" stroke-width="1.25"/>
@@ -673,7 +638,7 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
           <rect x="700" y="112" width="228" height="44" rx="2" class="fill-cost"/>
           <rect x="700" y="112" width="228" height="44" rx="2" class="st-cost" stroke-width="1.25"/>
           <text x="814" y="131" text-anchor="middle" class="lbl sv-ink w600">best of all thread counts:</text>
-          <text x="814" y="147" text-anchor="middle" class="mono sv-cost w600">38.8 GB/s &mdash; 1.01&times; one thread</text>
+          <text x="814" y="147" text-anchor="middle" class="mono sv-cost w600">38.8 GB/s &mdash; 1.03&times; one thread</text>
 
           <!-- x labels -->
           <g class="mono-sm sv-faint">
@@ -699,7 +664,7 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
         </svg>
       </div>
       <figcaption>
-        <b>Twelve times the cores, 1.01&times; the bandwidth.</b> The curve is not merely
+        <b>Twelve times the cores, 1.03&times; the bandwidth.</b> The curve is not merely
         sublinear &mdash; it is flat, and past ten threads it bends <em>down</em>, because the extra
         threads are Zen 5c cores contending for a memory controller that was already saturated by
         the first one.
@@ -717,13 +682,13 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
       core has its own L1 and L2, or when the work is genuinely compute-bound. The dividing line is
       the machine&rsquo;s balance: a Zen 5 core retires two 512-bit FMAs per cycle, so
       <code>2 &times; 8 doubles &times; 2 flops = 32 flops/cycle</code>, or 162 GFLOP/s at 5.07 GHz,
-      against 38.5 GB/s of DRAM &mdash; 4.8 billion doubles per second.
+      against 37.5 GB/s of DRAM &mdash; 4.7 billion doubles per second.
     </p>
     <div class="note warn">
       <h3>About 34 flops per double</h3>
       <p>
-        <code>162 GFLOP/s &divide; 4.8 Gdouble/s &asymp; 34</code>. If your loop does fewer than
-        roughly 34 floating-point operations per element it reads from DRAM, it is not a computation
+        <code>162 GFLOP/s &divide; 4.7 Gdouble/s &asymp; 35</code>. If your loop does fewer than
+        roughly 35 floating-point operations per element it reads from DRAM, it is not a computation
         &mdash; it is a memory system with some arithmetic attached, and this flat line is your
         ceiling. Dot products, <code>saxpy</code>, most elementwise array work and every graph
         traversal sit far below that line. Dense matrix multiply is one of the few common kernels
@@ -744,7 +709,7 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
     <figure>
       <div class="canvas">
         <svg viewBox="0 0 1040 260" role="img"
-             aria-label="Four cases for handing one cache line between two threads. Between SMT siblings on one core the line stays in L1 and costs 18 nanoseconds. Between two Zen 5 cores it travels through the shared L3 and costs 20 nanoseconds. Between two Zen 5c cores, 30 nanoseconds. Between cores in different complexes it crosses the Infinity Fabric and costs 167 nanoseconds.">
+             aria-label="Four cases for handing one cache line between two threads. Between SMT siblings on one core the line stays in L1 and costs 21 nanoseconds. Between two Zen 5 cores it travels through the shared L3 and costs 20 nanoseconds. Between two Zen 5c cores, 31 nanoseconds. Between cores in different complexes it crosses the Infinity Fabric and costs about 100 nanoseconds.">
           <defs>
             <marker id="ar2-ink" viewBox="0 0 10 10" refX="9" refY="5"
                     markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
@@ -767,7 +732,7 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
           <line x1="112" y1="60" x2="124" y2="60" class="st-dim" stroke-width="1.25"
                 marker-start="url(#ar2-ink)" marker-end="url(#ar2-ink)"/>
           <text x="118" y="92" text-anchor="middle" class="mono-sm sv-faint">shared L1</text>
-          <text x="118" y="152" text-anchor="middle" class="mono-lg sv-ink">18 ns</text>
+          <text x="118" y="152" text-anchor="middle" class="mono-lg sv-ink">21 ns</text>
           <text x="118" y="172" text-anchor="middle" class="lbl-sm sv-dim">line never leaves the core</text>
 
           <!-- ---- B: same complex, Zen 5 ---- -->
@@ -823,19 +788,19 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
           <rect x="852" y="128" width="140" height="20" rx="2" class="fill-cost"/>
           <rect x="852" y="128" width="140" height="20" rx="2" class="st-cost" stroke-width="1.25"/>
           <text x="922" y="142" text-anchor="middle" class="mono-sm sv-cost">Infinity Fabric</text>
-          <text x="922" y="176" text-anchor="middle" class="mono-lg sv-cost">167 ns</text>
-          <text x="922" y="196" text-anchor="middle" class="lbl-sm sv-cost">slower than missing to DRAM</text>
+          <text x="922" y="176" text-anchor="middle" class="mono-lg sv-cost">100 ns</text>
+          <text x="922" y="196" text-anchor="middle" class="lbl-sm sv-cost">about the cost of a DRAM miss</text>
 
           <line x1="48" y1="222" x2="992" y2="222" class="st-grid" stroke-width="1"/>
           <text x="48" y="242" class="mono-sm sv-faint">
             Ping-pong of one 64-byte line, 200,000 exchanges, median of five runs, threads pinned.
-            Cross-complex handoffs also scatter between 67 and 171 ns run to run; the others repeat to within a few percent.
+            Cross-complex handoffs also scatter between 64 and 140 ns run to run; the others repeat to within a few percent.
           </text>
         </svg>
       </div>
       <figcaption>
         <b>Placement is an 8&times; decision you never wrote down.</b> The same two-thread program
-        pays 20&nbsp;ns or 167&nbsp;ns per handoff depending on which cores the scheduler picked.
+        pays 20&nbsp;ns or 100&nbsp;ns per handoff depending on which cores the scheduler picked.
         Worse, the expensive case is also the unstable one, and a barrier waits for the tail.
         None of these match the latency scale above &mdash; &sect;05 takes them apart.
       </figcaption>
@@ -850,7 +815,7 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
     <figure>
       <div class="canvas">
         <svg viewBox="0 0 1040 566" role="img"
-             aria-label="Matrix of coherence latency between every pair of the twelve physical cores. The four Zen 5 cores of CCX 0 exchange a line in about 20 nanoseconds and the eight Zen 5c cores of CCX 1 in about 30. Every pair that crosses between the two complexes costs about 167 nanoseconds, except pairs involving core 4, which cost 76 to 155.">
+             aria-label="Matrix of coherence latency between every pair of the twelve physical cores. The four Zen 5 cores of CCX 0 exchange a line in about 20 nanoseconds and the eight Zen 5c cores of CCX 1 in about 30. Every pair that crosses between the two complexes costs 64 to 140 nanoseconds, around 100 on average.">
           <text x="96" y="40" class="cap sv-z5">CCX 0 &middot; Zen 5</text>
           <line x1="96" y1="48" x2="232" y2="48" class="st-z5" stroke-width="1.25"/>
           <text x="232" y="40" class="cap sv-z5c">CCX 1 &middot; Zen 5c</text>
@@ -881,294 +846,291 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
           <text x="86" y="470" text-anchor="end" class="mono-sm sv-z5c">11</text>
           <text x="86" y="60" text-anchor="end" class="mono-sm sv-faint">core</text>
           <rect x="96" y="76" width="34" height="34" class="fill-sunken"/>
-          <text x="113" y="92" text-anchor="middle" class="mono-sm sv-dim">18</text>
-          <text x="113" y="103" text-anchor="middle" class="mono-sm sv-faint" font-size="7.5">SMT</text>
-          <rect x="130" y="76" width="34" height="34" class="fill-cost" opacity="0.147"/>
+          <text x="113" y="96" text-anchor="middle" class="mono-sm sv-faint">&middot;</text>
+          <rect x="130" y="76" width="34" height="34" class="fill-cost" opacity="0.266"/>
           <text x="147" y="96" text-anchor="middle" class="mono-sm sv-ink">19</text>
-          <rect x="164" y="76" width="34" height="34" class="fill-cost" opacity="0.182"/>
-          <text x="181" y="96" text-anchor="middle" class="mono-sm sv-ink">21</text>
-          <rect x="198" y="76" width="34" height="34" class="fill-cost" opacity="0.183"/>
-          <text x="215" y="96" text-anchor="middle" class="mono-sm sv-ink">21</text>
-          <rect x="232" y="76" width="34" height="34" class="fill-cost" opacity="0.638"/>
-          <text x="249" y="96" text-anchor="middle" class="mono-sm fill-surface">83</text>
-          <rect x="266" y="76" width="34" height="34" class="fill-cost" opacity="0.988"/>
-          <text x="283" y="96" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="300" y="76" width="34" height="34" class="fill-cost" opacity="0.988"/>
-          <text x="317" y="96" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="334" y="76" width="34" height="34" class="fill-cost" opacity="0.986"/>
-          <text x="351" y="96" text-anchor="middle" class="mono-sm fill-surface">167</text>
-          <rect x="368" y="76" width="34" height="34" class="fill-cost" opacity="0.993"/>
-          <text x="385" y="96" text-anchor="middle" class="mono-sm fill-surface">169</text>
-          <rect x="402" y="76" width="34" height="34" class="fill-cost" opacity="0.989"/>
-          <text x="419" y="96" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="436" y="76" width="34" height="34" class="fill-cost" opacity="0.996"/>
-          <text x="453" y="96" text-anchor="middle" class="mono-sm fill-surface">170</text>
-          <rect x="470" y="76" width="34" height="34" class="fill-cost" opacity="0.992"/>
-          <text x="487" y="96" text-anchor="middle" class="mono-sm fill-surface">169</text>
-          <rect x="96" y="110" width="34" height="34" class="fill-cost" opacity="0.147"/>
+          <rect x="164" y="76" width="34" height="34" class="fill-cost" opacity="0.274"/>
+          <text x="181" y="96" text-anchor="middle" class="mono-sm sv-ink">20</text>
+          <rect x="198" y="76" width="34" height="34" class="fill-cost" opacity="0.270"/>
+          <text x="215" y="96" text-anchor="middle" class="mono-sm sv-ink">20</text>
+          <rect x="232" y="76" width="34" height="34" class="fill-cost" opacity="0.591"/>
+          <text x="249" y="96" text-anchor="middle" class="mono-sm sv-ink">73</text>
+          <rect x="266" y="76" width="34" height="34" class="fill-cost" opacity="0.778"/>
+          <text x="283" y="96" text-anchor="middle" class="mono-sm fill-surface">104</text>
+          <rect x="300" y="76" width="34" height="34" class="fill-cost" opacity="0.996"/>
+          <text x="317" y="96" text-anchor="middle" class="mono-sm fill-surface">140</text>
+          <rect x="334" y="76" width="34" height="34" class="fill-cost" opacity="0.622"/>
+          <text x="351" y="96" text-anchor="middle" class="mono-sm fill-surface">78</text>
+          <rect x="368" y="76" width="34" height="34" class="fill-cost" opacity="0.803"/>
+          <text x="385" y="96" text-anchor="middle" class="mono-sm fill-surface">108</text>
+          <rect x="402" y="76" width="34" height="34" class="fill-cost" opacity="0.938"/>
+          <text x="419" y="96" text-anchor="middle" class="mono-sm fill-surface">130</text>
+          <rect x="436" y="76" width="34" height="34" class="fill-cost" opacity="1.000"/>
+          <text x="453" y="96" text-anchor="middle" class="mono-sm fill-surface">140</text>
+          <rect x="470" y="76" width="34" height="34" class="fill-cost" opacity="0.762"/>
+          <text x="487" y="96" text-anchor="middle" class="mono-sm fill-surface">101</text>
+          <rect x="96" y="110" width="34" height="34" class="fill-cost" opacity="0.266"/>
           <text x="113" y="130" text-anchor="middle" class="mono-sm sv-ink">19</text>
           <rect x="130" y="110" width="34" height="34" class="fill-sunken"/>
           <text x="147" y="130" text-anchor="middle" class="mono-sm sv-faint">&middot;</text>
-          <rect x="164" y="110" width="34" height="34" class="fill-cost" opacity="0.163"/>
-          <text x="181" y="130" text-anchor="middle" class="mono-sm sv-ink">20</text>
-          <rect x="198" y="110" width="34" height="34" class="fill-cost" opacity="0.224"/>
-          <text x="215" y="130" text-anchor="middle" class="mono-sm sv-ink">24</text>
-          <rect x="232" y="110" width="34" height="34" class="fill-cost" opacity="0.667"/>
-          <text x="249" y="130" text-anchor="middle" class="mono-sm fill-surface">89</text>
-          <rect x="266" y="110" width="34" height="34" class="fill-cost" opacity="0.986"/>
-          <text x="283" y="130" text-anchor="middle" class="mono-sm fill-surface">167</text>
-          <rect x="300" y="110" width="34" height="34" class="fill-cost" opacity="0.985"/>
-          <text x="317" y="130" text-anchor="middle" class="mono-sm fill-surface">167</text>
-          <rect x="334" y="110" width="34" height="34" class="fill-cost" opacity="0.983"/>
-          <text x="351" y="130" text-anchor="middle" class="mono-sm fill-surface">166</text>
-          <rect x="368" y="110" width="34" height="34" class="fill-cost" opacity="0.99"/>
-          <text x="385" y="130" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="402" y="110" width="34" height="34" class="fill-cost" opacity="0.986"/>
-          <text x="419" y="130" text-anchor="middle" class="mono-sm fill-surface">167</text>
-          <rect x="436" y="110" width="34" height="34" class="fill-cost" opacity="0.993"/>
-          <text x="453" y="130" text-anchor="middle" class="mono-sm fill-surface">169</text>
-          <rect x="470" y="110" width="34" height="34" class="fill-cost" opacity="0.989"/>
-          <text x="487" y="130" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="96" y="144" width="34" height="34" class="fill-cost" opacity="0.182"/>
-          <text x="113" y="164" text-anchor="middle" class="mono-sm sv-ink">21</text>
-          <rect x="130" y="144" width="34" height="34" class="fill-cost" opacity="0.163"/>
-          <text x="147" y="164" text-anchor="middle" class="mono-sm sv-ink">20</text>
+          <rect x="164" y="110" width="34" height="34" class="fill-cost" opacity="0.268"/>
+          <text x="181" y="130" text-anchor="middle" class="mono-sm sv-ink">19</text>
+          <rect x="198" y="110" width="34" height="34" class="fill-cost" opacity="0.271"/>
+          <text x="215" y="130" text-anchor="middle" class="mono-sm sv-ink">20</text>
+          <rect x="232" y="110" width="34" height="34" class="fill-cost" opacity="0.605"/>
+          <text x="249" y="130" text-anchor="middle" class="mono-sm sv-ink">75</text>
+          <rect x="266" y="110" width="34" height="34" class="fill-cost" opacity="0.577"/>
+          <text x="283" y="130" text-anchor="middle" class="mono-sm sv-ink">70</text>
+          <rect x="300" y="110" width="34" height="34" class="fill-cost" opacity="0.537"/>
+          <text x="317" y="130" text-anchor="middle" class="mono-sm sv-ink">64</text>
+          <rect x="334" y="110" width="34" height="34" class="fill-cost" opacity="0.654"/>
+          <text x="351" y="130" text-anchor="middle" class="mono-sm fill-surface">83</text>
+          <rect x="368" y="110" width="34" height="34" class="fill-cost" opacity="0.585"/>
+          <text x="385" y="130" text-anchor="middle" class="mono-sm sv-ink">72</text>
+          <rect x="402" y="110" width="34" height="34" class="fill-cost" opacity="0.774"/>
+          <text x="419" y="130" text-anchor="middle" class="mono-sm fill-surface">103</text>
+          <rect x="436" y="110" width="34" height="34" class="fill-cost" opacity="0.778"/>
+          <text x="453" y="130" text-anchor="middle" class="mono-sm fill-surface">104</text>
+          <rect x="470" y="110" width="34" height="34" class="fill-cost" opacity="0.718"/>
+          <text x="487" y="130" text-anchor="middle" class="mono-sm fill-surface">94</text>
+          <rect x="96" y="144" width="34" height="34" class="fill-cost" opacity="0.274"/>
+          <text x="113" y="164" text-anchor="middle" class="mono-sm sv-ink">20</text>
+          <rect x="130" y="144" width="34" height="34" class="fill-cost" opacity="0.268"/>
+          <text x="147" y="164" text-anchor="middle" class="mono-sm sv-ink">19</text>
           <rect x="164" y="144" width="34" height="34" class="fill-sunken"/>
           <text x="181" y="164" text-anchor="middle" class="mono-sm sv-faint">&middot;</text>
-          <rect x="198" y="144" width="34" height="34" class="fill-cost" opacity="0.192"/>
-          <text x="215" y="164" text-anchor="middle" class="mono-sm sv-ink">21</text>
-          <rect x="232" y="144" width="34" height="34" class="fill-cost" opacity="0.942"/>
-          <text x="249" y="164" text-anchor="middle" class="mono-sm fill-surface">155</text>
-          <rect x="266" y="144" width="34" height="34" class="fill-cost" opacity="0.99"/>
-          <text x="283" y="164" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="300" y="144" width="34" height="34" class="fill-cost" opacity="0.966"/>
-          <text x="317" y="164" text-anchor="middle" class="mono-sm fill-surface">161</text>
-          <rect x="334" y="144" width="34" height="34" class="fill-cost" opacity="0.988"/>
-          <text x="351" y="164" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="368" y="144" width="34" height="34" class="fill-cost" opacity="0.993"/>
-          <text x="385" y="164" text-anchor="middle" class="mono-sm fill-surface">169</text>
-          <rect x="402" y="144" width="34" height="34" class="fill-cost" opacity="0.989"/>
-          <text x="419" y="164" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="436" y="144" width="34" height="34" class="fill-cost" opacity="0.996"/>
-          <text x="453" y="164" text-anchor="middle" class="mono-sm fill-surface">170</text>
-          <rect x="470" y="144" width="34" height="34" class="fill-cost" opacity="0.993"/>
-          <text x="487" y="164" text-anchor="middle" class="mono-sm fill-surface">169</text>
-          <rect x="96" y="178" width="34" height="34" class="fill-cost" opacity="0.183"/>
-          <text x="113" y="198" text-anchor="middle" class="mono-sm sv-ink">21</text>
-          <rect x="130" y="178" width="34" height="34" class="fill-cost" opacity="0.224"/>
-          <text x="147" y="198" text-anchor="middle" class="mono-sm sv-ink">24</text>
-          <rect x="164" y="178" width="34" height="34" class="fill-cost" opacity="0.192"/>
-          <text x="181" y="198" text-anchor="middle" class="mono-sm sv-ink">21</text>
+          <rect x="198" y="144" width="34" height="34" class="fill-cost" opacity="0.272"/>
+          <text x="215" y="164" text-anchor="middle" class="mono-sm sv-ink">20</text>
+          <rect x="232" y="144" width="34" height="34" class="fill-cost" opacity="0.685"/>
+          <text x="249" y="164" text-anchor="middle" class="mono-sm fill-surface">88</text>
+          <rect x="266" y="144" width="34" height="34" class="fill-cost" opacity="0.698"/>
+          <text x="283" y="164" text-anchor="middle" class="mono-sm fill-surface">90</text>
+          <rect x="300" y="144" width="34" height="34" class="fill-cost" opacity="0.684"/>
+          <text x="317" y="164" text-anchor="middle" class="mono-sm fill-surface">88</text>
+          <rect x="334" y="144" width="34" height="34" class="fill-cost" opacity="0.575"/>
+          <text x="351" y="164" text-anchor="middle" class="mono-sm sv-ink">70</text>
+          <rect x="368" y="144" width="34" height="34" class="fill-cost" opacity="0.882"/>
+          <text x="385" y="164" text-anchor="middle" class="mono-sm fill-surface">121</text>
+          <rect x="402" y="144" width="34" height="34" class="fill-cost" opacity="0.695"/>
+          <text x="419" y="164" text-anchor="middle" class="mono-sm fill-surface">90</text>
+          <rect x="436" y="144" width="34" height="34" class="fill-cost" opacity="0.859"/>
+          <text x="453" y="164" text-anchor="middle" class="mono-sm fill-surface">117</text>
+          <rect x="470" y="144" width="34" height="34" class="fill-cost" opacity="0.845"/>
+          <text x="487" y="164" text-anchor="middle" class="mono-sm fill-surface">115</text>
+          <rect x="96" y="178" width="34" height="34" class="fill-cost" opacity="0.270"/>
+          <text x="113" y="198" text-anchor="middle" class="mono-sm sv-ink">20</text>
+          <rect x="130" y="178" width="34" height="34" class="fill-cost" opacity="0.271"/>
+          <text x="147" y="198" text-anchor="middle" class="mono-sm sv-ink">20</text>
+          <rect x="164" y="178" width="34" height="34" class="fill-cost" opacity="0.272"/>
+          <text x="181" y="198" text-anchor="middle" class="mono-sm sv-ink">20</text>
           <rect x="198" y="178" width="34" height="34" class="fill-sunken"/>
           <text x="215" y="198" text-anchor="middle" class="mono-sm sv-faint">&middot;</text>
-          <rect x="232" y="178" width="34" height="34" class="fill-cost" opacity="0.605"/>
-          <text x="249" y="198" text-anchor="middle" class="mono-sm fill-surface">76</text>
-          <rect x="266" y="178" width="34" height="34" class="fill-cost" opacity="0.99"/>
-          <text x="283" y="198" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="300" y="178" width="34" height="34" class="fill-cost" opacity="0.991"/>
-          <text x="317" y="198" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="334" y="178" width="34" height="34" class="fill-cost" opacity="0.99"/>
-          <text x="351" y="198" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="368" y="178" width="34" height="34" class="fill-cost" opacity="0.995"/>
-          <text x="385" y="198" text-anchor="middle" class="mono-sm fill-surface">170</text>
-          <rect x="402" y="178" width="34" height="34" class="fill-cost" opacity="0.989"/>
-          <text x="419" y="198" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="436" y="178" width="34" height="34" class="fill-cost" opacity="0.999"/>
-          <text x="453" y="198" text-anchor="middle" class="mono-sm fill-surface">171</text>
-          <rect x="470" y="178" width="34" height="34" class="fill-cost" opacity="0.996"/>
-          <text x="487" y="198" text-anchor="middle" class="mono-sm fill-surface">170</text>
-          <rect x="96" y="212" width="34" height="34" class="fill-cost" opacity="0.638"/>
-          <text x="113" y="232" text-anchor="middle" class="mono-sm fill-surface">83</text>
-          <rect x="130" y="212" width="34" height="34" class="fill-cost" opacity="0.667"/>
-          <text x="147" y="232" text-anchor="middle" class="mono-sm fill-surface">89</text>
-          <rect x="164" y="212" width="34" height="34" class="fill-cost" opacity="0.942"/>
-          <text x="181" y="232" text-anchor="middle" class="mono-sm fill-surface">155</text>
-          <rect x="198" y="212" width="34" height="34" class="fill-cost" opacity="0.605"/>
-          <text x="215" y="232" text-anchor="middle" class="mono-sm fill-surface">76</text>
+          <rect x="232" y="178" width="34" height="34" class="fill-cost" opacity="0.568"/>
+          <text x="249" y="198" text-anchor="middle" class="mono-sm sv-ink">69</text>
+          <rect x="266" y="178" width="34" height="34" class="fill-cost" opacity="0.748"/>
+          <text x="283" y="198" text-anchor="middle" class="mono-sm fill-surface">99</text>
+          <rect x="300" y="178" width="34" height="34" class="fill-cost" opacity="0.851"/>
+          <text x="317" y="198" text-anchor="middle" class="mono-sm fill-surface">116</text>
+          <rect x="334" y="178" width="34" height="34" class="fill-cost" opacity="0.936"/>
+          <text x="351" y="198" text-anchor="middle" class="mono-sm fill-surface">130</text>
+          <rect x="368" y="178" width="34" height="34" class="fill-cost" opacity="0.868"/>
+          <text x="385" y="198" text-anchor="middle" class="mono-sm fill-surface">118</text>
+          <rect x="402" y="178" width="34" height="34" class="fill-cost" opacity="0.836"/>
+          <text x="419" y="198" text-anchor="middle" class="mono-sm fill-surface">113</text>
+          <rect x="436" y="178" width="34" height="34" class="fill-cost" opacity="0.873"/>
+          <text x="453" y="198" text-anchor="middle" class="mono-sm fill-surface">119</text>
+          <rect x="470" y="178" width="34" height="34" class="fill-cost" opacity="0.930"/>
+          <text x="487" y="198" text-anchor="middle" class="mono-sm fill-surface">129</text>
+          <rect x="96" y="212" width="34" height="34" class="fill-cost" opacity="0.591"/>
+          <text x="113" y="232" text-anchor="middle" class="mono-sm sv-ink">73</text>
+          <rect x="130" y="212" width="34" height="34" class="fill-cost" opacity="0.605"/>
+          <text x="147" y="232" text-anchor="middle" class="mono-sm sv-ink">75</text>
+          <rect x="164" y="212" width="34" height="34" class="fill-cost" opacity="0.685"/>
+          <text x="181" y="232" text-anchor="middle" class="mono-sm fill-surface">88</text>
+          <rect x="198" y="212" width="34" height="34" class="fill-cost" opacity="0.568"/>
+          <text x="215" y="232" text-anchor="middle" class="mono-sm sv-ink">69</text>
           <rect x="232" y="212" width="34" height="34" class="fill-sunken"/>
-          <text x="249" y="228" text-anchor="middle" class="mono-sm sv-dim">29</text>
-          <text x="249" y="239" text-anchor="middle" class="mono-sm sv-faint" font-size="7.5">SMT</text>
-          <rect x="266" y="212" width="34" height="34" class="fill-cost" opacity="0.304"/>
+          <text x="249" y="232" text-anchor="middle" class="mono-sm sv-faint">&middot;</text>
+          <rect x="266" y="212" width="34" height="34" class="fill-cost" opacity="0.338"/>
           <text x="283" y="232" text-anchor="middle" class="mono-sm sv-ink">31</text>
-          <rect x="300" y="212" width="34" height="34" class="fill-cost" opacity="0.303"/>
+          <rect x="300" y="212" width="34" height="34" class="fill-cost" opacity="0.337"/>
           <text x="317" y="232" text-anchor="middle" class="mono-sm sv-ink">31</text>
-          <rect x="334" y="212" width="34" height="34" class="fill-cost" opacity="0.306"/>
-          <text x="351" y="232" text-anchor="middle" class="mono-sm sv-ink">31</text>
-          <rect x="368" y="212" width="34" height="34" class="fill-cost" opacity="0.312"/>
-          <text x="385" y="232" text-anchor="middle" class="mono-sm sv-ink">32</text>
-          <rect x="402" y="212" width="34" height="34" class="fill-cost" opacity="0.312"/>
-          <text x="419" y="232" text-anchor="middle" class="mono-sm sv-ink">32</text>
-          <rect x="436" y="212" width="34" height="34" class="fill-cost" opacity="0.3"/>
-          <text x="453" y="232" text-anchor="middle" class="mono-sm sv-ink">30</text>
-          <rect x="470" y="212" width="34" height="34" class="fill-cost" opacity="0.32"/>
-          <text x="487" y="232" text-anchor="middle" class="mono-sm sv-ink">33</text>
-          <rect x="96" y="246" width="34" height="34" class="fill-cost" opacity="0.988"/>
-          <text x="113" y="266" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="130" y="246" width="34" height="34" class="fill-cost" opacity="0.986"/>
-          <text x="147" y="266" text-anchor="middle" class="mono-sm fill-surface">167</text>
-          <rect x="164" y="246" width="34" height="34" class="fill-cost" opacity="0.99"/>
-          <text x="181" y="266" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="198" y="246" width="34" height="34" class="fill-cost" opacity="0.99"/>
-          <text x="215" y="266" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="232" y="246" width="34" height="34" class="fill-cost" opacity="0.304"/>
+          <rect x="334" y="212" width="34" height="34" class="fill-cost" opacity="0.333"/>
+          <text x="351" y="232" text-anchor="middle" class="mono-sm sv-ink">30</text>
+          <rect x="368" y="212" width="34" height="34" class="fill-cost" opacity="0.336"/>
+          <text x="385" y="232" text-anchor="middle" class="mono-sm sv-ink">31</text>
+          <rect x="402" y="212" width="34" height="34" class="fill-cost" opacity="0.337"/>
+          <text x="419" y="232" text-anchor="middle" class="mono-sm sv-ink">31</text>
+          <rect x="436" y="212" width="34" height="34" class="fill-cost" opacity="0.349"/>
+          <text x="453" y="232" text-anchor="middle" class="mono-sm sv-ink">33</text>
+          <rect x="470" y="212" width="34" height="34" class="fill-cost" opacity="0.347"/>
+          <text x="487" y="232" text-anchor="middle" class="mono-sm sv-ink">32</text>
+          <rect x="96" y="246" width="34" height="34" class="fill-cost" opacity="0.778"/>
+          <text x="113" y="266" text-anchor="middle" class="mono-sm fill-surface">104</text>
+          <rect x="130" y="246" width="34" height="34" class="fill-cost" opacity="0.577"/>
+          <text x="147" y="266" text-anchor="middle" class="mono-sm sv-ink">70</text>
+          <rect x="164" y="246" width="34" height="34" class="fill-cost" opacity="0.698"/>
+          <text x="181" y="266" text-anchor="middle" class="mono-sm fill-surface">90</text>
+          <rect x="198" y="246" width="34" height="34" class="fill-cost" opacity="0.748"/>
+          <text x="215" y="266" text-anchor="middle" class="mono-sm fill-surface">99</text>
+          <rect x="232" y="246" width="34" height="34" class="fill-cost" opacity="0.338"/>
           <text x="249" y="266" text-anchor="middle" class="mono-sm sv-ink">31</text>
           <rect x="266" y="246" width="34" height="34" class="fill-sunken"/>
           <text x="283" y="266" text-anchor="middle" class="mono-sm sv-faint">&middot;</text>
-          <rect x="300" y="246" width="34" height="34" class="fill-cost" opacity="0.291"/>
-          <text x="317" y="266" text-anchor="middle" class="mono-sm sv-ink">30</text>
-          <rect x="334" y="246" width="34" height="34" class="fill-cost" opacity="0.283"/>
+          <rect x="300" y="246" width="34" height="34" class="fill-cost" opacity="0.328"/>
+          <text x="317" y="266" text-anchor="middle" class="mono-sm sv-ink">29</text>
+          <rect x="334" y="246" width="34" height="34" class="fill-cost" opacity="0.324"/>
           <text x="351" y="266" text-anchor="middle" class="mono-sm sv-ink">29</text>
-          <rect x="368" y="246" width="34" height="34" class="fill-cost" opacity="0.304"/>
+          <rect x="368" y="246" width="34" height="34" class="fill-cost" opacity="0.336"/>
           <text x="385" y="266" text-anchor="middle" class="mono-sm sv-ink">31</text>
-          <rect x="402" y="246" width="34" height="34" class="fill-cost" opacity="0.291"/>
+          <rect x="402" y="246" width="34" height="34" class="fill-cost" opacity="0.329"/>
           <text x="419" y="266" text-anchor="middle" class="mono-sm sv-ink">30</text>
-          <rect x="436" y="246" width="34" height="34" class="fill-cost" opacity="0.312"/>
+          <rect x="436" y="246" width="34" height="34" class="fill-cost" opacity="0.341"/>
           <text x="453" y="266" text-anchor="middle" class="mono-sm sv-ink">32</text>
-          <rect x="470" y="246" width="34" height="34" class="fill-cost" opacity="0.303"/>
+          <rect x="470" y="246" width="34" height="34" class="fill-cost" opacity="0.336"/>
           <text x="487" y="266" text-anchor="middle" class="mono-sm sv-ink">31</text>
-          <rect x="96" y="280" width="34" height="34" class="fill-cost" opacity="0.988"/>
-          <text x="113" y="300" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="130" y="280" width="34" height="34" class="fill-cost" opacity="0.985"/>
-          <text x="147" y="300" text-anchor="middle" class="mono-sm fill-surface">167</text>
-          <rect x="164" y="280" width="34" height="34" class="fill-cost" opacity="0.966"/>
-          <text x="181" y="300" text-anchor="middle" class="mono-sm fill-surface">161</text>
-          <rect x="198" y="280" width="34" height="34" class="fill-cost" opacity="0.991"/>
-          <text x="215" y="300" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="232" y="280" width="34" height="34" class="fill-cost" opacity="0.303"/>
+          <rect x="96" y="280" width="34" height="34" class="fill-cost" opacity="0.996"/>
+          <text x="113" y="300" text-anchor="middle" class="mono-sm fill-surface">140</text>
+          <rect x="130" y="280" width="34" height="34" class="fill-cost" opacity="0.537"/>
+          <text x="147" y="300" text-anchor="middle" class="mono-sm sv-ink">64</text>
+          <rect x="164" y="280" width="34" height="34" class="fill-cost" opacity="0.684"/>
+          <text x="181" y="300" text-anchor="middle" class="mono-sm fill-surface">88</text>
+          <rect x="198" y="280" width="34" height="34" class="fill-cost" opacity="0.851"/>
+          <text x="215" y="300" text-anchor="middle" class="mono-sm fill-surface">116</text>
+          <rect x="232" y="280" width="34" height="34" class="fill-cost" opacity="0.337"/>
           <text x="249" y="300" text-anchor="middle" class="mono-sm sv-ink">31</text>
-          <rect x="266" y="280" width="34" height="34" class="fill-cost" opacity="0.291"/>
-          <text x="283" y="300" text-anchor="middle" class="mono-sm sv-ink">30</text>
+          <rect x="266" y="280" width="34" height="34" class="fill-cost" opacity="0.328"/>
+          <text x="283" y="300" text-anchor="middle" class="mono-sm sv-ink">29</text>
           <rect x="300" y="280" width="34" height="34" class="fill-sunken"/>
           <text x="317" y="300" text-anchor="middle" class="mono-sm sv-faint">&middot;</text>
-          <rect x="334" y="280" width="34" height="34" class="fill-cost" opacity="0.283"/>
+          <rect x="334" y="280" width="34" height="34" class="fill-cost" opacity="0.324"/>
           <text x="351" y="300" text-anchor="middle" class="mono-sm sv-ink">29</text>
-          <rect x="368" y="280" width="34" height="34" class="fill-cost" opacity="0.293"/>
+          <rect x="368" y="280" width="34" height="34" class="fill-cost" opacity="0.331"/>
           <text x="385" y="300" text-anchor="middle" class="mono-sm sv-ink">30</text>
-          <rect x="402" y="280" width="34" height="34" class="fill-cost" opacity="0.293"/>
+          <rect x="402" y="280" width="34" height="34" class="fill-cost" opacity="0.330"/>
           <text x="419" y="300" text-anchor="middle" class="mono-sm sv-ink">30</text>
-          <rect x="436" y="280" width="34" height="34" class="fill-cost" opacity="0.304"/>
-          <text x="453" y="300" text-anchor="middle" class="mono-sm sv-ink">31</text>
-          <rect x="470" y="280" width="34" height="34" class="fill-cost" opacity="0.301"/>
+          <rect x="436" y="280" width="34" height="34" class="fill-cost" opacity="0.366"/>
+          <text x="453" y="300" text-anchor="middle" class="mono-sm sv-ink">36</text>
+          <rect x="470" y="280" width="34" height="34" class="fill-cost" opacity="0.336"/>
           <text x="487" y="300" text-anchor="middle" class="mono-sm sv-ink">31</text>
-          <rect x="96" y="314" width="34" height="34" class="fill-cost" opacity="0.986"/>
-          <text x="113" y="334" text-anchor="middle" class="mono-sm fill-surface">167</text>
-          <rect x="130" y="314" width="34" height="34" class="fill-cost" opacity="0.983"/>
-          <text x="147" y="334" text-anchor="middle" class="mono-sm fill-surface">166</text>
-          <rect x="164" y="314" width="34" height="34" class="fill-cost" opacity="0.988"/>
-          <text x="181" y="334" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="198" y="314" width="34" height="34" class="fill-cost" opacity="0.99"/>
-          <text x="215" y="334" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="232" y="314" width="34" height="34" class="fill-cost" opacity="0.306"/>
-          <text x="249" y="334" text-anchor="middle" class="mono-sm sv-ink">31</text>
-          <rect x="266" y="314" width="34" height="34" class="fill-cost" opacity="0.283"/>
+          <rect x="96" y="314" width="34" height="34" class="fill-cost" opacity="0.622"/>
+          <text x="113" y="334" text-anchor="middle" class="mono-sm fill-surface">78</text>
+          <rect x="130" y="314" width="34" height="34" class="fill-cost" opacity="0.654"/>
+          <text x="147" y="334" text-anchor="middle" class="mono-sm fill-surface">83</text>
+          <rect x="164" y="314" width="34" height="34" class="fill-cost" opacity="0.575"/>
+          <text x="181" y="334" text-anchor="middle" class="mono-sm sv-ink">70</text>
+          <rect x="198" y="314" width="34" height="34" class="fill-cost" opacity="0.936"/>
+          <text x="215" y="334" text-anchor="middle" class="mono-sm fill-surface">130</text>
+          <rect x="232" y="314" width="34" height="34" class="fill-cost" opacity="0.333"/>
+          <text x="249" y="334" text-anchor="middle" class="mono-sm sv-ink">30</text>
+          <rect x="266" y="314" width="34" height="34" class="fill-cost" opacity="0.324"/>
           <text x="283" y="334" text-anchor="middle" class="mono-sm sv-ink">29</text>
-          <rect x="300" y="314" width="34" height="34" class="fill-cost" opacity="0.283"/>
+          <rect x="300" y="314" width="34" height="34" class="fill-cost" opacity="0.324"/>
           <text x="317" y="334" text-anchor="middle" class="mono-sm sv-ink">29</text>
           <rect x="334" y="314" width="34" height="34" class="fill-sunken"/>
           <text x="351" y="334" text-anchor="middle" class="mono-sm sv-faint">&middot;</text>
-          <rect x="368" y="314" width="34" height="34" class="fill-cost" opacity="0.295"/>
+          <rect x="368" y="314" width="34" height="34" class="fill-cost" opacity="0.331"/>
           <text x="385" y="334" text-anchor="middle" class="mono-sm sv-ink">30</text>
-          <rect x="402" y="314" width="34" height="34" class="fill-cost" opacity="0.283"/>
+          <rect x="402" y="314" width="34" height="34" class="fill-cost" opacity="0.324"/>
           <text x="419" y="334" text-anchor="middle" class="mono-sm sv-ink">29</text>
-          <rect x="436" y="314" width="34" height="34" class="fill-cost" opacity="0.303"/>
+          <rect x="436" y="314" width="34" height="34" class="fill-cost" opacity="0.338"/>
           <text x="453" y="334" text-anchor="middle" class="mono-sm sv-ink">31</text>
-          <rect x="470" y="314" width="34" height="34" class="fill-cost" opacity="0.29"/>
+          <rect x="470" y="314" width="34" height="34" class="fill-cost" opacity="0.331"/>
           <text x="487" y="334" text-anchor="middle" class="mono-sm sv-ink">30</text>
-          <rect x="96" y="348" width="34" height="34" class="fill-cost" opacity="0.993"/>
-          <text x="113" y="368" text-anchor="middle" class="mono-sm fill-surface">169</text>
-          <rect x="130" y="348" width="34" height="34" class="fill-cost" opacity="0.99"/>
-          <text x="147" y="368" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="164" y="348" width="34" height="34" class="fill-cost" opacity="0.993"/>
-          <text x="181" y="368" text-anchor="middle" class="mono-sm fill-surface">169</text>
-          <rect x="198" y="348" width="34" height="34" class="fill-cost" opacity="0.995"/>
-          <text x="215" y="368" text-anchor="middle" class="mono-sm fill-surface">170</text>
-          <rect x="232" y="348" width="34" height="34" class="fill-cost" opacity="0.312"/>
-          <text x="249" y="368" text-anchor="middle" class="mono-sm sv-ink">32</text>
-          <rect x="266" y="348" width="34" height="34" class="fill-cost" opacity="0.304"/>
+          <rect x="96" y="348" width="34" height="34" class="fill-cost" opacity="0.803"/>
+          <text x="113" y="368" text-anchor="middle" class="mono-sm fill-surface">108</text>
+          <rect x="130" y="348" width="34" height="34" class="fill-cost" opacity="0.585"/>
+          <text x="147" y="368" text-anchor="middle" class="mono-sm sv-ink">72</text>
+          <rect x="164" y="348" width="34" height="34" class="fill-cost" opacity="0.882"/>
+          <text x="181" y="368" text-anchor="middle" class="mono-sm fill-surface">121</text>
+          <rect x="198" y="348" width="34" height="34" class="fill-cost" opacity="0.868"/>
+          <text x="215" y="368" text-anchor="middle" class="mono-sm fill-surface">118</text>
+          <rect x="232" y="348" width="34" height="34" class="fill-cost" opacity="0.336"/>
+          <text x="249" y="368" text-anchor="middle" class="mono-sm sv-ink">31</text>
+          <rect x="266" y="348" width="34" height="34" class="fill-cost" opacity="0.336"/>
           <text x="283" y="368" text-anchor="middle" class="mono-sm sv-ink">31</text>
-          <rect x="300" y="348" width="34" height="34" class="fill-cost" opacity="0.293"/>
+          <rect x="300" y="348" width="34" height="34" class="fill-cost" opacity="0.331"/>
           <text x="317" y="368" text-anchor="middle" class="mono-sm sv-ink">30</text>
-          <rect x="334" y="348" width="34" height="34" class="fill-cost" opacity="0.295"/>
+          <rect x="334" y="348" width="34" height="34" class="fill-cost" opacity="0.331"/>
           <text x="351" y="368" text-anchor="middle" class="mono-sm sv-ink">30</text>
           <rect x="368" y="348" width="34" height="34" class="fill-sunken"/>
-          <text x="385" y="364" text-anchor="middle" class="mono-sm sv-dim">28</text>
-          <text x="385" y="375" text-anchor="middle" class="mono-sm sv-faint" font-size="7.5">SMT</text>
-          <rect x="402" y="348" width="34" height="34" class="fill-cost" opacity="0.308"/>
-          <text x="419" y="368" text-anchor="middle" class="mono-sm sv-ink">31</text>
-          <rect x="436" y="348" width="34" height="34" class="fill-cost" opacity="0.33"/>
+          <text x="385" y="368" text-anchor="middle" class="mono-sm sv-faint">&middot;</text>
+          <rect x="402" y="348" width="34" height="34" class="fill-cost" opacity="0.330"/>
+          <text x="419" y="368" text-anchor="middle" class="mono-sm sv-ink">30</text>
+          <rect x="436" y="348" width="34" height="34" class="fill-cost" opacity="0.354"/>
           <text x="453" y="368" text-anchor="middle" class="mono-sm sv-ink">34</text>
-          <rect x="470" y="348" width="34" height="34" class="fill-cost" opacity="0.314"/>
+          <rect x="470" y="348" width="34" height="34" class="fill-cost" opacity="0.345"/>
           <text x="487" y="368" text-anchor="middle" class="mono-sm sv-ink">32</text>
-          <rect x="96" y="382" width="34" height="34" class="fill-cost" opacity="0.989"/>
-          <text x="113" y="402" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="130" y="382" width="34" height="34" class="fill-cost" opacity="0.986"/>
-          <text x="147" y="402" text-anchor="middle" class="mono-sm fill-surface">167</text>
-          <rect x="164" y="382" width="34" height="34" class="fill-cost" opacity="0.989"/>
-          <text x="181" y="402" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="198" y="382" width="34" height="34" class="fill-cost" opacity="0.989"/>
-          <text x="215" y="402" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="232" y="382" width="34" height="34" class="fill-cost" opacity="0.312"/>
-          <text x="249" y="402" text-anchor="middle" class="mono-sm sv-ink">32</text>
-          <rect x="266" y="382" width="34" height="34" class="fill-cost" opacity="0.291"/>
+          <rect x="96" y="382" width="34" height="34" class="fill-cost" opacity="0.938"/>
+          <text x="113" y="402" text-anchor="middle" class="mono-sm fill-surface">130</text>
+          <rect x="130" y="382" width="34" height="34" class="fill-cost" opacity="0.774"/>
+          <text x="147" y="402" text-anchor="middle" class="mono-sm fill-surface">103</text>
+          <rect x="164" y="382" width="34" height="34" class="fill-cost" opacity="0.695"/>
+          <text x="181" y="402" text-anchor="middle" class="mono-sm fill-surface">90</text>
+          <rect x="198" y="382" width="34" height="34" class="fill-cost" opacity="0.836"/>
+          <text x="215" y="402" text-anchor="middle" class="mono-sm fill-surface">113</text>
+          <rect x="232" y="382" width="34" height="34" class="fill-cost" opacity="0.337"/>
+          <text x="249" y="402" text-anchor="middle" class="mono-sm sv-ink">31</text>
+          <rect x="266" y="382" width="34" height="34" class="fill-cost" opacity="0.329"/>
           <text x="283" y="402" text-anchor="middle" class="mono-sm sv-ink">30</text>
-          <rect x="300" y="382" width="34" height="34" class="fill-cost" opacity="0.293"/>
+          <rect x="300" y="382" width="34" height="34" class="fill-cost" opacity="0.330"/>
           <text x="317" y="402" text-anchor="middle" class="mono-sm sv-ink">30</text>
-          <rect x="334" y="382" width="34" height="34" class="fill-cost" opacity="0.283"/>
+          <rect x="334" y="382" width="34" height="34" class="fill-cost" opacity="0.324"/>
           <text x="351" y="402" text-anchor="middle" class="mono-sm sv-ink">29</text>
-          <rect x="368" y="382" width="34" height="34" class="fill-cost" opacity="0.308"/>
-          <text x="385" y="402" text-anchor="middle" class="mono-sm sv-ink">31</text>
+          <rect x="368" y="382" width="34" height="34" class="fill-cost" opacity="0.330"/>
+          <text x="385" y="402" text-anchor="middle" class="mono-sm sv-ink">30</text>
           <rect x="402" y="382" width="34" height="34" class="fill-sunken"/>
           <text x="419" y="402" text-anchor="middle" class="mono-sm sv-faint">&middot;</text>
-          <rect x="436" y="382" width="34" height="34" class="fill-cost" opacity="0.307"/>
+          <rect x="436" y="382" width="34" height="34" class="fill-cost" opacity="0.336"/>
           <text x="453" y="402" text-anchor="middle" class="mono-sm sv-ink">31</text>
-          <rect x="470" y="382" width="34" height="34" class="fill-cost" opacity="0.293"/>
+          <rect x="470" y="382" width="34" height="34" class="fill-cost" opacity="0.329"/>
           <text x="487" y="402" text-anchor="middle" class="mono-sm sv-ink">30</text>
-          <rect x="96" y="416" width="34" height="34" class="fill-cost" opacity="0.996"/>
-          <text x="113" y="436" text-anchor="middle" class="mono-sm fill-surface">170</text>
-          <rect x="130" y="416" width="34" height="34" class="fill-cost" opacity="0.993"/>
-          <text x="147" y="436" text-anchor="middle" class="mono-sm fill-surface">169</text>
-          <rect x="164" y="416" width="34" height="34" class="fill-cost" opacity="0.996"/>
-          <text x="181" y="436" text-anchor="middle" class="mono-sm fill-surface">170</text>
-          <rect x="198" y="416" width="34" height="34" class="fill-cost" opacity="0.999"/>
-          <text x="215" y="436" text-anchor="middle" class="mono-sm fill-surface">171</text>
-          <rect x="232" y="416" width="34" height="34" class="fill-cost" opacity="0.3"/>
-          <text x="249" y="436" text-anchor="middle" class="mono-sm sv-ink">30</text>
-          <rect x="266" y="416" width="34" height="34" class="fill-cost" opacity="0.312"/>
+          <rect x="96" y="416" width="34" height="34" class="fill-cost" opacity="1.000"/>
+          <text x="113" y="436" text-anchor="middle" class="mono-sm fill-surface">140</text>
+          <rect x="130" y="416" width="34" height="34" class="fill-cost" opacity="0.778"/>
+          <text x="147" y="436" text-anchor="middle" class="mono-sm fill-surface">104</text>
+          <rect x="164" y="416" width="34" height="34" class="fill-cost" opacity="0.859"/>
+          <text x="181" y="436" text-anchor="middle" class="mono-sm fill-surface">117</text>
+          <rect x="198" y="416" width="34" height="34" class="fill-cost" opacity="0.873"/>
+          <text x="215" y="436" text-anchor="middle" class="mono-sm fill-surface">119</text>
+          <rect x="232" y="416" width="34" height="34" class="fill-cost" opacity="0.349"/>
+          <text x="249" y="436" text-anchor="middle" class="mono-sm sv-ink">33</text>
+          <rect x="266" y="416" width="34" height="34" class="fill-cost" opacity="0.341"/>
           <text x="283" y="436" text-anchor="middle" class="mono-sm sv-ink">32</text>
-          <rect x="300" y="416" width="34" height="34" class="fill-cost" opacity="0.304"/>
-          <text x="317" y="436" text-anchor="middle" class="mono-sm sv-ink">31</text>
-          <rect x="334" y="416" width="34" height="34" class="fill-cost" opacity="0.303"/>
+          <rect x="300" y="416" width="34" height="34" class="fill-cost" opacity="0.366"/>
+          <text x="317" y="436" text-anchor="middle" class="mono-sm sv-ink">36</text>
+          <rect x="334" y="416" width="34" height="34" class="fill-cost" opacity="0.338"/>
           <text x="351" y="436" text-anchor="middle" class="mono-sm sv-ink">31</text>
-          <rect x="368" y="416" width="34" height="34" class="fill-cost" opacity="0.33"/>
+          <rect x="368" y="416" width="34" height="34" class="fill-cost" opacity="0.354"/>
           <text x="385" y="436" text-anchor="middle" class="mono-sm sv-ink">34</text>
-          <rect x="402" y="416" width="34" height="34" class="fill-cost" opacity="0.307"/>
+          <rect x="402" y="416" width="34" height="34" class="fill-cost" opacity="0.336"/>
           <text x="419" y="436" text-anchor="middle" class="mono-sm sv-ink">31</text>
           <rect x="436" y="416" width="34" height="34" class="fill-sunken"/>
           <text x="453" y="436" text-anchor="middle" class="mono-sm sv-faint">&middot;</text>
-          <rect x="470" y="416" width="34" height="34" class="fill-cost" opacity="0.3"/>
-          <text x="487" y="436" text-anchor="middle" class="mono-sm sv-ink">30</text>
-          <rect x="96" y="450" width="34" height="34" class="fill-cost" opacity="0.992"/>
-          <text x="113" y="470" text-anchor="middle" class="mono-sm fill-surface">169</text>
-          <rect x="130" y="450" width="34" height="34" class="fill-cost" opacity="0.989"/>
-          <text x="147" y="470" text-anchor="middle" class="mono-sm fill-surface">168</text>
-          <rect x="164" y="450" width="34" height="34" class="fill-cost" opacity="0.993"/>
-          <text x="181" y="470" text-anchor="middle" class="mono-sm fill-surface">169</text>
-          <rect x="198" y="450" width="34" height="34" class="fill-cost" opacity="0.996"/>
-          <text x="215" y="470" text-anchor="middle" class="mono-sm fill-surface">170</text>
-          <rect x="232" y="450" width="34" height="34" class="fill-cost" opacity="0.32"/>
-          <text x="249" y="470" text-anchor="middle" class="mono-sm sv-ink">33</text>
-          <rect x="266" y="450" width="34" height="34" class="fill-cost" opacity="0.303"/>
+          <rect x="470" y="416" width="34" height="34" class="fill-cost" opacity="0.336"/>
+          <text x="487" y="436" text-anchor="middle" class="mono-sm sv-ink">31</text>
+          <rect x="96" y="450" width="34" height="34" class="fill-cost" opacity="0.762"/>
+          <text x="113" y="470" text-anchor="middle" class="mono-sm fill-surface">101</text>
+          <rect x="130" y="450" width="34" height="34" class="fill-cost" opacity="0.718"/>
+          <text x="147" y="470" text-anchor="middle" class="mono-sm fill-surface">94</text>
+          <rect x="164" y="450" width="34" height="34" class="fill-cost" opacity="0.845"/>
+          <text x="181" y="470" text-anchor="middle" class="mono-sm fill-surface">115</text>
+          <rect x="198" y="450" width="34" height="34" class="fill-cost" opacity="0.930"/>
+          <text x="215" y="470" text-anchor="middle" class="mono-sm fill-surface">129</text>
+          <rect x="232" y="450" width="34" height="34" class="fill-cost" opacity="0.347"/>
+          <text x="249" y="470" text-anchor="middle" class="mono-sm sv-ink">32</text>
+          <rect x="266" y="450" width="34" height="34" class="fill-cost" opacity="0.336"/>
           <text x="283" y="470" text-anchor="middle" class="mono-sm sv-ink">31</text>
-          <rect x="300" y="450" width="34" height="34" class="fill-cost" opacity="0.301"/>
+          <rect x="300" y="450" width="34" height="34" class="fill-cost" opacity="0.336"/>
           <text x="317" y="470" text-anchor="middle" class="mono-sm sv-ink">31</text>
-          <rect x="334" y="450" width="34" height="34" class="fill-cost" opacity="0.29"/>
+          <rect x="334" y="450" width="34" height="34" class="fill-cost" opacity="0.331"/>
           <text x="351" y="470" text-anchor="middle" class="mono-sm sv-ink">30</text>
-          <rect x="368" y="450" width="34" height="34" class="fill-cost" opacity="0.314"/>
+          <rect x="368" y="450" width="34" height="34" class="fill-cost" opacity="0.345"/>
           <text x="385" y="470" text-anchor="middle" class="mono-sm sv-ink">32</text>
-          <rect x="402" y="450" width="34" height="34" class="fill-cost" opacity="0.293"/>
+          <rect x="402" y="450" width="34" height="34" class="fill-cost" opacity="0.329"/>
           <text x="419" y="470" text-anchor="middle" class="mono-sm sv-ink">30</text>
-          <rect x="436" y="450" width="34" height="34" class="fill-cost" opacity="0.3"/>
-          <text x="453" y="470" text-anchor="middle" class="mono-sm sv-ink">30</text>
+          <rect x="436" y="450" width="34" height="34" class="fill-cost" opacity="0.336"/>
+          <text x="453" y="470" text-anchor="middle" class="mono-sm sv-ink">31</text>
           <rect x="470" y="450" width="34" height="34" class="fill-sunken"/>
           <text x="487" y="470" text-anchor="middle" class="mono-sm sv-faint">&middot;</text>
           <g class="st-grid" stroke-width="1">
@@ -1279,10 +1241,10 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
       <figcaption>
         <b>The boundary is visible in the data before you are told where it is.</b> Two cheap blocks
         sit on the diagonal &mdash; the four Zen 5 cores at ~20&nbsp;ns, the eight Zen 5c cores at
-        ~30&nbsp;ns &mdash; and everything off them costs about 167&nbsp;ns. Cell values are medians
+        ~31&nbsp;ns &mdash; and everything off them costs 64&ndash;140&nbsp;ns. Cell values are medians
         in nanoseconds, rounded; the diagonal holds SMT-sibling handoffs, sampled on cores 0, 4 and 8
         only. The one thing the schematic above cannot show is row&nbsp;4: core&nbsp;4 answers the
-        Zen&nbsp;5 complex in 76&ndash;155&nbsp;ns while its seven neighbours all charge ~167&nbsp;ns.
+        Zen&nbsp;5 complex more cheaply than its neighbours do, and the spread across the block is wide.
         That asymmetry is reproducible across runs and is not explained here.
       </figcaption>
     </figure>
@@ -1293,9 +1255,9 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
     <h2><span class="num">05</span>Why a handoff costs more than a cache hit</h2>
     <p class="lede">
       Those four numbers do not line up with the latency scale, and the mismatch is worth chasing.
-      Two threads sharing an L1 &mdash; a cache with a <strong>0.78 ns</strong> hit time &mdash;
-      take <strong>18 ns</strong> to pass a line. Two complexes take <strong>167 ns</strong>, which
-      is <em>slower than fetching from DRAM</em>. Neither is an anomaly; the two benchmarks measure
+      Two threads sharing an L1 &mdash; a cache with a <strong>0.79 ns</strong> hit time &mdash;
+      take <strong>21 ns</strong> to pass a line. Two complexes take <strong>100 ns</strong>, which
+      is <em>about what a DRAM fetch costs</em>. Neither is an anomaly; the two benchmarks measure
       different quantities.
     </p>
     <p>
@@ -1317,8 +1279,8 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
           </tr>
         </thead>
         <tbody>
-          <tr><td>Zen 5 @ 5.09 GHz</td><td>65 cyc</td><td>0.21 ns</td><td>12.87 ns</td></tr>
-          <tr><td>Zen 5c @ 3.25 GHz</td><td>65 cyc</td><td>0.31 ns</td><td>20.13 ns</td></tr>
+          <tr><td>Zen 5 @ 5.07 GHz</td><td>65 cyc</td><td>0.21 ns</td><td>12.87 ns</td></tr>
+          <tr><td>Zen 5c @ 3.22 GHz</td><td>65 cyc</td><td>0.31 ns</td><td>20.13 ns</td></tr>
         </tbody>
       </table>
     </div>
@@ -1333,7 +1295,7 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
     <figure>
       <div class="canvas">
         <svg viewBox="0 0 1040 300" role="img"
-             aria-label="Stacked bars splitting each measured handoff into the waiter's PAUSE polling quantum and the remaining coherence work. SMT siblings: 12.9 nanoseconds of polling plus about 5 nanoseconds, with no data movement. Within complex zero: 12.9 plus 8. Within complex one: 20.1 plus 10.6. Across complexes: 12.9 plus 154, far beyond the 104-nanosecond DRAM fetch marked on the axis.">
+             aria-label="Stacked bars splitting each measured handoff into the waiter's PAUSE polling quantum and the remaining coherence work. SMT siblings: 12.9 nanoseconds of polling plus about 8 nanoseconds, with no data movement. Within complex zero: 12.9 plus 7. Within complex one: 20.1 plus 10.6. Across complexes: 12.9 plus 87, comparable to the 103-nanosecond DRAM fetch marked on the axis.">
           <defs>
             <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5"
                     markerWidth="5" markerHeight="5" orient="auto-start-reverse">
@@ -1358,16 +1320,16 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
           <text x="180" y="82" text-anchor="end" class="mono-sm sv-faint">line never moves</text>
           <rect x="200" y="56" width="56.6" height="30" class="fill-sunken"/>
           <rect x="200" y="56" width="56.6" height="30" class="st-rule" stroke-width="1"/>
-          <rect x="256.6" y="56" width="23.7" height="30" class="sv-dim"/>
-          <text x="292" y="75" class="mono sv-ink w500">18.3 ns</text>
+          <rect x="256.6" y="56" width="35.5" height="30" class="sv-dim"/>
+          <text x="304" y="75" class="mono sv-ink w500">21.0 ns</text>
 
           <!-- row 2: CCX0 -->
           <text x="180" y="117" text-anchor="end" class="lbl sv-ink w600">CCX 0 &middot; Zen 5</text>
           <text x="180" y="130" text-anchor="end" class="mono-sm sv-faint">via 16 MB L3</text>
           <rect x="200" y="104" width="56.6" height="30" class="fill-sunken"/>
           <rect x="200" y="104" width="56.6" height="30" class="st-rule" stroke-width="1"/>
-          <rect x="256.6" y="104" width="35.1" height="30" class="sv-z5"/>
-          <text x="303" y="123" class="mono sv-ink w500">20.9 ns</text>
+          <rect x="256.6" y="104" width="30.3" height="30" class="sv-z5"/>
+          <text x="299" y="123" class="mono sv-ink w500">19.8 ns</text>
 
           <!-- row 3: CCX1 -->
           <text x="180" y="165" text-anchor="end" class="lbl sv-ink w600">CCX 1 &middot; Zen 5c</text>
@@ -1382,8 +1344,8 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
           <text x="180" y="236" text-anchor="end" class="mono-sm sv-faint">via Infinity Fabric</text>
           <rect x="200" y="210" width="56.6" height="30" class="fill-sunken"/>
           <rect x="200" y="210" width="56.6" height="30" class="st-rule" stroke-width="1"/>
-          <rect x="256.6" y="210" width="676.4" height="30" class="sv-cost"/>
-          <text x="944" y="229" class="mono sv-cost w500">167 ns</text>
+          <rect x="256.6" y="210" width="383.6" height="30" class="sv-cost"/>
+          <text x="650" y="229" class="mono sv-cost w500">100 ns</text>
 
           <!-- axis -->
           <line x1="200" y1="248" x2="990" y2="248" class="st-rule" stroke-width="1.25"/>
@@ -1412,16 +1374,16 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
       </div>
       <figcaption>
         <b>Most of the three local bars is apparatus, not data movement.</b> Subtract the polling
-        quantum and the coherence work lands at roughly 5, 8 and 11 ns &mdash; and the two
+        quantum and the coherence work lands at roughly 8, 7 and 11 ns &mdash; and the two
         complexes, which look 50% apart, are doing comparable work.
       </figcaption>
     </figure>
 
     <dl class="puzzles">
       <div>
-        <dt>18 ns between SMT siblings, when L1 hits in 0.78 ns</dt>
+        <dt>21 ns between SMT siblings, when L1 hits in 0.79 ns</dt>
         <dd>
-          The line genuinely never moves &mdash; those two threads share one L1. So all 18 ns is
+          The line genuinely never moves &mdash; those two threads share one L1. So all 21 ns is
           apparatus: the waiter&rsquo;s PAUSE quantum, the store draining out of the store buffer,
           and two threads contending for one core&rsquo;s pipeline. This row is the benchmark&rsquo;s
           noise floor, and it is what proves the other rows are mostly floor too.
@@ -1433,18 +1395,18 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
           Not a slower cache. The same PAUSE costs 20.1 ns on a 3.25 GHz Zen 5c core and 12.9 ns on a 5.09 GHz Zen 5 core, so
           most of the difference is the Zen 5c core being slower <em>at waiting</em>. Subtract the
           quantum and both complexes do 8&ndash;11 ns of coherence work, landing right on the
-          measured L3 hit range of 8&ndash;11.9 ns.
+          measured L3 hit range of 8&ndash;14 ns.
         </dd>
       </div>
       <div>
-        <dt>167 ns across the fabric, when DRAM answers in 104 ns</dt>
+        <dt>100 ns across the fabric, when DRAM answers in 103 ns</dt>
         <dd>
           DRAM is a one-way fetch of a line nobody owns: core &rarr; controller &rarr; DRAM &rarr;
           core. A cross-complex handoff is a round trip through a protocol &mdash; acquire
           ownership, cross the fabric to the directory, probe the remote complex, extract the line
           <em>dirty out of another core&rsquo;s L1</em>, carry it back across the fabric. Several
           traversals against DRAM&rsquo;s one, over a fabric that is power-managed on a laptop.
-          That last part is also why this row, alone among the four, scatters between 67 and 171 ns.
+          That last part is also why this row, alone among the four, scatters between 64 and 140 ns.
         </dd>
       </div>
     </dl>
@@ -1453,10 +1415,10 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
       <h3>Which number applies to your code</h3>
       <p>
         <strong>Locks and producer/consumer queues really do pay the polling quantum</strong> &mdash;
-        a waiter there is doing exactly what this benchmark does, so 18&ndash;167 ns is the honest
+        a waiter there is doing exactly what this benchmark does, so 21&ndash;100 ns is the honest
         figure. <strong>False sharing does not.</strong> Those threads are not waiting on each
         other, only writing, so the cost per contended write is the coherence segment alone:
-        roughly 8&ndash;14 ns inside a complex, ~150 ns across it.
+        roughly 7&ndash;11 ns inside a complex, ~87 ns across it.
       </p>
     </div>
   </section>
@@ -1471,10 +1433,10 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
     </p>
     <div class="cards">
       <div class="card c-z5">
-        <div class="figure">77&times;</div>
+        <div class="figure">66&times;</div>
         <h3>Prefetching, when the pattern is predictable</h3>
         <p>
-          Sequential access at DRAM sizes costs 1.8&nbsp;ns instead of 104&nbsp;ns. The hardware
+          Sequential access at DRAM sizes costs 1.7&nbsp;ns instead of 103&nbsp;ns. The hardware
           issues the loads before you ask. Pointer chasing and hash probes get none of this.
         </p>
       </div>
@@ -1489,20 +1451,20 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
         <p class="more"><a href="why_1024_is_slow.html">Read the full explanation &rarr;</a></p>
       </div>
       <div class="card c-z5c">
-        <div class="figure">2.4&times;</div>
+        <div class="figure">3.0&times;</div>
         <h3>Address translation, on 4 KB pages</h3>
         <p>
           The L1 DTLB holds 96 translations &mdash; 384&nbsp;KB of reach, less than this core&rsquo;s
-          L2. A 12&nbsp;MB working set that fits in L3 spans 3,072 pages, so it pays a page walk
-          almost every access.
+          L2. A 12&nbsp;MB working set that fits in L3 spans 3,072 pages, so it pays a page walk on
+          almost every access: 37.2&nbsp;ns instead of 12.5&nbsp;ns.
         </p>
         <p class="more"><a href="tlb_cliff.html">Read the full explanation &rarr;</a></p>
       </div>
       <div class="card c-ink">
-        <div class="figure">1.01&times;</div>
+        <div class="figure">1.03&times;</div>
         <h3>What twelve cores add to DRAM bandwidth</h3>
         <p>
-          One thread reads 38.5&nbsp;GB/s; twelve threads read 38.8&nbsp;GB/s. A memory-bound loop
+          One thread reads 37.5&nbsp;GB/s; twelve threads read 38.8&nbsp;GB/s. A memory-bound loop
           gets no speedup from more cores on this machine &mdash; not a poor one, none.
         </p>
         <p class="more"><a href="#bandwidth">See the scaling curve &rarr;</a></p>
@@ -1528,18 +1490,18 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
         </thead>
         <tbody>
           <tr><td>Register</td><td>&mdash;</td><td>&mdash;</td><td>0.20 ns</td><td>1</td><td>&mdash;</td><td>one thread</td></tr>
-          <tr><td>L1d</td><td>48 KB</td><td>12-way</td><td>0.78 ns</td><td>4</td><td>223 GB/s</td><td>one core, 2 threads</td></tr>
+          <tr><td>L1d</td><td>48 KB</td><td>12-way</td><td>0.79 ns</td><td>4</td><td>234 GB/s</td><td>one core, 2 threads</td></tr>
           <tr><td>L1i</td><td>32 KB</td><td>8-way</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>one core, 2 threads</td></tr>
           <tr><td>L2</td><td>1 MB</td><td>16-way</td><td>2.73 ns</td><td>14</td><td>165 GB/s</td><td>one core, 2 threads</td></tr>
-          <tr><td>L3 &mdash; CCX 0</td><td>16 MB</td><td>16-way</td><td>5.2&ndash;11.9 ns</td><td>27&ndash;60</td><td>157 GB/s</td><td>4 Zen 5 cores</td></tr>
-          <tr><td>L3 &mdash; CCX 1</td><td>8 MB</td><td>16-way</td><td>5.2&ndash;11.9 ns</td><td>27&ndash;60</td><td>157 GB/s</td><td>8 Zen 5c cores</td></tr>
-          <tr class="divide"><td>DRAM</td><td>14 GB</td><td>&mdash;</td><td>104 ns</td><td>530</td><td>38.5 GB/s</td><td>everything</td></tr>
-          <tr><td>NVMe SSD</td><td>931 GB</td><td>&mdash;</td><td>45.8 &micro;s</td><td>232,000</td><td>2.95 GB/s</td><td>everything, persistently</td></tr>
+          <tr><td>L3 &mdash; CCX 0</td><td>16 MB</td><td>16-way</td><td>5.3&ndash;14.0 ns</td><td>27&ndash;70</td><td>157 GB/s</td><td>4 Zen 5 cores</td></tr>
+          <tr><td>L3 &mdash; CCX 1</td><td>8 MB</td><td>16-way</td><td>5.3&ndash;14.0 ns</td><td>27&ndash;70</td><td>157 GB/s</td><td>8 Zen 5c cores</td></tr>
+          <tr class="divide"><td>DRAM</td><td>14 GB</td><td>&mdash;</td><td>103 ns</td><td>507</td><td>37.5 GB/s</td><td>everything</td></tr>
+          <tr><td>NVMe SSD</td><td>931 GB</td><td>&mdash;</td><td>43.3 &micro;s</td><td>220,000</td><td>3.14 GB/s</td><td>everything, persistently</td></tr>
         </tbody>
       </table>
     </div>
     <p class="lede" style="font-size:13.5px">
-      Cache line is 64 bytes at every level. Cycle counts use the 5.07 GHz the Zen 5 cores held
+      Cache line is 64 bytes at every level. Cycle counts use the ~5.1 GHz the Zen 5 cores held
       during the runs; the Zen 5c cores top out at 3.29 GHz, so their cycle counts differ while
       their nanoseconds do not.
     </p>
@@ -1560,7 +1522,9 @@ a:focus-visible{outline:2px solid var(--zen5);outline-offset:3px;border-radius:2
     </p>
     <p>
       Sources and raw <code>.csv</code> results are in this directory; the full write-up is
-      <a href="cache_hierarchy.ipynb">cache_hierarchy.ipynb</a>.
+      <a href="cache_hierarchy.ipynb">cache_hierarchy.ipynb</a>. For the same machine with the
+      sharing and coherence taken out &mdash; capacity, line size, latency, and cache geometry as
+      one core experiences them &mdash; see <a href="1_core_cache.html">What One Core Sees</a>.
     </p>
   </footer>
 

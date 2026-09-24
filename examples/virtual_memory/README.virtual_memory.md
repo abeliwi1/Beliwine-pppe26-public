@@ -6,7 +6,7 @@ Linux, gcc 13.3, 48-bit addresses, 4 KB pages, 15.3 GB of RAM and 15.3 GB of swa
 This directory is about the **operating system's** memory abstraction — address spaces,
 translation, page faults, copy-on-write, sharing and protection. What happens to an address
 *after* it has been translated — cache levels, line sizes, the TLB — is
-[../memory_hierarchy/](../memory_hierarchy/README.md).
+[../memory_hierarchy/](../memory_hierarchy/README.memory.md).
 
 Five programs, none of which needs privileges. They read `/proc/self/{maps,status,smaps_rollup,
 pagemap}` and take fault counts from `getrusage`.
@@ -91,6 +91,6 @@ swapped bits are still readable and `lazy_alloc` uses them.
 
 | Topic | Directory |
 |---|---|
-| Caches, and the TLB's capacity cliff | [../memory_hierarchy/](../memory_hierarchy/README.md) |
-| Threads, which share all of this | [../openmp/](../openmp/) &middot; [../cilk/](../cilk/README.md) |
-| False sharing: two threads, one frame, no logical sharing | [../false_sharing/](../false_sharing/false_sharing_ryzen.md) |
+| Caches, and the TLB's capacity cliff | [../memory_hierarchy/](../memory_hierarchy/README.memory.md) |
+| Threads, which share all of this | [../openmp/](../openmp/) &middot; [../cilk/](../cilk/README.cilk.md) |
+| False sharing: two threads, one frame, no logical sharing | [../false_sharing/](../false_sharing/README.false_sharing.md) |

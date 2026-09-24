@@ -1,8 +1,16 @@
 # Loop optimizations
 
 Five classic loop transformations, each isolated in its own example so the
-win (or the surprising non-win) is unambiguous. Measured on Apple M-series /
-Apple Clang; see each write-up for build flags and exact numbers.
+win (or the surprising non-win) is unambiguous. Measured on an AMD Ryzen AI 9
+HX 370 (Zen 5, "Strix Point") under Linux with g++ 13.3 — 48 KB 12-way L1d
+with 64-byte lines, 1 MB L2 per core, 16 MB L3, 5.13 GHz. See each write-up
+for build flags and exact numbers.
+
+Every benchmark pins itself to a fast core and warms the clock before
+measuring. Both matter on this part: the chip has 5.13 GHz Zen 5 cores and
+3.17 GHz Zen 5c cores, and the governor boosts on instructions-per-cycle, so a
+memory-bound loop left to itself runs the whole way at ~3.59 GHz — and every
+repetition is equally slow, so taking a minimum does not rescue it.
 
 Each example is a single source file; build with `g++ <flags> -o <name>
 <name>.cpp` and run it directly — no shared Makefile.
@@ -92,20 +100,39 @@ flag like `-ffast-math` to happen automatically). Every example below has
 settled the first question already; only loop fusion's FP reduction runs
 into the second.
 
+### See it move
+
+[**loop_carried_dependency.html**](loop_carried_dependency.html) — two loops over
+the same eight numbers, driven by one shared clock. The dependent loop passes a
+baton (the running total `s`) from box to box and needs eight ticks; the
+independent loop has no baton, finishes on tick one, and then sits idle for seven
+ticks while the other is still crawling. The page is standalone — double-click it,
+no server required.
+
+It is the shortest way to make the legality argument above land before anyone has
+looked at a benchmark.
+
 ---
 
-## 1 · Loop fission — trade a memory pass for fewer live registers
+## 1 · Loop unrolling — trade branch/loop overhead for code size
 
-Split a wide loop body into narrower loops to cut register pressure and
-eliminate spills to the stack.
+Process multiple elements per iteration to amortize the loop-control
+overhead, and handle whatever doesn't divide evenly (the **tail problem**).
 
 | Step | Open | What it teaches |
 |------|------|------------------|
-| Read | [loop_fission.md](loop_fission.md) | why 32 simultaneous accumulators exhaust ARM64's register file, and how to read spill/reload annotations in the assembly |
-| Run  | [loop_fission.cpp](loop_fission.cpp) | 32 simultaneous cross-correlations, split into two loops of 16 |
+| Read | [loop_unrolling.md](loop_unrolling.md) | why removing loop-control overhead returns nothing on an out-of-order core, and what to do instead |
+| Run  | [loop_unrolling.cpp](loop_unrolling.cpp) | sum-reduction, four strategies × five working sets (8 KB → 64 MB) × three optimization levels |
+| Port | [loop_unrolling.rs](loop_unrolling.rs) | the same three strategies in Rust — and why Duff's Device doesn't translate mechanically (no fallthrough in `match`) |
 
-Fissioning trades an extra read of the signal array for the removal of
-per-iteration FP spills: 202 ms → 90 ms (**2.24x**).
+**Unrolling on its own does nothing here**: 1.01–1.04x at `-O1`, flat across
+every working set from 8 KB to 64 MB, and Duff's Device is consistently ~5%
+*slower*. The scalar loop already runs at 1.0 cycles/element — the latency of
+the dependent chain through the accumulator — so loop control is issuing for
+free and there is nothing to remove. What the unrolled body is good for is
+making room for something else: four independent accumulators give **1.65x**
+at `-O1`, and at `-O2` GCC vectorises the unrolled kernels (**2.03x**) while
+declining to vectorise the scalar loop. Unrolling is an enabler, not a win.
 
 ---
 
@@ -119,10 +146,11 @@ between them can be worked around algebraically.
 | Read | [loop_fusion.md](loop_fusion.md) | using Var(X) = E[X²] − E[X]² to fuse mean+variance into one pass, and why the "textbook" single-pass alternative (Welford's) is *slower* |
 | Run  | [loop_fusion.cpp](loop_fusion.cpp) | mean/variance over 50M ints — two-pass, fused, and Welford's, side by side |
 
-Fusing removes a full cold-cache reread of a 200 MB array: 69 ms → 39 ms
-(**1.77x**), close to the 2x memory-bandwidth ceiling. Welford's fuses the
-passes too but adds a per-iteration division and a loop-carried dependency —
-0.40x, *slower* than doing two passes.
+Fusing removes a full cold-cache reread of a 381 MB array: 59 ms → 29 ms
+(**2.02x**) — the 2x memory-bandwidth ceiling exactly, meaning the extra
+multiply in the fused body is free. Welford's fuses the passes too but adds a
+per-iteration division and a loop-carried dependency — 0.31x, *slower* than
+doing two passes.
 
 ---
 
@@ -133,54 +161,70 @@ of striding across rows.
 
 | Step | Open | What it teaches |
 |------|------|------------------|
-| Read | [loop_interchange.md](loop_interchange.md) | row-major stride math, and why a 64 KB working set that exactly fills L1 is not a coincidence |
+| Read | [loop_interchange.md](loop_interchange.md) | row-major stride math, and why you count what must be *retained* rather than what is touched |
 | Run  | [loop_interchange.cpp](loop_interchange.cpp) | matrix–vector multiply, column access vs. row access over a 128 MB matrix |
 
-Reordering with no algorithmic change: stride-N column access (one miss per
-element) vs. stride-1 row access (L1-resident) — 47 ms → 12 ms (**3.92x**).
+Reordering with no algorithmic change: stride-32KB column access (one miss per
+element, 1 of 8 doubles per line used) vs. stride-1 row access — 67 ms → 11 ms
+(**6.29x**), with identical results to the last bit.
 
 ---
 
-## 4 · Loop tiling — block the iteration space to fit a cache level
+## 4 · Loop fission — trade a memory pass for fewer live registers
+
+Split a wide loop body into narrower loops to cut register pressure and
+eliminate spills to the stack.
+
+| Step | Open | What it teaches |
+|------|------|------------------|
+| Read | [loop_fission.md](loop_fission.md) | why 32 simultaneous accumulators exhaust x86-64's 16 XMM registers, and how to count spills in the generated assembly |
+| Run  | [loop_fission.cpp](loop_fission.cpp) | 32 simultaneous cross-correlations, split 1/2/4/8 ways |
+
+Fissioning trades extra reads of the signal for the removal of per-iteration
+spills: 238 ms → 56 ms (**4.28x**). The speedup tracks the spill count exactly
+— 134 stack references at 32 accumulators per loop, 57 at 16, **zero at 8** —
+so the knee is where the spills disappear, not where the arithmetic changes.
+
+---
+
+## 5 · Loop tiling — block the iteration space to fit a cache level
 
 Restructure a loop into rectangular blocks so each block's working set is
 reused from cache instead of reloaded from DRAM.
 
 | Step | Open | What it teaches |
 |------|------|------------------|
-| Read | [loop_tiling.md](loop_tiling.md) | two failed candidates (matmul, box filter) before landing on matrix transpose, and a cache **set-conflict** that beats the textbook working-set formula |
-| Run  | [loop_tiling.cpp](loop_tiling.cpp) | 4096×4096 transpose, tile size swept from 8 to 256+ |
+| Read | [loop_tiling.md](loop_tiling.md) | the no-reuse case: why the leading dimension, not the tile size, governs a transpose — and why padding beats tiling there |
+| Read | [matmul_tiling.md](matmul_tiling.md) | the reuse case: why blocking wins ~3x on matrix multiply, and why padding cannot substitute |
+| Run  | [loop_tiling.cpp](loop_tiling.cpp) | 4096×4096 transpose: tile size swept 2→256, then the same transpose with the row stride swept |
+| Run  | [matmul_tiling.cpp](matmul_tiling.cpp) | matmul at n=512/1024/2048, blocked in one, two and three dimensions |
 
-Naive transpose writes stride-N (unpredictable for the prefetcher); tiling
-gets 74 ms → 25 ms (**2.96x**) — but at tile=8, not the tile=64 the
-`2·B²·8 ≤ L1` formula predicts, because N is a power of 2 and every output row
-aliases the same 128 L1 sets. The real constraint is `B ≤ associativity`, not
-raw byte capacity.
+Tiling pays in proportion to how many times a kernel re-reads the same byte, so
+that is the question to ask first. **Matrix multiply** reads every element of B
+once per row of A — blocking cuts that traffic by the tile size and wins
+**2.98x** at n=2048, growing with the problem. **Transpose** reads every element
+exactly once, so there is no reuse for a tile to capture, and the answer comes
+out the other way.
 
----
-
-## 5 · Loop unrolling — trade branch/loop overhead for code size
-
-Process multiple elements per iteration to amortize the loop-control
-overhead, and handle whatever doesn't divide evenly (the **tail problem**).
-
-| Step | Open | What it teaches |
-|------|------|------------------|
-| Read | [loop_unrolling.md](loop_unrolling.md) | 4x unroll + cleanup loop vs. Duff's Device, and why the winner flips across `-O0`/`-O1`/`-O2` |
-| Run  | [loop_unrolling.cpp](loop_unrolling.cpp) | sum-reduction over 100M ints, three strategies × three optimization levels |
-| Port | [loop_unrolling.rs](loop_unrolling.rs) | the same three strategies in Rust — and why Duff's Device doesn't translate mechanically (no fallthrough in `match`) |
-
-Unrolling only wins in the narrow window where register allocation is on but
-auto-vectorization isn't: `-O0` 0.69x (spills dominate) → `-O1` **1.35x**
-(register reuse) → `-O2` 0.83x (the compiler's own SIMD beats hand-unrolled
-scalar code).
+On the transpose: naive writes stride-`lda` (unpredictable for the prefetcher),
+and tiling gets 188 ms → 34 ms (**5.5x** at B=16). But there the tile size is the
+wrong variable. At `lda=4096` a column of the output reaches exactly **one** of the
+64 L1 sets, and that set has 12 ways. Padding `lda` to 4104 makes the *naive*
+loop 7.8x faster — **1.4x faster than the best tile size ever manages** — and
+then tiling becomes a net loss. With no reuse, pad first; tile only if it still
+doesn't fit. The two are independent transformations — on matmul, padding helps
+the *blocked* version and does nothing for the unblocked one.
 
 ---
 
 ## Files at a glance
 
-**Sources** — `loop_fission.cpp`, `loop_fusion.cpp`, `loop_interchange.cpp`, `loop_tiling.cpp`, `loop_unrolling.cpp`, `loop_unrolling.rs`
-**Write-ups** — `loop_fission.md`, `loop_fusion.md`, `loop_interchange.md`, `loop_tiling.md`, `loop_unrolling.md`
+**Sources** — `loop_fission.cpp`, `loop_fusion.cpp`, `loop_interchange.cpp`, `loop_tiling.cpp`, `matmul_tiling.cpp`, `loop_unrolling.cpp`, `loop_unrolling.rs`
+**Visual** — [loop_carried_dependency.html](loop_carried_dependency.html) — standalone cartoon contrasting a dependent and an independent loop on one clock
+**Visual** — [loop_fission_spill.html](loop_fission_spill.html) — standalone panel showing the register files overflowing to the stack as the loop body widens
+**Visual** — [loop_interchange_memory.html](loop_interchange_memory.html) — standalone cartoon showing row- versus column-order traversal against the memory the array actually occupies
+**Visual** — [tiling_iteration_order.html](tiling_iteration_order.html) — standalone animation of blocked versus unblocked iteration order, counting the operands each keeps live
+**Write-ups** — `loop_fission.md`, `loop_fusion.md`, `loop_interchange.md`, `loop_tiling.md`, `matmul_tiling.md`, `loop_unrolling.md`
 **Reference** — [loop_optimizations_overview.md](loop_optimizations_overview.md) — non-benchmarked software examples of fusion and fission across domains (image processing, DB queries, compilers, video/audio, ML pipelines, network packet processing)
 
 Every write-up here follows the same arc: state the transformation, show why

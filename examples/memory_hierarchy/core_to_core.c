@@ -13,10 +13,10 @@
  * L3 slices, so the answer depends on which two cores are talking.
  *
  * Measurement notes, both learned the hard way on this machine:
- *   - Each thread runs a compute warmup before the timed section.  A spin loop
- *     built out of PAUSE does not raise the core's clock, so without the
- *     warmup the Zen 5c cores stay near idle frequency and cross-complex
- *     results scatter over 74-180 ns run to run.
+ *   - Each thread warms its core with high-IPC work before the timed section
+ *     (warm_core in harness.h).  A spin loop built out of PAUSE does not
+ *     raise the clock, so without it the Zen 5c cores stay near idle
+ *     frequency and cross-complex results scatter over 74-180 ns.
  *   - The timed region is measured *inside* the parity-0 thread, after a
  *     barrier, so thread creation and warmup are outside the clock.
  *
@@ -24,14 +24,11 @@
  *
  * Build: gcc -O2 -pthread -o core_to_core core_to_core.c
  */
-#define _GNU_SOURCE
+#include "harness.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <stdatomic.h>
 #include <pthread.h>
-#include <sched.h>
-#include <time.h>
 
 #define ITERS   200000
 #define WARMUP   20000
@@ -42,34 +39,12 @@ static _Alignas(64) char keep_line_private[64];
 
 static pthread_barrier_t barrier;
 
-static double now_s(void) {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ts.tv_sec + 1e-9 * ts.tv_nsec;
-}
-
-static void pin_self(int cpu) {
-    cpu_set_t set; CPU_ZERO(&set); CPU_SET(cpu, &set);
-    pthread_setaffinity_np(pthread_self(), sizeof(set), &set);
-}
-
-/* run a dependent add chain for `seconds` to pull this core up to its
- * boost clock before anything is timed */
-static void spin_up(double seconds) {
-    uint64_t x = 0;
-    double t0 = now_s();
-    while (now_s() - t0 < seconds)
-        for (long i = 0; i < 20L * 1000 * 1000; i++)
-            __asm__ volatile ("addq $1, %0" : "+r"(x));
-    __asm__ volatile ("" :: "r"(x));
-}
-
 struct arg { int cpu, parity; double ns; };
 
 static void *pong(void *v) {
     struct arg *a = v;
-    pin_self(a->cpu);
-    spin_up(0.2);
+    pin_to(a->cpu);
+    warm_core(0.2);   /* high-IPC, or the governor leaves this core slow */
 
     /* warmup exchanges: get the line into the coherence steady state */
     pthread_barrier_wait(&barrier);
