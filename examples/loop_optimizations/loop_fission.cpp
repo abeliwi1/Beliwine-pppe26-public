@@ -39,8 +39,8 @@
 // whenever you change targets.
 //
 // To see the spill/reload instructions:
-//   g++ -O1 -S -o fission.s loop_fission.cpp
-//   grep -c '(%rsp)' fission.s          # stack traffic in the inner loops
+//   g++ -O1 -masm=intel -S -o fission.s loop_fission.cpp
+//   grep -c '\[rsp' fission.s          # stack traffic in the inner loops
 //
 // Build:
 //   g++ -O1 -o fission_O1 loop_fission.cpp && ./fission_O1
@@ -765,10 +765,10 @@ int main() {
     cout << "\nThe knee is at 8 accumulators per loop, where the spills reach zero.\n"
             "Count them yourself -- the speedup tracks the stack traffic exactly:\n"
             "\n"
-            "  g++ -O1 -S -o fission.s loop_fission.cpp\n"
+            "  g++ -O1 -masm=intel -S -o fission.s loop_fission.cpp\n"
             "  for f in fused split16 split8 split4; do \\\n"
-            "      echo -n \"$f \"; sed -n \"/correlate_$f/,/^\\s*\\.size/p\" fission.s \\\n"
-            "      | grep -c '(%rsp)'; done\n"
+            "      echo -n \"$f \"; sed -n \"/^_Z.*correlate_$f/,/\\.size/p\" fission.s \\\n"
+            "      | grep -c '\\[rsp'; done\n"
             "\n"
             "    32 accumulators -> 134 stack refs      8 accumulators ->   0\n"
             "    16 accumulators ->  57 stack refs      4 accumulators ->   0\n"

@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  Vector lanes — the interactive version of the register figure in section 1
+  of course_materials/07.vectorization.md.
+
+  It opens at 128-bit / int32 = 4 lanes, carrying the same values as that
+  figure (a = 7 3 9 4, b = 7 5 9 1), so the page is literally that diagram
+  with the compare running.  Click up to 256 or 512 and watch the lane count
+  follow:
+
+      lanes = register width / element width
+
+  which is also section 4's hardware table, made operable:
+
+      128-bit  SSE / NEON   int8 16  int16  8  int32  4  int64 2
+      256-bit  AVX2         int8 32  int16 16  int32  8  int64 4
+      512-bit  AVX-512      int8 64  int16 32  int32 16  int64 8
+
+  The point students miss from the static figure is that the ELEMENT TYPE
+  moves the ceiling: int32 -> int64 halves the lanes on the same register.
+
+  A compare then runs two ways on one clock: the scalar row one lane per
+  instruction, the vector row all lanes in one.
+
+  Single-theme by choice: a light panel, with every colour painted explicitly
+  so it keeps its appearance on a dark background rather than borrowing one.
+
+  Double-click to open.  No server, no build, no dependencies beyond the
+  Google Fonts link (it degrades to system fonts offline).
+
+  Companion to: ../../course_materials/07.vectorization.md and
+                README.vectorization.md
+-->
+<title>One Instruction, Many Lanes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+</head>
+<body>
+<style>
+  /* Deliberately single-theme: a light instrument panel.  No prefers-color-scheme
+     block and no [data-theme] stamps -- every colour below is painted explicitly,
+     including the body background, so the page holds its own appearance on a dark
+     host ground instead of borrowing it. */
+  :root {
+    --bg:       #FAF9F7;
+    --card:     #FFFFFF;
+    --sunk:     #F1EFEC;
+    --ink:      #1C1B19;
+    --ink-2:    #45433F;
+    --muted:    #736F69;
+    --rule:     #E3E0DA;
+    --rule-2:   #CAC6BE;
+    --idle:     #E9E6E1;
+    --simd:     #4F46C4;
+    --simd-bg:  #E5E3F7;
+    --scalar:   #B0561F;
+    --scalar-bg:#F8E7DB;
+    --miss:     #A8A49D;
+    --shadow:   0 1px 2px rgba(28,27,25,.05), 0 10px 26px rgba(28,27,25,.05);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0; padding: 0 18px 72px;
+    background: var(--bg); color: var(--ink);
+    font-family: Figtree, system-ui, -apple-system, sans-serif;
+    font-size: 16.5px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  .spine { max-width: 64ch; }
+  h1 {
+    font-size: clamp(1.85rem, 4.6vw, 2.5rem); font-weight: 700;
+    letter-spacing: -.025em; line-height: 1.12; margin: 46px 0 10px;
+    text-wrap: balance;
+  }
+  .sub { color: var(--muted); margin: 0 0 26px; max-width: 54ch; }
+  h2 { font-size: 1.2rem; font-weight: 600; margin: 34px 0 8px; letter-spacing: -.012em; }
+  p { margin: 0 0 14px; }
+  .m { font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; font-size: .88em; }
+
+  /* ---- controls ---- */
+  .bar {
+    background: var(--card); border: 1px solid var(--rule); border-radius: 11px;
+    padding: 14px 16px; margin-bottom: 18px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 11px;
+  }
+  .grp { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .grp > .lbl {
+    font-family: "JetBrains Mono", monospace; font-size: 10.5px; font-weight: 700;
+    letter-spacing: .13em; text-transform: uppercase; color: var(--muted);
+    min-width: 108px;
+  }
+  button {
+    font-family: "JetBrains Mono", monospace; font-size: 12.5px; font-weight: 500;
+    color: var(--ink); background: var(--bg);
+    border: 1px solid var(--rule-2); border-radius: 6px;
+    padding: 7px 13px; cursor: pointer;
+  }
+  button:hover { border-color: var(--muted); }
+  button:focus-visible { outline: 2px solid var(--simd); outline-offset: 2px; }
+  button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  button.run { background: var(--simd); color: #fff; border-color: var(--simd); font-weight: 700; }
+
+  .verdict {
+    background: var(--sunk); border: 1px solid var(--rule); border-radius: 9px;
+    padding: 12px 15px; margin-bottom: 18px;
+    font-family: "JetBrains Mono", monospace; font-size: 1.02rem;
+    font-variant-numeric: tabular-nums; color: var(--ink-2);
+  }
+  .verdict b { color: var(--simd); font-weight: 700; }
+  .verdict .w { color: var(--ink); font-weight: 700; }
+
+  /* ---- the register figure ---- */
+  .fig {
+    background: var(--card); border: 1px solid var(--rule); border-radius: 11px;
+    padding: 18px 16px 16px; box-shadow: var(--shadow); margin-bottom: 18px;
+    overflow-x: auto;
+  }
+  .reg { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+  .reg:last-child { margin-bottom: 0; }
+  .rlab {
+    font-family: "JetBrains Mono", monospace; font-size: 12px; font-weight: 700;
+    width: 62px; flex: none; text-align: right; color: var(--muted);
+  }
+  .lanes { display: flex; gap: 2px; flex: 1; min-width: 380px; }
+  .lane {
+    flex: 1; min-width: 0; height: 38px; border-radius: 4px;
+    background: var(--idle); border: 1px solid var(--rule-2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: "JetBrains Mono", monospace; font-size: 12px; font-weight: 500;
+    color: var(--ink-2); overflow: hidden;
+    transition: background .18s ease, border-color .18s ease, color .18s ease;
+  }
+  .lane.eq   { background: var(--simd-bg);   border-color: var(--simd);   color: var(--simd);   font-weight: 700; }
+  .lane.ne   { background: var(--idle);      border-color: var(--rule-2); color: var(--miss); }
+  .lane.pend { background: var(--idle); border-style: dashed; color: transparent; }
+  .lane.cur  { background: var(--scalar); border-color: var(--scalar); color: #fff; font-weight: 700; }
+  .lane.tiny { font-size: 0; }
+
+  .opband {
+    display: flex; align-items: center; gap: 10px; margin: 2px 0 9px;
+  }
+  .opband .rlab { color: var(--simd); }
+  .opband .bandline {
+    flex: 1; min-width: 380px; height: 22px; border-radius: 5px;
+    background: var(--simd-bg); border: 1px dashed var(--simd);
+    display: flex; align-items: center; justify-content: center;
+    font-family: "JetBrains Mono", monospace; font-size: 11px; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--simd);
+  }
+
+  .row-head {
+    display: flex; align-items: baseline; gap: 9px; margin: 16px 0 7px;
+    padding-top: 13px; border-top: 1px solid var(--rule);
+  }
+  .row-head:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+  .row-name { font-weight: 600; font-size: .98rem; }
+  .row-name.s { color: var(--scalar); }
+  .row-name.v { color: var(--simd); }
+  .count {
+    margin-left: auto; font-family: "JetBrains Mono", monospace;
+    font-size: .92rem; font-variant-numeric: tabular-nums; color: var(--muted);
+  }
+  .count b { color: var(--ink); font-weight: 700; }
+
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; margin-top: 6px; }
+  th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--rule); }
+  th:first-child, td:first-child { text-align: left; }
+  th {
+    font-size: .68rem; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  td { font-family: "JetBrains Mono", monospace; font-size: .86rem; font-variant-numeric: tabular-nums; }
+  tr.on td { background: var(--simd-bg); }
+  tr.on td:first-child { font-weight: 700; }
+
+  footer {
+    margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--rule);
+    font-size: .85rem; color: var(--muted);
+  }
+  @media (prefers-reduced-motion: reduce) { .lane { transition: none; } }
+</style>
+
+<div class="wrap">
+
+  <h1>One Instruction, Many Lanes</h1>
+  <p class="sub">A vector register is an ordinary register that the hardware has agreed to read as several numbers side by side. How many depends on two things, and you control both.</p>
+
+  <div class="bar">
+    <div class="grp">
+      <span class="lbl">register</span>
+      <button data-w="128" aria-pressed="true">128-bit &middot; SSE / NEON</button>
+      <button data-w="256" aria-pressed="false">256-bit &middot; AVX2</button>
+      <button data-w="512" aria-pressed="false">512-bit &middot; AVX-512</button>
+    </div>
+    <div class="grp">
+      <span class="lbl">element</span>
+      <button data-e="8"  aria-pressed="false">int8</button>
+      <button data-e="16" aria-pressed="false">int16</button>
+      <button data-e="32" aria-pressed="true">int32 / float</button>
+      <button data-e="64" aria-pressed="false">int64 / double</button>
+    </div>
+    <div class="grp">
+      <span class="lbl">compare</span>
+      <button class="run" id="run">&#9654; Run</button>
+      <button id="reset">Reset</button>
+    </div>
+  </div>
+
+  <div class="verdict" id="verdict"></div>
+
+  <div class="fig">
+    <div class="reg"><span class="rlab">a</span><div class="lanes" id="la"></div></div>
+    <div class="opband"><span class="rlab">==</span><div class="bandline">one instruction, every lane at once</div></div>
+    <div class="reg"><span class="rlab">b</span><div class="lanes" id="lb"></div></div>
+
+    <div class="row-head"><span class="row-name s">Scalar</span><span class="count">compares issued so far <b id="c-s">0</b></span></div>
+    <div class="reg"><span class="rlab">dst</span><div class="lanes" id="ls"></div></div>
+
+    <div class="row-head"><span class="row-name v">Vector</span><span class="count">compares issued so far <b id="c-v">0</b></span></div>
+    <div class="reg"><span class="rlab">dst</span><div class="lanes" id="lv"></div></div>
+  </div>
+
+  <div class="spine">
+    <h2>What you are looking at</h2>
+    <p>Both rows compute exactly the same thing: for each position, is <span class="m">a</span> equal to <span class="m">b</span>? A lane that matches fills with all ones, which is how a vector compare reports true; a lane that does not is left at zero.</p>
+    <p>The scalar row does it one position per instruction, so it needs as many instructions as there are elements. The vector row does every position in <em>one</em>. That is the whole idea, and the only number that changes it is the lane count.</p>
+
+    <h2>Lanes are the ceiling</h2>
+    <p>Lane count is just division:</p>
+    <p class="m">lanes = register width &divide; element width</p>
+    <p>Which means <strong>the data type you pick changes your speedup</strong>. Switch the element from <span class="m">int32</span> to <span class="m">int64</span> above and watch the lane count halve — same register, same instruction, half the work per issue. No transformation in the loop-optimization lecture behaves that way.</p>
+  </div>
+
+  <table>
+    <thead><tr><th>register</th><th>int8</th><th>int16</th><th>int32 / float</th><th>int64 / double</th></tr></thead>
+    <tbody>
+      <tr id="r128"><td>128-bit — SSE, NEON</td><td>16</td><td>8</td><td>4</td><td>2</td></tr>
+      <tr id="r256"><td>256-bit — AVX2</td><td>32</td><td>16</td><td>8</td><td>4</td></tr>
+      <tr id="r512"><td>512-bit — AVX-512</td><td>64</td><td>32</td><td>16</td><td>8</td></tr>
+    </tbody>
+  </table>
+
+  <div class="spine">
+    <p>These are ceilings, not speedups. You will not reach them — loads, stores, the leftover elements at the end of an array, and anything that moves data between vector and scalar registers all cost. But the lane count tells you immediately whether a rewrite is worth attempting, and a 512-bit register is four times the width of a 128-bit one without being four times the speed.</p>
+  </div>
+
+  <footer>
+    Companion to <span class="m">course_materials/07.vectorization.md</span> and
+    <span class="m">examples/vectorization/</span>, where a loop the compiler refuses to
+    vectorize is worked three ways — by hand in AVX2, by hand in NEON, and once in
+    Highway that compiles to both — and measured at 2&ndash;3.5&times; on a Ryzen and
+    1.5&ndash;1.8&times; on an M5.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  var W = 128, E = 32, step = 0, timer = null;
+  var A = [], B = [];
+
+  var la = document.getElementById('la'), lb = document.getElementById('lb');
+  var ls = document.getElementById('ls'), lv = document.getElementById('lv');
+
+  function lanes() { return W / E; }
+
+  // The first four lanes carry the same values as the static figure in
+  // section 1 of the lecture, so at the default 128-bit width this page is
+  // literally that diagram with the compare running.
+  var FIG_A = [7, 3, 9, 4], FIG_B = [7, 5, 9, 1];
+
+  function makeData() {
+    var n = lanes();
+    A = []; B = [];
+    for (var i = 0; i < n; i++) {
+      if (i < 4) { A.push(FIG_A[i]); B.push(FIG_B[i]); continue; }
+      var v = (i * 7 + 3) % 10;
+      A.push(v);
+      // roughly half the remaining lanes match, deterministically
+      B.push((i % 3 === 0 || i % 4 === 1) ? v : (v + 1 + (i % 3)) % 10);
+    }
+  }
+
+  function fill(host, vals, cls) {
+    var n = lanes(), tiny = n > 16;
+    host.innerHTML = '';
+    for (var i = 0; i < n; i++) {
+      var d = document.createElement('div');
+      d.className = 'lane' + (tiny ? ' tiny' : '') + (cls ? ' ' + cls : '');
+      d.textContent = vals ? vals[i] : '';
+      host.appendChild(d);
+    }
+    return host.children;
+  }
+
+  function redraw() {
+    makeData();
+    fill(la, A); fill(lb, B);
+    fill(ls, null, 'pend'); fill(lv, null, 'pend');
+    step = 0;
+    document.getElementById('c-s').textContent = 0;
+    document.getElementById('c-v').textContent = 0;
+
+    var n = lanes();
+    document.getElementById('verdict').innerHTML =
+      '<span class="w">' + W + '</span> bits &divide; <span class="w">' + E +
+      '</span>-bit elements = <b>' + n + ' lanes</b>' +
+      ' &nbsp;&rarr;&nbsp; scalar needs <span class="w">' + n +
+      '</span> instructions, vector needs <b>1</b>';
+
+    ['r128', 'r256', 'r512'].forEach(function (id) {
+      document.getElementById(id).classList.toggle('on', id === 'r' + W);
+    });
+  }
+
+  function paintResult(host, upto) {
+    var n = lanes(), cells = host.children;
+    for (var i = 0; i < n; i++) {
+      var c = cells[i];
+      c.className = 'lane' + (n > 16 ? ' tiny' : '');
+      if (i < upto) {
+        c.classList.add(A[i] === B[i] ? 'eq' : 'ne');
+        c.textContent = A[i] === B[i] ? '1s' : '0';
+      } else {
+        c.classList.add('pend');
+        c.textContent = '';
+      }
+    }
+  }
+
+  function advance() {
+    var n = lanes();
+    if (step < n) step++;
+    paintResult(ls, step);
+    document.getElementById('c-s').textContent = step;
+    // the vector result lands whole, on the very first tick
+    if (step >= 1) {
+      paintResult(lv, n);
+      document.getElementById('c-v').textContent = 1;
+    }
+    if (step >= n) stop();
+  }
+  function stop() {
+    if (timer) { clearInterval(timer); timer = null; }
+    document.getElementById('run').innerHTML = '&#9654; Run';
+  }
+  function start() {
+    if (step >= lanes()) redraw();
+    var n = lanes();
+    timer = setInterval(advance, Math.max(90, 900 / n));
+    document.getElementById('run').innerHTML = '&#10074;&#10074; Pause';
+  }
+
+  document.querySelectorAll('button[data-w]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      stop();
+      document.querySelectorAll('button[data-w]').forEach(function (o) { o.setAttribute('aria-pressed', 'false'); });
+      b.setAttribute('aria-pressed', 'true');
+      W = parseInt(b.dataset.w, 10);
+      redraw();
+    });
+  });
+  document.querySelectorAll('button[data-e]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      stop();
+      document.querySelectorAll('button[data-e]').forEach(function (o) { o.setAttribute('aria-pressed', 'false'); });
+      b.setAttribute('aria-pressed', 'true');
+      E = parseInt(b.dataset.e, 10);
+      redraw();
+    });
+  });
+  document.getElementById('run').addEventListener('click', function () { timer ? stop() : start(); });
+  document.getElementById('reset').addEventListener('click', function () { stop(); redraw(); });
+
+  redraw();
+})();
+</script>
+
+</body>
+</html>

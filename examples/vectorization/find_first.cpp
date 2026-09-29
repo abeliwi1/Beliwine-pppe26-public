@@ -43,8 +43,16 @@
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <random>
 #include <vector>
+
+#if defined(__linux__)
+  #include <sched.h>
+#elif defined(__APPLE__)
+  #include <pthread.h>
+  #include <sys/qos.h>
+#endif
 
 #if __has_include(<hwy/highway.h>)
 #define HAVE_HIGHWAY 1
@@ -52,6 +60,83 @@
 #include <hwy/highway.h>
 namespace hn = hwy::HWY_NAMESPACE;
 #endif
+
+
+// ---------------------------------------------------------------------------
+// Measurement harness.
+//
+// These times are single-digit nanoseconds per call, so two machine properties
+// that are easy to ignore will dominate the result if you let them:
+//
+//  1. HETEROGENEOUS CORES.  The Ryzen has Zen 5 cores at 5.13 GHz and Zen 5c
+//     cores at 3.17 GHz; Apple silicon has performance and efficiency cores.
+//     An unpinned run lands wherever the scheduler puts it, which is a 1.6x
+//     spread on the same binary.
+//  2. CLOCK RAMP.  The governor raises the clock in response to instructions
+//     per cycle, not to the core being busy, and it takes a moment to do it.
+//     A cold first measurement is taken at the base clock.
+//
+// Set PIN_CPU to move off a busy core.  On Apple silicon there is no numbered
+// pinning, but the quality-of-service class selects the cluster: PIN_CPU under
+// 4 asks for a performance core.
+// ---------------------------------------------------------------------------
+
+static int pin_to_fast_core() {
+  int cpu = 0;
+  if (const char* e = getenv("PIN_CPU")) cpu = atoi(e);
+#if defined(__linux__)
+  cpu_set_t set;
+  CPU_ZERO(&set);
+  CPU_SET(cpu, &set);
+  if (sched_setaffinity(0, sizeof set, &set) != 0)
+    fprintf(stderr, "warning: could not pin to cpu%d\n", cpu);
+#elif defined(__APPLE__)
+  pthread_set_qos_class_self_np(
+      cpu < 4 ? QOS_CLASS_USER_INTERACTIVE : QOS_CLASS_BACKGROUND, 0);
+#endif
+  return cpu;
+}
+
+// A dependent chain of integer adds retires one per cycle, so this reports the
+// clock the core is running at now rather than its nameplate maximum.
+static double core_clock_ghz() {
+  const long n = 100000000;
+  long a = 0;
+  auto t0 = std::chrono::steady_clock::now();
+  for (long i = 0; i < n / 8; i++)
+#if defined(__aarch64__)
+    asm volatile("add %0,%0,#1\n\tadd %0,%0,#1\n\tadd %0,%0,#1\n\tadd %0,%0,#1\n\t"
+                 "add %0,%0,#1\n\tadd %0,%0,#1\n\tadd %0,%0,#1\n\tadd %0,%0,#1"
+                 : "+r"(a));
+#else
+    asm volatile("addq $1,%0\n\taddq $1,%0\n\taddq $1,%0\n\taddq $1,%0\n\t"
+                 "addq $1,%0\n\taddq $1,%0\n\taddq $1,%0\n\taddq $1,%0"
+                 : "+r"(a));
+#endif
+  auto t1 = std::chrono::steady_clock::now();
+  return n / std::chrono::duration<double>(t1 - t0).count() / 1e9;
+}
+
+// Eight INDEPENDENT chains, so this is high-IPC and the governor responds to
+// it.  Spinning on the dependent chain above does not raise the clock.
+static double warm_up(double seconds = 0.8) {
+  long a0 = 0, a1 = 0, a2 = 0, a3 = 0, a4 = 0, a5 = 0, a6 = 0, a7 = 0;
+  auto t0 = std::chrono::steady_clock::now();
+  while (std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count() < seconds)
+    for (int i = 0; i < 200000; i++)
+#if defined(__aarch64__)
+      asm volatile("add %0,%0,#1\n\tadd %1,%1,#1\n\tadd %2,%2,#1\n\tadd %3,%3,#1\n\t"
+                   "add %4,%4,#1\n\tadd %5,%5,#1\n\tadd %6,%6,#1\n\tadd %7,%7,#1"
+                   : "+r"(a0),"+r"(a1),"+r"(a2),"+r"(a3),"+r"(a4),"+r"(a5),"+r"(a6),"+r"(a7));
+#else
+      asm volatile("addq $1,%0\n\taddq $1,%1\n\taddq $1,%2\n\taddq $1,%3\n\t"
+                   "addq $1,%4\n\taddq $1,%5\n\taddq $1,%6\n\taddq $1,%7"
+                   : "+r"(a0),"+r"(a1),"+r"(a2),"+r"(a3),"+r"(a4),"+r"(a5),"+r"(a6),"+r"(a7));
+#endif
+  return core_clock_ghz();
+}
+
+// ---------------------------------------------------------------------------
 
 // Scalar.  The compiler leaves this alone.
 long find_scalar(const int64_t* data, long n, int64_t target) {
@@ -131,20 +216,33 @@ long find_highway(const int64_t* data, long n, int64_t target) {
 
 typedef long (*FindFn)(const int64_t*, long, int64_t);
 
+// Minimum of TRIALS passes, not the mean of one.  The mean of a single pass
+// takes whatever interference happened to land during it, which is how two
+// tables measured on the same machine end up disagreeing by a third.
+static const int TRIALS = 7;
+
 static double time_it(FindFn f, const int64_t* data, long n, int64_t target,
                       int reps) {
-  auto t0 = std::chrono::steady_clock::now();
+  double best = 1e300;
   volatile long sink = 0;
-  for (int r = 0; r < reps; r++) {
-    // Keeps the compiler from hoisting the call out of the timing loop.
-    asm volatile("" ::"r"(data) : "memory");
-    sink += f(data, n, target);
+  for (int t = 0; t < TRIALS; t++) {
+    auto t0 = std::chrono::steady_clock::now();
+    for (int r = 0; r < reps; r++) {
+      // Keeps the compiler from hoisting the call out of the timing loop.
+      asm volatile("" ::"r"(data) : "memory");
+      sink += f(data, n, target);
+    }
+    auto t1 = std::chrono::steady_clock::now();
+    double ns = std::chrono::duration<double>(t1 - t0).count() / reps * 1e9;
+    if (ns < best) best = ns;
   }
-  auto t1 = std::chrono::steady_clock::now();
-  return std::chrono::duration<double>(t1 - t0).count() / reps * 1e9;  // ns
+  return best;
 }
 
 int main() {
+  int cpu = pin_to_fast_core();
+  double ghz = warm_up();
+
   const long n = 8192;  // 64 KiB of int64, fits in L1
   const int64_t target = 7;
   const int reps = 20000;
@@ -153,6 +251,7 @@ int main() {
   std::mt19937_64 rng(42);
   for (long i = 0; i < n; i++) data[(size_t)i] = (int64_t)(rng() % 1000000) + 1000;
 
+  printf("cpu%d, %.2f GHz after warm-up (measured), min of %d trials\n", cpu, ghz, TRIALS);
   printf("%ld int64 values, searching for the first match\n", n);
 #ifdef HAVE_HIGHWAY
   printf("highway target: %s, %zu lanes per vector\n\n",

@@ -117,10 +117,10 @@ at.
 ## Measuring the spills
 
 ```bash
-g++ -O1 -S -o fission.s loop_fission.cpp
+g++ -O1 -masm=intel -S -o fission.s loop_fission.cpp
 for f in fused split16 split8 split4; do
     echo -n "$f "
-    sed -n "/correlate_$f/,/^\s*\.size/p" fission.s | grep -c '(%rsp)'
+    sed -n "/^_Z.*correlate_$f/,/\.size/p" fission.s | grep -c '\[rsp'
 done
 ```
 
@@ -128,12 +128,12 @@ The spilled accumulators are plainly visible in the 32-accumulator version —
 written to a stack slot and read back from it inside the hot loop:
 
 ```
-    movss   %xmm1, -52(%rsp)     # spill an accumulator
+    movss   DWORD PTR -52[rsp], xmm1     # spill an accumulator
     ...
-    addss   -52(%rsp), %xmm15    # read it back to accumulate into it
+    addss   xmm15, DWORD PTR -52[rsp]    # read it back to accumulate into it
 ```
 
-In the 8- and 4-accumulator versions there are no `(%rsp)` references in the
+In the 8- and 4-accumulator versions there are no `[rsp]` references in the
 loops at all. Every accumulator lives in an XMM register for the duration.
 
 Note that the function boundary matters when counting: the last correlation
@@ -190,7 +190,7 @@ the 4.28x as purely a register-allocation result.
 1. **Fission trades memory passes for register pressure.** It wins while there
    are spills on the critical path and stops the moment there aren't.
 
-2. **Count the spills; don't guess at them.** `grep -c '(%rsp)'` on the
+2. **Count the spills; don't guess at them.** `grep -c '\[rsp'` on the
    generated assembly turns the whole question into an observation. Here the
    speedup tracks the count exactly.
 

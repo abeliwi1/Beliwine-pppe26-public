@@ -13,12 +13,6 @@ clang++ -O3 -std=c++17 -stdlib=libc++ find_first.cpp -o find_first -lhwy
 ./find_first
 ```
 
-[find_first_diagram.html](find_first_diagram.html) draws the computation: the
-scalar and vector scans side by side, what happens inside one vector step, and
-why the vectorizer refuses this loop. Open it in a browser.
-
----
-
 # Vectorization: a loop the compiler will not do for you
 
 Auto-vectorization handles most simple loops well enough that hand-written
@@ -36,6 +30,12 @@ long find_first(const int64_t* data, long n, int64_t target) {
 }
 ```
 
+
+[find_first_diagram.html](find_first_diagram.html) draws the computation: the
+scalar and vector scans side by side, what happens inside one vector step, and
+why the vectorizer refuses this loop. Open it in a browser.
+
+
 Ask the compiler why it did not vectorize this and it tells you:
 
 ```
@@ -49,6 +49,8 @@ loop exits when it finds something, so the trip count depends on the data
 and there is no plan to make. The compiler emits plain scalar code —
 `cmp` / `je`, one element per iteration, no vector instructions at any
 optimization level.
+
+
 
 ## Why this one counts
 
@@ -84,6 +86,32 @@ accepting a restriction the compiler was obliged to reject. The compiler is
 not declining to vectorize this loop because it doubts you. It is declining
 because its vectorizer is built around a trip count, and this loop does not
 have one.
+
+## How these were measured
+
+The program pins itself to one core, spins on a high-IPC loop until the
+governor raises the clock, and reports the minimum of seven timing passes
+rather than the mean of one. Set `PIN_CPU` to move off a busy core:
+
+```bash
+PIN_CPU=2 ./find_first
+```
+
+All three matter at this scale. The times below are single-digit to
+low-thousand nanoseconds per call, and this kernel is **compute-bound** — its
+times scale with the core clock, unlike the memory-bound loops in
+[../loop_optimizations/](../loop_optimizations/README.loops.md), which barely
+move when the clock does. So a run on a 3.17 GHz efficiency core, or on a
+performance core the governor has not yet boosted, reports numbers roughly
+twice as large, and the scalar-versus-vector *ratios* shift too: the scalar
+path is clock-bound while the short vector path is dominated by fixed
+overhead.
+
+> **The two tables below were taken in separate sessions before the harness
+> pinned and warmed the core, and their scalar baselines disagree by up to
+> 38%** (702.7 vs 909.1 ns at 4096; 1160.3 vs 1596.1 at 8191). The speedups
+> are still the right shape, but the absolute times should be re-taken in one
+> sitting on a warmed core before they are quoted anywhere.
 
 ## Results: hand-written AVX2
 

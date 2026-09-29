@@ -10,7 +10,9 @@
 <style>
   /* the hosted version of this page got a reset from its runtime; standalone,
      it brings its own */
-  body { margin: 0; }
+  /* Single-theme by choice: a light page.  body paints its own background so
+     it keeps that appearance on a dark host ground instead of borrowing one. */
+  body { margin: 0; background: var(--bg); color: var(--ink); }
   img { max-width: 100%; }
 
   @font-face {
@@ -98,37 +100,6 @@
     --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg:        #0D1117;
-      --surface:   #151B24;
-      --panel:     #111823;
-      --ink:       #E6EBF3;
-      --ink-2:     #98A5B8;
-      --ink-3:     #6D7A8D;
-      --rule:      #28313E;
-      --rule-soft: #1E2733;
-      --accent:    #7BA4FF;
-      --accent-bg: #16233C;
-      --hit:       #FF8158;
-      --hit-bg:    #2E1810;
-    }
-  }
-
-  :root[data-theme="dark"] {
-    --bg:        #0D1117;
-    --surface:   #151B24;
-    --panel:     #111823;
-    --ink:       #E6EBF3;
-    --ink-2:     #98A5B8;
-    --ink-3:     #6D7A8D;
-    --rule:      #28313E;
-    --rule-soft: #1E2733;
-    --accent:    #7BA4FF;
-    --accent-bg: #16233C;
-    --hit:       #FF8158;
-    --hit-bg:    #2E1810;
-  }
 
   * { box-sizing: border-box; }
 
