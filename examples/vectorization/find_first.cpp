@@ -243,7 +243,7 @@ int main() {
   int cpu = pin_to_fast_core();
   double ghz = warm_up();
 
-  const long n = 8192;  // 64 KiB of int64, fits in L1
+  const long n = 8192;  // 64 KiB of int64: more than Zen 5's 48 KiB L1d
   const int64_t target = 7;
   const int reps = 20000;
 

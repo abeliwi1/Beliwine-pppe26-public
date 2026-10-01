@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thirty-Two Names for Sixteen Registers</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700&display=swap">
+
+<style>
+  /* Deliberately single-theme: a light reference sheet, matching the other two
+     figures in examples/vectorization/.  No prefers-color-scheme block and no
+     [data-theme] stamps; every colour, including the body background, is set
+     explicitly so the page holds its appearance on a dark host ground. */
+  :root {
+    color-scheme: light;
+    --bg:        #F6F7F9;
+    --card:      #FFFFFF;
+    --sunk:      #EDEFF3;
+    --ink:       #171A1F;
+    --ink-2:     #434A55;
+    --muted:     #6C7480;
+    --rule:      #DFE3E9;
+    --rule-2:    #C4CAD3;
+    --shared:    #2C6E9B;
+    --shared-bg: #E2EDF5;
+    --only512:   #7A4FBF;
+    --only512-bg:#EDE5F9;
+    --legacy:    #B5651D;
+    --legacy-bg: #F8ECDD;
+    --off:       #E7EAEF;
+    --shadow:    0 1px 2px rgba(23,26,31,.05), 0 8px 22px rgba(23,26,31,.05);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding-block: 0 72px;
+    padding-inline: 18px;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: Manrope, system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; }
+  .spine { max-width: 66ch; }
+
+  h1 {
+    font-size: clamp(1.75rem, 4.2vw, 2.35rem); font-weight: 700;
+    letter-spacing: -.026em; line-height: 1.12;
+    margin: 44px 0 10px; text-wrap: balance;
+  }
+  .sub { color: var(--muted); margin: 0 0 8px; }
+  .machine {
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    font-size: 12px; color: var(--muted);
+    margin: 0 0 24px; padding-bottom: 18px; border-bottom: 1px solid var(--rule);
+  }
+  h2 {
+    font-size: 1.12rem; font-weight: 700; letter-spacing: -.01em;
+    margin: 0 0 3px;
+  }
+  .note { color: var(--muted); font-size: .9rem; margin: 0 0 14px; }
+  p { margin: 0 0 13px; }
+  .m { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; font-size: .88em; }
+
+  /* ---- ISA selector ---- */
+  .bar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    background: var(--card); border: 1px solid var(--rule); border-radius: 9px;
+    padding: 11px 13px; margin-bottom: 20px; box-shadow: var(--shadow);
+  }
+  .bar .lbl {
+    font-family: "IBM Plex Mono", monospace; font-size: 10px; font-weight: 600;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+    margin-right: 4px;
+  }
+  button {
+    font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 500;
+    color: var(--ink-2); background: var(--bg);
+    border: 1px solid var(--rule-2); border-radius: 5px;
+    padding: 7px 13px; cursor: pointer;
+  }
+  button:hover { border-color: var(--muted); }
+  button:focus-visible { outline: 2px solid var(--shared); outline-offset: 2px; }
+  button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .bar .reach {
+    margin-left: auto; font-family: "IBM Plex Mono", monospace; font-size: 11.5px;
+    color: var(--muted); font-variant-numeric: tabular-nums;
+  }
+  .bar .reach b { color: var(--ink); }
+
+  /* ---- panels ---- */
+  .panel {
+    background: var(--card); border: 1px solid var(--rule); border-radius: 9px;
+    padding: 17px 17px 15px; box-shadow: var(--shadow); margin-bottom: 20px;
+  }
+  .scroller { overflow-x: auto; }
+  .rows { display: flex; flex-direction: column; gap: 3px; min-width: 520px; }
+
+  /* a register row: a nested set of width views */
+  .row { display: flex; align-items: stretch; gap: 7px; }
+  .idx {
+    font-family: "IBM Plex Mono", monospace; font-size: 10.5px; color: var(--muted);
+    width: 22px; flex: none; display: flex; align-items: center; justify-content: flex-end;
+  }
+  .views { display: flex; flex: 1; gap: 2px; }
+  .v {
+    display: flex; align-items: center; justify-content: center;
+    font-family: "IBM Plex Mono", monospace; font-size: 11.5px; font-weight: 500;
+    height: 26px; border-radius: 4px; border: 1px solid transparent;
+    white-space: nowrap; overflow: hidden;
+  }
+  /* widths are proportional to the bits they cover */
+  .w512 { flex: 32; } .w256 { flex: 16; } .w128 { flex: 8; }
+  .w64  { flex: 32; } .w32  { flex: 16; } .w16 { flex: 8; } .w8 { flex: 4; }
+
+  .v.shared  { background: var(--shared-bg);  border-color: var(--shared);  color: var(--shared); }
+  .v.only512 { background: var(--only512-bg); border-color: var(--only512); color: var(--only512); }
+  .v.legacy  { background: var(--legacy-bg);  border-color: var(--legacy);  color: var(--legacy); }
+  .v.off     { background: var(--off); color: var(--muted); border-color: var(--rule); }
+  .v.special { background: var(--sunk); border-color: var(--rule-2); color: var(--ink-2); font-style: italic; }
+
+  .grouphead {
+    display: flex; align-items: baseline; gap: 9px;
+    margin: 16px 0 7px; padding-top: 13px; border-top: 1px dashed var(--rule-2);
+    font-size: .92rem; font-weight: 600;
+  }
+  .grouphead:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+  .grouphead .tag {
+    font-family: "IBM Plex Mono", monospace; font-size: 9.5px; font-weight: 600;
+    letter-spacing: .1em; text-transform: uppercase;
+    padding: 3px 7px; border-radius: 3px;
+  }
+  .tag.s { background: var(--shared-bg);  color: var(--shared); }
+  .tag.u { background: var(--only512-bg); color: var(--only512); }
+  .grouphead .rt { margin-left: auto; font-size: .82rem; color: var(--muted); font-weight: 400; }
+
+  /* mask registers */
+  .ks { display: flex; flex-wrap: wrap; gap: 6px; }
+  .k {
+    font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 500;
+    padding: 7px 12px; border-radius: 5px;
+    background: var(--only512-bg); border: 1px solid var(--only512); color: var(--only512);
+  }
+  .k.off { background: var(--off); border-color: var(--rule); color: var(--muted); }
+
+  /* legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 4px; font-size: .86rem; color: var(--ink-2); }
+  .legend span { display: flex; align-items: center; gap: 6px; }
+  .sw { width: 13px; height: 13px; border-radius: 3px; border: 1px solid; flex: none; }
+  .sw.s { background: var(--shared-bg);  border-color: var(--shared); }
+  .sw.u { background: var(--only512-bg); border-color: var(--only512); }
+  .sw.l { background: var(--legacy-bg);  border-color: var(--legacy); }
+  .sw.o { background: var(--off);        border-color: var(--rule-2); }
+
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  th, td { padding: 8px 9px; text-align: left; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th {
+    font-family: "IBM Plex Mono", monospace; font-size: 9.5px; font-weight: 600;
+    letter-spacing: .11em; text-transform: uppercase; color: var(--muted);
+  }
+  td.mono { font-family: "IBM Plex Mono", monospace; font-size: .85rem; }
+
+  footer {
+    margin-top: 30px; padding-top: 15px; border-top: 1px solid var(--rule);
+    font-size: .85rem; color: var(--muted);
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <h1>Thirty-Two Names for Sixteen Registers</h1>
+  <p class="sub">A register is a place, not a name. The same storage answers to <span class="m">rax</span>, <span class="m">eax</span>, <span class="m">ax</span>, <span class="m">al</span> — and on the vector side, to <span class="m">zmm0</span>, <span class="m">ymm0</span>, <span class="m">xmm0</span>.</p>
+  <p class="machine">AMD Ryzen AI 9 HX 370 · Zen 5 · avx512f avx512vl avx512bw avx512dq · 16 GP · 32 vector · 8 mask</p>
+
+  <div class="bar">
+    <span class="lbl">reachable with</span>
+    <button data-isa="sse"    aria-pressed="false">SSE2</button>
+    <button data-isa="avx2"   aria-pressed="false">AVX2</button>
+    <button data-isa="avx512" aria-pressed="true">AVX-512</button>
+    <span class="reach" id="reach"></span>
+  </div>
+
+  <div class="panel">
+    <h2>General-purpose registers</h2>
+    <p class="note">Sixteen of them. Each holds 64 bits, and the narrower names address the low end of the same storage — writing <span class="m">eax</span> writes the low half of <span class="m">rax</span>.</p>
+    <div class="scroller"><div class="rows" id="gp"></div></div>
+    <div class="legend">
+      <span><i class="sw s"></i> any ISA level</span>
+      <span><i class="sw l"></i> legacy high-byte name, only on the first four</span>
+      <span><i class="sw o"></i> no name at this width</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Vector registers</h2>
+    <p class="note">Thirty-two of them on this part. <span class="m">xmm</span> is the low 128 bits of <span class="m">ymm</span>, which is the low 256 of <span class="m">zmm</span> — one place, three names.</p>
+    <div class="scroller"><div class="rows" id="vec"></div></div>
+    <div class="legend">
+      <span><i class="sw s"></i> reachable by SSE, VEX and EVEX</span>
+      <span><i class="sw u"></i> EVEX only — AVX-512 adds these</span>
+      <span><i class="sw o"></i> not reachable at the selected level</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Mask registers</h2>
+    <p class="note">Eight, and entirely new with AVX-512 — they have no name under SSE or AVX2. Each holds one bit per lane, so an instruction can write some lanes and leave others untouched.</p>
+    <div class="ks" id="ks"></div>
+    <p class="note" style="margin:13px 0 0">
+      <span class="m">k0</span> is readable and writable like the others, but naming it as an
+      instruction's write-mask means <em>no masking</em> — there is no way to spell
+      "mask with k0".
+    </p>
+  </div>
+
+  <div class="spine">
+    <h2 style="margin-top:30px">What is shared and what is not</h2>
+    <p>Registers <span class="m">0</span>–<span class="m">15</span> are shared ground: an SSE instruction, a VEX-encoded AVX2 instruction, and an EVEX-encoded AVX-512 instruction can all name the same physical register, just at different widths.</p>
+    <p>Registers <span class="m">16</span>–<span class="m">31</span> are not reachable at all without EVEX encoding. They exist on this chip, and because it has <span class="m">avx512vl</span> they can be addressed at 128 and 256 bits as well — but only by an EVEX instruction. There is no way to write <span class="m">xmm20</span> in an SSE or AVX2 instruction, because those encodings have nowhere to put the extra register number.</p>
+    <p>So AVX-512 on this part is not only wider registers. It is <strong>twice as many of them</strong>, plus eight mask registers — which is why it helps code that was short of registers even when the vectors stay 256 bits wide.</p>
+  </div>
+
+  <div class="panel">
+    <h2>One important asymmetry</h2>
+    <p class="note">Writing a narrow view does not always leave the rest of the register alone.</p>
+    <table>
+      <thead><tr><th>what you write</th><th>what happens to the upper bits</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">eax</td><td>zeroed — writing a 32-bit GP name clears bits 32–63</td></tr>
+        <tr><td class="mono">ax, al</td><td>preserved — the rest of <span class="m">rax</span> survives</td></tr>
+        <tr><td class="mono">xmm0, SSE encoding</td><td>preserved — bits 128 and up are left as they were</td></tr>
+        <tr><td class="mono">xmm0, VEX or EVEX encoding</td><td>zeroed — bits 128 and up are cleared</td></tr>
+      </tbody>
+    </table>
+    <p class="note" style="margin:13px 0 0">That last pair is the reason for <span class="m">vzeroupper</span>: mixing legacy SSE writes with VEX code leaves the upper halves in a state the hardware has to reconcile, and on some parts it costs a stall on every transition.</p>
+  </div>
+
+  <footer>
+    Verified on the machine rather than quoted: <span class="m">avx512vl</span> is present in
+    <span class="m">/proc/cpuinfo</span>, a masked 512-bit op compiles and runs, and writing a
+    register's <span class="m">xmm</span> view through <span class="m">_mm256_insertf128_pd</span>
+    left its upper 128 bits intact — which is what makes the nesting above more than a diagram.
+    Companion to <span class="m">course_materials/07.vectorization.md</span>.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  var isa = 'avx512';
+
+  // the first four have legacy high-byte names; the rest do not
+  var GP = [
+    { r: 'rax', e: 'eax',  w: 'ax',   h: 'ah', l: 'al'   },
+    { r: 'rcx', e: 'ecx',  w: 'cx',   h: 'ch', l: 'cl'   },
+    { r: 'rdx', e: 'edx',  w: 'dx',   h: 'dh', l: 'dl'   },
+    { r: 'rbx', e: 'ebx',  w: 'bx',   h: 'bh', l: 'bl'   },
+    { r: 'rsp', e: 'esp',  w: 'sp',   h: null, l: 'spl',  note: 'stack pointer' },
+    { r: 'rbp', e: 'ebp',  w: 'bp',   h: null, l: 'bpl'  },
+    { r: 'rsi', e: 'esi',  w: 'si',   h: null, l: 'sil'  },
+    { r: 'rdi', e: 'edi',  w: 'di',   h: null, l: 'dil'  }
+  ];
+  for (var n = 8; n <= 15; n++)
+    GP.push({ r: 'r' + n, e: 'r' + n + 'd', w: 'r' + n + 'w', h: null, l: 'r' + n + 'b' });
+
+  function cell(cls, text, extra) {
+    return '<div class="v ' + cls + (extra || '') + '">' + text + '</div>';
+  }
+
+  function drawGP() {
+    var host = document.getElementById('gp'), out = '';
+    GP.forEach(function (g, i) {
+      var special = g.note ? ' special' : '';
+      out += '<div class="row"><span class="idx">' + i + '</span><div class="views">';
+      out += cell('shared w64' + special, g.r);
+      out += cell('shared w32' + special, g.e);
+      out += cell('shared w16' + special, g.w);
+      out += g.h ? cell('legacy w8', g.h) : cell('off w8', '—');
+      out += cell('shared w8' + special, g.l);
+      out += '</div></div>';
+    });
+    host.innerHTML = out;
+  }
+
+  function drawVec() {
+    var host = document.getElementById('vec'), out = '';
+    function group(from, to, title, tag, tagcls, rt) {
+      out += '<div class="grouphead"><span>' + title + '</span>' +
+             '<span class="tag ' + tagcls + '">' + tag + '</span>' +
+             '<span class="rt">' + rt + '</span></div>';
+      for (var i = from; i <= to; i++) {
+        var upper = i > 15;
+        var base = upper ? 'only512' : 'shared';
+        // which widths can the selected ISA actually name?
+        var z = (isa === 'avx512');
+        var y = (isa === 'avx512' || isa === 'avx2') && (!upper || isa === 'avx512');
+        var x = (!upper) || isa === 'avx512';
+        out += '<div class="row"><span class="idx">' + i + '</span><div class="views">';
+        out += cell(z ? base + ' w512' : 'off w512', 'zmm' + i);
+        out += cell(y ? base + ' w256' : 'off w256', 'ymm' + i);
+        out += cell(x ? base + ' w128' : 'off w128', 'xmm' + i);
+        out += '</div></div>';
+      }
+    }
+    group(0, 15, 'Registers 0–15', 'shared', 's',
+          'named by SSE, VEX and EVEX');
+    group(16, 31, 'Registers 16–31', 'avx-512 only', 'u',
+          'no encoding without EVEX can name these');
+    host.innerHTML = out;
+  }
+
+  function drawK() {
+    var host = document.getElementById('ks'), on = (isa === 'avx512'), out = '';
+    for (var i = 0; i < 8; i++)
+      out += '<span class="k' + (on ? '' : ' off') + '">k' + i + '</span>';
+    host.innerHTML = out;
+  }
+
+  function reach() {
+    var vec = (isa === 'avx512') ? 32 : 16;
+    var width = isa === 'sse' ? 128 : isa === 'avx2' ? 256 : 512;
+    document.getElementById('reach').innerHTML =
+      '<b>' + vec + '</b> vector registers · <b>' + width + '</b> bits wide · <b>' +
+      (isa === 'avx512' ? 8 : 0) + '</b> mask registers';
+  }
+
+  function render() { drawVec(); drawK(); reach(); }
+
+  document.querySelectorAll('button[data-isa]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('button[data-isa]').forEach(function (o) {
+        o.setAttribute('aria-pressed', 'false');
+      });
+      b.setAttribute('aria-pressed', 'true');
+      isa = b.dataset.isa;
+      render();
+    });
+  });
+
+  drawGP();
+  render();
+})();
+</script>
+
+</body>
+</html>
