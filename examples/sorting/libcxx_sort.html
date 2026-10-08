@@ -1,0 +1,855 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- What libc++ Adds to std::sort -- generated for the pppe26 repo; opens standalone
+     in any browser, no server and no external assets beyond the web fonts, which
+     fall back to system faces offline. -->
+<title>What libc++ Adds</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  /* the hosted version of this page got a reset from its runtime; standalone,
+     it brings its own */
+  body { margin: 0; }
+  img { max-width: 100%; }
+
+  :root {
+    --bg: #F4F5F7;
+    --surface: #FFFFFF;
+    --surface-sunken: #ECEEF1;
+    --border: #DBDFE4;
+    --border-strong: #C3C8CF;
+    --text-primary: #171B21;
+    --text-secondary: #4B525C;
+    --text-muted: #7C838D;
+    --copper: #C1682F;
+    --copper-soft: #C1682F26;
+    --slate: #3E6FA6;
+    --slate-soft: #3E6FA626;
+    --grid-line: #D3D7DC;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #11151B;
+      --surface: #171C24;
+      --surface-sunken: #10141A;
+      --border: #2A313C;
+      --border-strong: #3A4350;
+      --text-primary: #EDEFF2;
+      --text-secondary: #AEB4BE;
+      --text-muted: #7A8290;
+      --copper: #CC7038;
+      --copper-soft: #CC703833;
+      --slate: #5B93CE;
+      --slate-soft: #5B93CE33;
+      --grid-line: #262C36;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #11151B;
+    --surface: #171C24;
+    --surface-sunken: #10141A;
+    --border: #2A313C;
+    --border-strong: #3A4350;
+    --text-primary: #EDEFF2;
+    --text-secondary: #AEB4BE;
+    --text-muted: #7A8290;
+    --copper: #CC7038;
+    --copper-soft: #CC703833;
+    --slate: #5B93CE;
+    --slate-soft: #5B93CE33;
+    --grid-line: #262C36;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.6;
+    font-size: 16.5px;
+    -webkit-font-smoothing: antialiased;
+    padding: 0 0 6rem;
+  }
+
+  .wrap { max-width: 760px; margin: 0 auto; padding: 4.5rem 1.5rem 0; }
+  .wide  { max-width: 940px; margin: 0 auto; padding: 0 1.5rem; }
+
+  .kicker {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--copper);
+  }
+  .kicker.slate { color: var(--slate); }
+
+  h1 {
+    font-family: "Big Shoulders Display", "Arial Narrow", sans-serif;
+    font-weight: 700;
+    font-size: clamp(2.6rem, 6vw, 3.9rem);
+    line-height: 0.98;
+    letter-spacing: 0.002em;
+    text-transform: uppercase;
+    text-wrap: balance;
+    margin: 0.3rem 0 0;
+  }
+
+  .dek {
+    font-size: 1.12rem;
+    color: var(--text-secondary);
+    max-width: 58ch;
+    margin: 1.1rem 0 0;
+  }
+  .dek em { color: var(--text-primary); font-style: normal; font-weight: 500; }
+
+  h2 {
+    font-family: "Big Shoulders Display", "Arial Narrow", sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.8rem, 3.6vw, 2.35rem);
+    text-transform: uppercase;
+    letter-spacing: 0.003em;
+    line-height: 1.02;
+    margin: 0.35rem 0 0;
+  }
+
+  h3 {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-weight: 600;
+    font-size: 1.05rem;
+    margin: 0 0 0.5rem;
+    color: var(--text-primary);
+  }
+
+  p { margin: 0.9rem 0; color: var(--text-primary); }
+  .lede { color: var(--text-secondary); }
+
+  a { color: var(--copper); text-decoration-color: var(--copper-soft); text-underline-offset: 2px; }
+  a:hover { text-decoration-color: var(--copper); }
+
+  code, .mono {
+    font-family: "IBM Plex Mono", monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  code {
+    background: var(--surface-sunken);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.05em 0.35em;
+    font-size: 0.88em;
+  }
+
+  hr.rule {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 3.2rem 0;
+  }
+  .wide hr.rule { margin: 2.6rem 0; }
+
+  .regime-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.9rem;
+    flex-wrap: wrap;
+  }
+  .regime-num {
+    font-family: "Big Shoulders Display", sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-muted);
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    width: 1.9rem; height: 1.9rem;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: none;
+  }
+
+  /* ---- schematic (decision flow) ---- */
+  .schematic {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    margin: 2.2rem 0 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .schematic .cell {
+    padding: 1.15rem 1.2rem 1.3rem;
+    border-left: 1px solid var(--border);
+    position: relative;
+  }
+  .schematic .cell:first-child { border-left: none; }
+  .schematic .tag {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+  .schematic .decision {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.88rem;
+    color: var(--text-primary);
+    margin-bottom: 0.55rem;
+  }
+  .schematic .outcome {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+  .schematic .swatch {
+    display: inline-block;
+    width: 0.6rem; height: 0.6rem;
+    border-radius: 2px;
+    margin-right: 0.4rem;
+    vertical-align: middle;
+  }
+  .schematic .arrow {
+    position: absolute;
+    top: 50%;
+    right: -0.62rem;
+    transform: translateY(-50%);
+    width: 1.1rem; height: 1.1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    z-index: 1;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted);
+    font-size: 0.65rem;
+  }
+
+  /* ---- chart panels ---- */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem 1.6rem 1.2rem;
+    margin: 1.6rem 0;
+  }
+  .panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.2rem;
+  }
+  .panel-title {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-primary);
+  }
+  .panel-sub {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 0.15rem;
+  }
+  .legend {
+    display: flex;
+    gap: 1.2rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    flex: none;
+  }
+  .legend .item { display: flex; align-items: center; gap: 0.4rem; }
+  .legend .dot { width: 0.65rem; height: 0.65rem; border-radius: 2px; }
+
+  svg.chart { width: 100%; height: auto; display: block; overflow: visible; }
+  .axis-label { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; fill: var(--text-muted); }
+  .band-label { font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: 0.04em; fill: var(--text-muted); text-transform: uppercase; }
+  .gridline { stroke: var(--grid-line); stroke-width: 1; }
+
+  .tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--text-primary);
+    color: var(--bg);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11.5px;
+    padding: 0.5rem 0.65rem;
+    border-radius: 6px;
+    line-height: 1.5;
+    opacity: 0;
+    transition: opacity 0.1s ease;
+    white-space: nowrap;
+    z-index: 5;
+    transform: translate(-50%, -110%);
+  }
+  .tooltip .row { display: flex; justify-content: space-between; gap: 0.8rem; }
+  .tooltip .n { color: var(--bg); opacity: 0.6; margin-bottom: 0.15rem; }
+
+  .chart-wrap { position: relative; }
+
+  /* ---- proportional split bar ---- */
+  .split-bar {
+    display: flex;
+    width: 100%;
+    height: 2.6rem;
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 1.6rem 0 0.4rem;
+    border: 1px solid var(--border);
+  }
+  .split-seg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.7rem;
+    line-height: 1.3;
+    letter-spacing: 0.01em;
+    padding: 0 0.4rem;
+  }
+  .split-small { background: var(--surface-sunken); color: var(--text-secondary); }
+  .split-big   { background: var(--copper-soft); color: var(--copper); font-weight: 600; }
+  .legend .dash { width: 1rem; height: 0; border-top: 2px dashed var(--text-muted); }
+  .legend .dash.copper { border-top-color: var(--copper); }
+  .legend { flex-wrap: wrap; }
+  pre.code {
+    background: var(--surface-sunken);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.9rem 1rem;
+    overflow-x: auto;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+  table.compare td, table.compare th { white-space: normal; text-align: left; font-family: "IBM Plex Sans", sans-serif; }
+  table.compare td:first-child { font-weight: 600; white-space: nowrap; }
+  .note { color: var(--text-muted); font-size: 0.88rem; }
+
+  /* ---- data tables ---- */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    margin: 1rem 0;
+  }
+  th, td {
+    text-align: right;
+    padding: 0.45rem 0.6rem;
+    border-bottom: 1px solid var(--border);
+    font-family: "IBM Plex Mono", monospace;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  th:first-child, td:first-child { text-align: left; font-family: "IBM Plex Sans", sans-serif; }
+  th {
+    color: var(--text-muted);
+    font-family: "IBM Plex Sans", sans-serif;
+    font-weight: 600;
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border-strong);
+  }
+  .table-scroll { overflow-x: auto; }
+
+  details.data-table summary {
+    cursor: pointer;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0.6rem 0;
+  }
+  details.data-table summary:hover { color: var(--text-primary); }
+
+  footer {
+    margin-top: 3.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+  footer .files th, footer .files td { text-align: left; }
+  footer p { color: var(--text-muted); font-size: 0.85rem; }
+
+  @media (max-width: 640px) {
+    .schematic { grid-template-columns: 1fr; }
+    .schematic .cell { border-left: none; border-top: 1px solid var(--border); }
+    .schematic .cell:first-child { border-top: none; }
+    .schematic .arrow { top: auto; bottom: -0.62rem; right: 50%; transform: translate(50%, 0) rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <p class="kicker">algorithm design &middot; clang's libc++ introsort, measured on Apple M5</p>
+  <h1>What libc++<br>Adds</h1>
+  <p class="dek">
+    clang's <code>std::sort</code> has the same three techniques as GCC's &mdash;
+    a cutoff to insertion sort, a quicksort middle, a heapsort safety net
+    &mdash; and on random <code>int</code> data it is <em>3&times; faster at a
+    million elements</em>. Almost all of that comes from one change in the
+    middle: a partition that never branches on the data.
+  </p>
+</div>
+
+<div class="wrap">
+  <p>
+    <a href="three_regimes.html">Three Techniques of std::sort</a> takes GCC's
+    libstdc++ apart and finds that, above the leaf, it costs exactly what plain
+    quicksort costs: the same Hoare partition, the same number of times. libc++
+    keeps the skeleton and changes what happens inside it. Read from its source
+    (<code>__algorithm/sort.h</code>, Apple clang 17):
+  </p>
+
+  <div class="table-scroll">
+    <table class="compare">
+      <thead><tr><th></th><th>libstdc++ (GCC)</th><th>libc++ (clang)</th></tr></thead>
+      <tbody>
+        <tr><td>Cutoff</td><td>stop partitioning at &le; 16; one final insertion pass over the whole array</td><td>insertion sort below 24, inside each partition</td></tr>
+        <tr><td>Tiny partitions</td><td>insertion sort</td><td>branch-free sorting networks for exactly 3, 4 and 5 elements</td></tr>
+        <tr><td>Pivot</td><td>median of 3</td><td>median of 3; median of medians of three above 128</td></tr>
+        <tr><td>Partition</td><td>Hoare: branches on every comparison with the pivot</td><td>bitset partition: <strong>no branch depends on the data</strong></td></tr>
+        <tr><td>Depth limit</td><td>heapsort at 2&middot;log&#8322;n</td><td>heapsort at 2&middot;log&#8322;n</td></tr>
+        <tr><td>Rare cases</td><td>&mdash;</td><td>an already-sorted check after a partition that needed no swaps; a separate partition for runs of keys equal to the pivot</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">
+    The branch-free paths &mdash; the bitset partition and the 3/4/5-element
+    networks &mdash; are meant for arithmetic types with a comparison libc++
+    knows has no branch of its own, such as the default <code>operator&lt;</code>.
+    On macOS the bitset partition actually reaches a program only through the
+    copies of <code>std::sort</code> precompiled into the system library; the
+    control below explains why.
+  </p>
+</div>
+
+<div class="wide">
+  <div class="panel">
+    <div class="panel-head">
+      <div>
+        <div class="panel-title">Normalized cost per comparison sort</div>
+        <div class="panel-sub">ns / (n&middot;log&#8322;n) &middot; Apple M5 &middot; -O2 &middot; random int32, a different input for every sort &middot; best of 7, median of 5 runs</div>
+      </div>
+      <div class="legend">
+        <span class="item"><span class="dot" style="background:var(--slate)"></span>quicksort.cpp</span>
+        <span class="item"><span class="dot" style="background:var(--text-muted)"></span>libstdc++ std::sort</span>
+        <span class="item"><span class="dash copper"></span>libc++, bitset partition off</span>
+        <span class="item"><span class="dot" style="background:var(--copper)"></span>libc++ std::sort</span>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <svg class="chart" id="chartA" viewBox="0 0 900 380" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="tooltip" id="tipA"></div>
+    </div>
+  </div>
+  <p class="note" style="max-width:68ch;">
+    libstdc++ is built with GCC 16, everything else with Apple clang 17, so the
+    grey line differs from the others in compiler as well as library. The same
+    source does not move much between them: <code>quicksort.cpp</code> built
+    with GCC runs within 2&ndash;8% of the clang build at every size.
+  </p>
+</div>
+
+<div class="wrap">
+
+  <hr class="rule">
+
+  <div class="regime-head">
+    <span class="regime-num">1</span>
+    <div>
+      <p class="kicker">the middle</p>
+      <h2>A Partition That Never Mispredicts</h2>
+    </div>
+  </div>
+
+  <p>
+    A Hoare partition runs loops like <code>while (a[++i] &lt; pivot) {}</code>.
+    Every comparison decides whether the loop continues, and with a median
+    pivot on random data each element is about as likely to belong on either
+    side &mdash; so the branch predictor guesses wrong about half the time, and
+    every wrong guess throws away work the core had already started.
+  </p>
+  <p>
+    libc++'s bitset partition (the BlockQuicksort scheme of Edelkamp and Wei&szlig;)
+    makes the same comparisons and never branches on one. It works in blocks of
+    64 elements from each end:
+  </p>
+  <pre class="code">// 1. left block: which of these 64 belong on the right?
+for (int j = 0; j &lt; 64; j++)
+    left_bits  |= uint64_t(!(a[first + j] &lt; pivot)) &lt;&lt; j;
+
+// 2. right block: which of these 64 belong on the left?
+for (int j = 0; j &lt; 64; j++)
+    right_bits |= uint64_t(a[last - j] &lt; pivot) &lt;&lt; j;
+
+// 3. swap misplaced pairs, lowest set bit of each word first
+while (left_bits &amp;&amp; right_bits) {
+    swap(a[first + ctz(left_bits)], a[last - ctz(right_bits)]);
+    left_bits  &amp;= left_bits - 1;     // clear lowest set bit
+    right_bits &amp;= right_bits - 1;
+}
+// 4. a block whose word reached zero is done: move that edge 64 inward</pre>
+  <p>
+    The comparison becomes a 0 or 1 shifted into a word; the loop always runs
+    64 times. The only data-dependent branch left is whether a word is empty,
+    which depends on how many elements are misplaced, not on any one of them,
+    and predicts well. It does more work than Hoare &mdash; every element is
+    compared and recorded, even ones already on the right side &mdash; and it
+    trades that for a straight run of work with nothing to mispredict.
+  </p>
+
+  <h3 style="margin-top:2rem;">The control: switch the partition off</h3>
+  <p>
+    Measuring the partition needs a <code>std::sort</code> with only the
+    partition changed, and two facts about libc++ on macOS decide how to get
+    one. First, <code>std::sort</code> on <code>int</code> is not compiled into
+    your program at all: libc++ declares it an <code>extern template</code>,
+    and the call goes to a copy precompiled into the system's
+    <code>libc++.1.dylib</code>, which uses the bitset partition. Second, a sort
+    compiled from this SDK's headers never uses the bitset partition, even with
+    a comparator libc++ lists as branch-free such as <code>std::greater</code>:
+    the header's dispatch checks the comparator without the <code>&amp;</code>
+    that list expects.
+  </p>
+  <p>
+    So <code>sort_compare_large.cpp</code> calls libc++'s own
+    <code>__introsort</code> directly from the header, with the bitset-partition
+    flag forced on and off. The cutoff at 24, the pivot choice, the 3/4/5-element
+    networks and the heapsort fallback are the same code in both, so the ratio
+    is the partition alone:
+  </p>
+
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>n</th><th>libc++, library</th><th>bitset on</th><th>bitset off</th><th>libstdc++</th><th>off &divide; on</th></tr></thead>
+      <tbody>
+        <tr><td>1,024</td><td>0.97</td><td>0.97</td><td>1.86</td><td>2.01</td><td>1.91&times;</td></tr>
+        <tr><td>8,192</td><td>0.82</td><td>0.83</td><td>1.91</td><td>1.99</td><td>2.30&times;</td></tr>
+        <tr><td>65,536</td><td>0.67</td><td>0.71</td><td>1.91</td><td>1.95</td><td>2.70&times;</td></tr>
+        <tr><td>1,048,576</td><td>0.69</td><td>0.68</td><td>1.96</td><td>2.04</td><td>2.88&times;</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="lede">ns / (n&middot;log&#8322;n); the last column is the ratio of total times.</p>
+  <p>
+    With the flag on, the header build matches the library copy to within a few
+    percent, so how the library was compiled adds nothing. With it off, libc++
+    runs within 1&ndash;8% of libstdc++ at every size from 1,024 up &mdash; its
+    later cutoff, per-partition insertion sort, small networks and better pivot
+    add almost nothing on top of GCC's textbook introsort. The partition makes
+    it 1.91&times; faster at a thousand elements and 2.88&times; at a million.
+    The gain grows with n for the same reason the leaves shrink: the taller the
+    tree, the larger the share of the work that is partitioning.
+  </p>
+
+  <hr class="rule">
+
+  <div class="regime-head">
+    <span class="regime-num">2</span>
+    <div>
+      <p class="kicker">the leaf</p>
+      <h2>A Later Cutoff, No Final Pass</h2>
+    </div>
+  </div>
+
+  <p>
+    libc++ stops partitioning below 24 elements rather than 16, and finishes
+    each small range with insertion sort right there, instead of leaving it for
+    one pass over the whole array at the end. Ranges of exactly 3, 4 or 5
+    elements get a fixed, branch-free sorting network instead.
+  </p>
+  <p>
+    At n&nbsp;=&nbsp;16 both libraries are simply an insertion sort, and they
+    cost the same: 0.99 ns per n&middot;log&#8322;n for libc++, 1.04 for
+    libstdc++, against 1.94 and 2.09 for plain quicksort built with each
+    compiler. The leaf is not where libc++ pulls ahead. A branch-free sorting
+    network can beat both by a wide margin &mdash; see
+    <a href="small_sorting.md">small_sorting.md</a>, where a NEON bitonic
+    network sorts 16 elements 6.8&times; faster than <code>std::sort</code>.
+  </p>
+
+  <hr class="rule">
+
+  <div class="regime-head">
+    <span class="regime-num">3</span>
+    <div>
+      <p class="kicker">the tiny partitions</p>
+      <h2>Sorting Networks for 3, 4 and 5</h2>
+    </div>
+  </div>
+
+  <p>
+    When a partition has exactly 3, 4 or 5 elements, libc++ skips insertion
+    sort and runs a fixed <strong>sorting network</strong>: a sequence of
+    compare-exchanges whose order never depends on the data. The same routines
+    handle the whole array when <code>std::sort</code> is called on 3 to 5
+    elements. Like the bitset partition, they are used only for arithmetic
+    types with the default comparison.
+  </p>
+  <p>
+    The building block is <code>__cond_swap</code>: compare two elements and
+    leave the smaller in the first position. It is written with conditional
+    expressions rather than an <code>if</code>, so the compiler can turn it
+    into selects instead of a branch. The four-element network is five of
+    them:
+  </p>
+  <pre class="code">// ensures *x &lt;= *y, swapping if necessary (libc++ __cond_swap)
+template &lt;class Compare, class It&gt;
+void __cond_swap(It x, It y, Compare c) {
+    bool r   = c(*x, *y);
+    auto tmp = r ? *x : *y;      // the smaller
+    *y       = r ? *y : *x;      // the larger
+    *x       = tmp;
+}
+
+// libc++ __sort4_maybe_branchless
+__cond_swap(x1, x3, c);   // layer 1: two independent pairs
+__cond_swap(x2, x4, c);
+__cond_swap(x1, x2, c);   // layer 2: smallest and largest settle
+__cond_swap(x3, x4, c);
+__cond_swap(x2, x3, c);   // layer 3: order the middle two</pre>
+
+  <figure style="margin:1.4rem 0 0.4rem;">
+    <div class="table-scroll">
+        <svg class="chart" viewBox="0 0 640 236" role="img" aria-label="The libc++ four-element sorting network: four wires and five compare-exchanges, traced on the input 3, 1, 4, 2. The two layer-1 comparators leave their pairs alone; the last three swap, and the output is 1, 2, 3, 4." style="min-width:520px">
+        <line x1="70" y1="46" x2="560" y2="46" style="stroke:var(--border-strong)" stroke-width="1.5"></line>
+        <text x="56" y="50" text-anchor="end" class="axis-label">x1</text>
+        <line x1="70" y1="96" x2="560" y2="96" style="stroke:var(--border-strong)" stroke-width="1.5"></line>
+        <text x="56" y="100" text-anchor="end" class="axis-label">x2</text>
+        <line x1="70" y1="146" x2="560" y2="146" style="stroke:var(--border-strong)" stroke-width="1.5"></line>
+        <text x="56" y="150" text-anchor="end" class="axis-label">x3</text>
+        <line x1="70" y1="196" x2="560" y2="196" style="stroke:var(--border-strong)" stroke-width="1.5"></line>
+        <text x="56" y="200" text-anchor="end" class="axis-label">x4</text>
+        <line x1="150" y1="46" x2="150" y2="146" style="stroke:var(--text-muted)" stroke-width="2.5"></line>
+        <circle cx="150" cy="46" r="5" style="fill:var(--text-muted)"></circle>
+        <circle cx="150" cy="146" r="5" style="fill:var(--text-muted)"></circle>
+        <line x1="185" y1="96" x2="185" y2="196" style="stroke:var(--text-muted)" stroke-width="2.5"></line>
+        <circle cx="185" cy="96" r="5" style="fill:var(--text-muted)"></circle>
+        <circle cx="185" cy="196" r="5" style="fill:var(--text-muted)"></circle>
+        <line x1="290" y1="46" x2="290" y2="96" style="stroke:var(--copper)" stroke-width="2.5"></line>
+        <circle cx="290" cy="46" r="5" style="fill:var(--copper)"></circle>
+        <circle cx="290" cy="96" r="5" style="fill:var(--copper)"></circle>
+        <line x1="290" y1="146" x2="290" y2="196" style="stroke:var(--copper)" stroke-width="2.5"></line>
+        <circle cx="290" cy="146" r="5" style="fill:var(--copper)"></circle>
+        <circle cx="290" cy="196" r="5" style="fill:var(--copper)"></circle>
+        <line x1="395" y1="96" x2="395" y2="146" style="stroke:var(--copper)" stroke-width="2.5"></line>
+        <circle cx="395" cy="96" r="5" style="fill:var(--copper)"></circle>
+        <circle cx="395" cy="146" r="5" style="fill:var(--copper)"></circle>
+        <rect x="89" y="35" width="22" height="22" rx="3" style="fill:var(--surface);stroke:var(--border)"></rect><text x="100" y="50.5" text-anchor="middle" class="axis-label" style="font-size:12.5px;fill:var(--text-primary)">3</text>
+        <rect x="89" y="85" width="22" height="22" rx="3" style="fill:var(--surface);stroke:var(--border)"></rect><text x="100" y="100.5" text-anchor="middle" class="axis-label" style="font-size:12.5px;fill:var(--text-primary)">1</text>
+        <rect x="89" y="135" width="22" height="22" rx="3" style="fill:var(--surface);stroke:var(--border)"></rect><text x="100" y="150.5" text-anchor="middle" class="axis-label" style="font-size:12.5px;fill:var(--text-primary)">4</text>
+        <rect x="89" y="185" width="22" height="22" rx="3" style="fill:var(--surface);stroke:var(--border)"></rect><text x="100" y="200.5" text-anchor="middle" class="axis-label" style="font-size:12.5px;fill:var(--text-primary)">2</text>
+        <rect x="226" y="35" width="22" height="22" rx="3" style="fill:var(--surface);stroke:var(--border)"></rect><text x="237" y="50.5" text-anchor="middle" class="axis-label" style="font-size:12.5px;fill:var(--text-primary)">3</text>
+        <rect x="226" y="85" width="22" height="22" rx="3" style="fill:var(--surface);stroke:var(--border)"></rect><text x="237" y="100.5" text-anchor="middle" class="axis-label" style="font-size:12.5px;fill:var(--text-primary)">1</text>
+        <rect x="226" y="135" width="22" height="22" rx="3" style="fill:var(--surface);stroke:var(--border)"></rect><text x="237" y="150.5" text-anchor="middle" class="axis-label" style="font-size:12.5px;fill:var(--text-primary)">4</text>
+        <rect x="226" y="185" width="22" height="22" rx="3" style="fill:var(--surface);stroke:var(--border)"></rect><text x="237" y="200.5" text-anchor="middle" class="axis-label" style="font-size:12.5px;fill:var(--text-primary)">2</text>
+        <rect x="331" y="35" width="22" height="22" rx="3" style="fill:var(--surface);stroke:var(--border)"></rect><text x="342" y="50.5" text-anchor="middle" class="axis-label" style="font-size:12.5px;fill:var(--text-primary)">1</text>
+        <rect x="331" y="85" width="22" height="22" rx="3" style="fill:var(--surface);stroke:var(--border)"></rect><text x="342" y="100.5" text-anchor="middle" class="axis-label" style="font-size:12.5px;fill:var(--text-primary)">3</text>
+        <rect x="331" y="135" width="22" height="22" rx="3" style="fill:var(--surface);stroke:var(--border)"></rect><text x="342" y="150.5" text-anchor="middle" class="axis-label" style="font-size:12.5px;fill:var(--text-primary)">2</text>
+        <rect x="331" y="185" width="22" height="22" rx="3" style="fill:var(--surface);stroke:var(--border)"></rect><text x="342" y="200.5" text-anchor="middle" class="axis-label" style="font-size:12.5px;fill:var(--text-primary)">4</text>
+        <rect x="589" y="35" width="22" height="22" rx="3" style="fill:var(--surface);stroke:var(--border)"></rect><text x="600" y="50.5" text-anchor="middle" class="axis-label" style="font-size:12.5px;fill:var(--text-primary)">1</text>
+        <rect x="589" y="85" width="22" height="22" rx="3" style="fill:var(--surface);stroke:var(--border)"></rect><text x="600" y="100.5" text-anchor="middle" class="axis-label" style="font-size:12.5px;fill:var(--text-primary)">2</text>
+        <rect x="589" y="135" width="22" height="22" rx="3" style="fill:var(--surface);stroke:var(--border)"></rect><text x="600" y="150.5" text-anchor="middle" class="axis-label" style="font-size:12.5px;fill:var(--text-primary)">3</text>
+        <rect x="589" y="185" width="22" height="22" rx="3" style="fill:var(--surface);stroke:var(--border)"></rect><text x="600" y="200.5" text-anchor="middle" class="axis-label" style="font-size:12.5px;fill:var(--text-primary)">4</text>
+        <text x="100" y="226" text-anchor="middle" class="axis-label">input</text>
+        <text x="167" y="226" text-anchor="middle" class="axis-label">layer 1</text>
+        <text x="290" y="226" text-anchor="middle" class="axis-label">layer 2</text>
+        <text x="395" y="226" text-anchor="middle" class="axis-label">layer 3</text>
+        <text x="600" y="226" text-anchor="middle" class="axis-label">output</text>
+        </svg>
+    </div>
+    <figcaption class="lede" style="font-size:0.88rem; margin-top:0.6rem;">
+      Each horizontal line carries one element, left to right; each vertical
+      bar is a <code>__cond_swap</code> that leaves the smaller value on the
+      upper line. Traced on the input 3, 1, 4, 2: the two layer-1 comparators
+      find their pairs already in order (grey), and the three later ones swap
+      (orange). After layer 2 the smallest value is on top and the largest at
+      the bottom, so layer 3 only has to order the middle two.
+    </figcaption>
+  </figure>
+
+  <p>
+    clang compiles the four-element network for <code>int</code> to 20
+    instructions &mdash; two loads, five rounds of one compare and two
+    conditional selects (<code>cmp</code>, <code>csel</code>, <code>csel</code>),
+    two stores &mdash; and no branch. The three- and five-element versions
+    use the same <code>__cond_swap</code> plus a fused helper for three elements
+    whose last two are already in order; they take 3 and 9 comparisons, the
+    fewest any network for those sizes can use (4 elements take 5).
+  </p>
+  <p class="note">
+    These networks only fire on partitions of exactly 3, 4 or 5 elements. The
+    control above keeps them on in both builds, so the 2.88&times; it measures
+    is the partition's alone; the networks fall inside the 1&ndash;8% that
+    separates libc++ with its partition switched off from libstdc++.
+  </p>
+
+  <hr class="rule">
+
+  <div class="regime-head">
+    <span class="regime-num">4</span>
+    <div>
+      <p class="kicker">the pivot and the safety net</p>
+      <h2>Small Refinements</h2>
+    </div>
+  </div>
+
+  <p>
+    Above 128 elements libc++ picks its pivot as a <strong>median of medians of
+    three</strong>: the median of three triples sampled from both ends and the
+    middle. Nine samples land closer to the true median than three, which keeps
+    the two sides of each partition more even. The heapsort fallback is
+    unchanged, and never fires on random data. Both are inside the
+    1&ndash;8% that separates libc++ with its partition switched off from
+    libstdc++.
+  </p>
+
+</div>
+
+<div class="wide">
+  <details class="data-table">
+    <summary>View full data table</summary>
+    <div class="table-scroll">
+      <table id="fullTable">
+        <thead><tr><th>n</th><th>quicksort.cpp</th><th>libstdc++</th><th>libc++, bitset off</th><th>libc++</th><th>libstdc++ &divide; libc++</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </details>
+
+  <hr class="rule">
+
+  <p style="color:var(--text-secondary); max-width:68ch;">
+    Same skeleton, same leaf, same safety net. GCC's libstdc++ partitions with
+    branches and costs what plain quicksort costs in the middle; clang's libc++
+    partitions without them and is 3&times; faster at a million elements. Take
+    the branch-free paths away and the two libraries land within a few percent
+    of each other. Everything else libc++ changes is a refinement; the
+    partition is the improvement.
+  </p>
+
+  <footer>
+    <table class="files">
+      <tbody>
+        <tr><th>std_sort.cpp</th><td><code>std::sort</code> over n = 16 to 1,048,576, built with each compiler</td></tr>
+        <tr><th>quicksort.cpp</th><td>Median-of-three Hoare quicksort, no cutoff &mdash; the common baseline</td></tr>
+        <tr><th>sort_compare_large.cpp</th><td>quicksort, <code>std::sort</code>, and libc++'s introsort compiled from the header with the bitset partition on and off</td></tr>
+        <tr><th>timing_size_breakdown.md</th><td>The full tables behind the numbers above</td></tr>
+      </tbody>
+    </table>
+    <p>Apple M5 performance core, 4.3&ndash;4.5 GHz after warm-up &middot; Apple clang 17 with libc++, and GCC 16.2 with libstdc++, both -O2 &middot; random int32, a different input for every sort &middot; best of 7 trials, median of 5 runs.</p>
+    <p>Companion pages: <a href="three_regimes.html">Three Techniques of std::sort</a> &mdash; GCC's version, taken apart; <a href="sort_mechanisms.html">Sort Mechanisms</a> &mdash; how each algorithm moves data.</p>
+  </footer>
+</div>
+
+<script>
+(function () {
+  var N   = [16,32,64,128,256,512,1024,2048,4096,8192,16384,32768,65536,131072,262144,524288,1048576];
+  var QS  = [1.94,2.41,2.49,2.49,2.43,2.43,2.37,2.37,2.32,2.34,2.35,2.32,2.30,2.28,2.33,2.30,2.29];
+  var GS  = [1.04,1.85,1.89,2.00,1.99,1.98,2.01,1.97,2.01,1.99,2.00,1.99,1.95,1.98,2.01,2.02,2.04];
+  var LAM = [null,null,null,null,null,null,1.86,1.88,1.89,1.91,1.91,1.95,1.91,1.97,1.97,2.01,1.96];
+  var CS  = [0.99,1.17,1.25,1.17,1.09,1.00,0.96,0.93,0.87,0.83,0.80,0.76,0.73,0.72,0.71,0.70,0.69];
+
+  function fmtN(n) { return n >= 1000 ? n.toLocaleString('en-US') : String(n); }
+  var css = getComputedStyle(document.documentElement);
+  function cvar(name) { return css.getPropertyValue(name).trim(); }
+
+  var svgNS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs) {
+    var e = document.createElementNS(svgNS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  (function () {
+    var svg = document.getElementById('chartA');
+    var W = 900, H = 380, ML = 46, MR = 16, MT = 20, MB = 40;
+    var pw = W - ML - MR, ph = H - MT - MB;
+    var n = N.length;
+    var yMax = 2.7, yMin = 0.4;
+
+    function x(i) { return ML + (pw * i / (n - 1)); }
+    function y(v) { return MT + ph * (1 - (v - yMin) / (yMax - yMin)); }
+
+    [0.5, 1.0, 1.5, 2.0, 2.5].forEach(function (v) {
+      svg.appendChild(el('line', { x1: ML, x2: ML + pw, y1: y(v), y2: y(v), class: 'gridline' }));
+      var t = el('text', { x: ML - 8, y: y(v) + 3, class: 'axis-label', 'text-anchor': 'end' });
+      t.textContent = v.toFixed(1);
+      svg.appendChild(t);
+    });
+    N.forEach(function (nv, i) {
+      if (i % 2 !== 0 && i !== n - 1) return;
+      var t = el('text', { x: x(i), y: H - MB + 18, class: 'axis-label', 'text-anchor': 'middle' });
+      t.textContent = fmtN(nv);
+      svg.appendChild(t);
+    });
+    var axTitle = el('text', { x: ML + pw / 2, y: H - 4, class: 'axis-label', 'text-anchor': 'middle' });
+    axTitle.textContent = 'n (elements, log scale)';
+    svg.appendChild(axTitle);
+
+    function path(vals, color, dashed) {
+      var d = '', started = false;
+      vals.forEach(function (v, i) {
+        if (v === null) return;
+        d += (started ? 'L' : 'M') + x(i) + ',' + y(v) + ' ';
+        started = true;
+      });
+      var attrs = { d: d, fill: 'none', stroke: color, 'stroke-width': 2.25, 'stroke-linejoin': 'round' };
+      if (dashed) attrs['stroke-dasharray'] = '6,5';
+      svg.appendChild(el('path', attrs));
+    }
+    var series = [[QS, '--slate', false], [GS, '--text-muted', false], [LAM, '--copper', true], [CS, '--copper', false]];
+    series.forEach(function (s) { path(s[0], cvar(s[1]), s[2]); });
+
+    var tip = document.getElementById('tipA');
+    var wrap = svg.parentElement;
+    series.forEach(function (s) {
+      var color = cvar(s[1]);
+      s[0].forEach(function (v, i) {
+        if (v === null) return;
+        var c = el('circle', { cx: x(i), cy: y(v), r: s[2] ? 3 : 4, fill: color, stroke: cvar('--surface'), 'stroke-width': 1.5 });
+        c.style.cursor = 'pointer';
+        c.addEventListener('mouseenter', function (ev) { showTip(i, ev); });
+        c.addEventListener('mousemove', function (ev) { showTip(i, ev); });
+        c.addEventListener('mouseleave', function () { tip.style.opacity = 0; });
+        svg.appendChild(c);
+      });
+    });
+    function row(label, v) {
+      return v === null ? '' : '<div class="row"><span>' + label + '</span><span>' + v.toFixed(2) + '</span></div>';
+    }
+    function showTip(i, ev) {
+      var r = wrap.getBoundingClientRect();
+      tip.innerHTML = '<div class="n">n = ' + fmtN(N[i]) + '</div>' +
+        row('quicksort.cpp', QS[i]) + row('libstdc++', GS[i]) + row('libc++, bitset off', LAM[i]) + row('libc++', CS[i]);
+      tip.style.left = (ev.clientX - r.left) + 'px';
+      tip.style.top = (ev.clientY - r.top) + 'px';
+      tip.style.opacity = 1;
+    }
+  })();
+
+  (function () {
+    var tbody = document.querySelector('#fullTable tbody');
+    N.forEach(function (nv, i) {
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + fmtN(nv) + '</td><td>' + QS[i].toFixed(2) + '</td><td>' + GS[i].toFixed(2) +
+        '</td><td>' + (LAM[i] === null ? '&mdash;' : LAM[i].toFixed(2)) + '</td><td>' + CS[i].toFixed(2) +
+        '</td><td>' + (GS[i] / CS[i]).toFixed(2) + '&times;</td>';
+      tbody.appendChild(tr);
+    });
+  })();
+})();
+</script>
+
+</body>
+</html>

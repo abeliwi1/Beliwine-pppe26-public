@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<!-- Three Regimes of std::sort -- generated for the pppe26 repo; opens standalone
+<!-- Three Techniques of std::sort (GCC's libstdc++) -- generated for the pppe26 repo; opens standalone
      in any browser, no server and no external assets beyond the web fonts, which
      fall back to system faces offline. -->
-<title>Three Regimes of std::sort</title>
+<title>Three Techniques of std::sort</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -316,6 +316,7 @@
   }
   .split-small { background: var(--surface-sunken); color: var(--text-secondary); }
   .split-big   { background: var(--copper-soft); color: var(--copper); font-weight: 600; }
+  .legend .dash { width: 1rem; height: 0; border-top: 2px dashed var(--text-muted); }
 
   /* ---- data tables ---- */
   table {
@@ -374,15 +375,14 @@
 <body>
 
 <div class="wrap">
-  <p class="kicker">algorithm design &middot; libstdc++ / libc++ introsort</p>
-  <h1>Three Regimes<br>of std::sort</h1>
+  <p class="kicker">algorithm design &middot; GCC's libstdc++ introsort, measured on Apple M5</p>
+  <h1>Three Techniques<br>of std::sort</h1>
   <p class="dek">
-    <code>std::sort</code> is not one algorithm. It is three algorithms and two size
-    checks, stitched together so that whichever regime an array falls into, a
-    different piece of the implementation does the work. This is what each piece
-    is for, and — measured against a plain median-of-three
-    <a href="sort_mechanisms.html#quicksort">quicksort</a>
-    with none of the three decisions — <em>what each one actually buys you.</em>
+    <code>std::sort</code> is not one algorithm. It combines three sorting
+    techniques &mdash; insertion sort, quicksort's partition and heapsort
+    &mdash; with two checks that decide which one handles each piece of the
+    array. This page measures GCC's libstdc++. clang's libc++ has additional optimizations.
+    (<a href="libcxx_sort.html">libc++</a>).
   </p>
 </div>
 
@@ -391,7 +391,7 @@
     <div class="cell">
       <span class="tag">Decision 1</span>
       <div class="decision">size ≤ 16 ?</div>
-      <div class="outcome"><span class="swatch" style="background:var(--copper)"></span>skip — <a href="sort_mechanisms.html#insertion">insertion sort</a> handles it in one final pass</div>
+      <div class="outcome"><span class="swatch" style="background:var(--copper)"></span>stop partitioning — one final <a href="sort_mechanisms.html#insertion">insertion-sort</a> pass over the whole array finishes every such range</div>
       <div class="arrow">&rarr;</div>
     </div>
     <div class="cell">
@@ -403,72 +403,78 @@
     <div class="cell">
       <span class="tag">otherwise</span>
       <div class="decision">median-of-3 partition</div>
-      <div class="outcome"><span class="swatch" style="background:var(--slate)"></span>quicksort proper — recurse on both halves</div>
+      <div class="outcome"><span class="swatch" style="background:var(--slate)"></span><a href="sort_mechanisms.html#quicksort">Hoare partition</a> — recurse on both halves</div>
     </div>
   </div>
+  <p style="color:var(--text-secondary); max-width:68ch;">
+    New to these three algorithms? <a href="sort_mechanisms.html">Sort Mechanisms</a>
+    traces how each one moves data, step by step:
+    <a href="sort_mechanisms.html#insertion">insertion sort</a>,
+    <a href="sort_mechanisms.html#quicksort">quicksort's partition</a>, and
+    <a href="sort_mechanisms.html#heapsort">heapsort</a>.
+  </p>
 </div>
 
 <div class="wrap">
   <p>
-    Isolating each decision's contribution needs a control: an implementation
-    that does <em>none</em> of them. This repository's <code>quicksort.cpp</code>
-    is exactly that — the same median-of-three Hoare partition std::sort uses
-    internally, with no cutoff and no depth limit, recursing all the way to
-    partitions of one. Benchmarked head-to-head against <code>std::sort</code>
-    across the same size sweep, the gap between them <em>is</em> the value of
-    decisions 1 and 2 — measured, not asserted.
+    Isolating each decision's contribution needs a control. This repository's <code>quicksort.cpp</code>
+    uses a median-of-three Hoare partition of the same kind
+    libstdc++ uses internally (<code>__unguarded_partition</code>), with no
+    cutoff and no depth limit, recursing all the way to partitions of one. Both
+    are compiled by the same compiler, GCC 16, so the gap between them
+    <em>is</em> the value of decisions 1 and 2.
   </p>
   <p>
-    That control is only meaningful if its partition code really is what
-    <code>std::sort</code> runs for every node above the cutoff — not just
-    asserted from reading both source trees, but shown. Instrumenting
-    <code>quicksort.cpp</code> to record wall time by node size, for one
-    sort of 1,048,576 random ints, answers that directly.
+    How much can the cutoff be worth? Instrumenting <code>quicksort.cpp</code>
+    to record wall time by node size, for one sort of 1,048,576 random ints,
+    answers that directly (<code>quicksort_breakdown.cpp</code>).
   </p>
 
-  <div class="split-bar" role="img" aria-label="21.9% of quicksort's time is spent in nodes of 16 or fewer elements; 78.1% is spent in nodes larger than 16.">
-    <div class="split-seg split-small" style="width:21.9%">
-      <span>&le;16<br>21.9%</span>
+  <div class="split-bar" role="img" aria-label="15.6% of quicksort's time is spent in nodes of 16 or fewer elements; 84.4% is spent in nodes larger than 16.">
+    <div class="split-seg split-small" style="width:15.6%">
+      <span>&le;16<br>15.6%</span>
     </div>
-    <div class="split-seg split-big" style="width:78.1%">
-      <span>&gt;16 — the code std::sort also runs, unchanged<br>78.1%</span>
+    <div class="split-seg split-big" style="width:84.4%">
+      <span>&gt;16 — the partitioning std::sort also does<br>84.4%</span>
     </div>
   </div>
 
   <div class="table-scroll">
     <table>
-      <thead><tr><th>node size</th><th>nodes</th><th>excl. time</th><th>% of total</th><th>ns / node</th></tr></thead>
+      <thead><tr><th>node size</th><th>nodes</th><th>excl. time</th><th>% of total</th></tr></thead>
       <tbody>
-        <tr><td>&le; 16</td><td>499,334</td><td>11.9 ms</td><td>21.9%</td><td>23.8</td></tr>
-        <tr><td>17 – 64</td><td>72,555</td><td>7.3 ms</td><td>13.5%</td><td>100.8</td></tr>
-        <tr><td>65 – 256</td><td>20,238</td><td>5.7 ms</td><td>10.4%</td><td>279.8</td></tr>
-        <tr><td>257 – 1,024</td><td>5,250</td><td>5.1 ms</td><td>9.3%</td><td>964.0</td></tr>
-        <tr><td>1,025 – 4,096</td><td>1,342</td><td>4.9 ms</td><td>8.9%</td><td>3,615.9</td></tr>
-        <tr><td>4,097 – 16,384</td><td>331</td><td>5.0 ms</td><td>9.2%</td><td>15,078.4</td></tr>
-        <tr><td>16,385 – 65,536</td><td>77</td><td>4.5 ms</td><td>8.3%</td><td>58,515.7</td></tr>
-        <tr><td>65,537 – 262,144</td><td>19</td><td>3.8 ms</td><td>7.0%</td><td>200,074.4</td></tr>
-        <tr><td>262,145 – 1,048,576</td><td>7</td><td>6.2 ms</td><td>11.5%</td><td>889,982.1</td></tr>
+        <tr><td>&le; 16</td><td>498,933</td><td>7.28 ms</td><td>15.6%</td></tr>
+        <tr><td>17 – 64</td><td>72,833</td><td>6.59 ms</td><td>14.1%</td></tr>
+        <tr><td>65 – 256</td><td>20,258</td><td>4.93 ms</td><td>10.5%</td></tr>
+        <tr><td>257 – 1,024</td><td>5,263</td><td>4.70 ms</td><td>10.1%</td></tr>
+        <tr><td>1,025 – 4,096</td><td>1,323</td><td>4.59 ms</td><td>9.8%</td></tr>
+        <tr><td>4,097 – 16,384</td><td>319</td><td>4.23 ms</td><td>9.1%</td></tr>
+        <tr><td>16,385 – 65,536</td><td>84</td><td>4.62 ms</td><td>9.9%</td></tr>
+        <tr><td>65,537 – 262,144</td><td>17</td><td>3.41 ms</td><td>7.3%</td></tr>
+        <tr><td>262,145 – 1,048,576</td><td>7</td><td>6.34 ms</td><td>13.6%</td></tr>
       </tbody>
     </table>
   </div>
 
   <p>
-    &ldquo;Node size&rdquo; is the size of one partition call; &ldquo;excl.
-    time&rdquo; is that call's own partition-loop cost with every descendant
-    call's time subtracted out — the technique is the same outermost-entry
-    guard <code>timing_size_breakdown.md</code> uses for its ≤16 figure,
-    generalized to nine nested size bands via successive differences. Rows
-    don't overlap and sum to the total.
+    &ldquo;Node size&rdquo; is the size of one partition call, counting calls on
+    two or more elements; &ldquo;excl. time&rdquo; is that call's own
+    partition-loop cost with every descendant call's time subtracted out. The
+    technique is an outermost-entry guard — time a call on a partition of
+    &le; T elements as a whole, and nothing inside it again — applied at nine
+    thresholds, with bands from successive differences and the 10 ns cost of
+    each pair of clock reads measured and subtracted. Rows don't overlap and
+    sum to the 46.7 ms total. Every figure is the best of 7 sorts of different
+    random arrays, and the median of 5 runs.
   </p>
   <p>
-    Only 21.9% of quicksort's own time is spent in the ≤16 partitions that
-    <code>std::sort</code> replaces with a single insertion-sort pass. The
-    other 78.1% — nodes from 17 elements up to the root call on the full
-    1,048,576-element array — is spent inside the identical median-of-three
-    Hoare partition <code>std::sort</code> also calls, recursively, the exact
-    same number of times. There's no room for <code>std::sort</code> to be
-    doing that majority of the work any differently: it's the same function.
-    Its entire measured advantage comes out of the remaining fifth.
+    Only 15.6% of quicksort's time is spent in the &le;16 partitions. The other
+    84.4% — nodes from 17 elements up to the root — is the median-of-three
+    Hoare partition that <code>std::sort</code> also runs, on the same pieces,
+    the same number of times. That makes a sharp prediction:
+    <code>std::sort</code> should cost what quicksort costs with its &le;16
+    leaves removed, plus whatever its one final insertion pass costs. The chart
+    below draws that middle line.
   </p>
 </div>
 
@@ -477,10 +483,11 @@
     <div class="panel-head">
       <div>
         <div class="panel-title">Normalized cost per comparison sort</div>
-        <div class="panel-sub">ns / (n&middot;log&#8322;n) &middot; Apple M5 &middot; -O2 &middot; random int32, independent buffers, best of 7</div>
+        <div class="panel-sub">ns / (n&middot;log&#8322;n) &middot; Apple M5 &middot; GCC 16, -O2 &middot; random int32, a different input for every sort &middot; best of 7, median of 5 runs</div>
       </div>
       <div class="legend">
         <span class="item"><span class="dot" style="background:var(--slate)"></span>quicksort (no cutoff)</span>
+        <span class="item"><span class="dash"></span>quicksort, &le;16 leaves removed</span>
         <span class="item"><span class="dot" style="background:var(--copper)"></span>std::sort</span>
       </div>
     </div>
@@ -489,6 +496,14 @@
       <div class="tooltip" id="tipA"></div>
     </div>
   </div>
+  <p style="color:var(--text-secondary); max-width:68ch;">
+    <strong>Reading the chart.</strong> Each point is total sort time divided
+    by n&middot;log&#8322;n, the work a comparison sort has to do. A flat line
+    means clean O(n log n) scaling; lower is faster. The dashed line is
+    quicksort minus its &le;16 partitions: the partitioning both sorts share.
+    <code>std::sort</code> sits just above it, and the small gap is its final
+    insertion pass. The tables below use the same units.
+  </p>
 </div>
 
 <div class="wrap">
@@ -498,138 +513,253 @@
   <div class="regime-head">
     <span class="regime-num">1</span>
     <div>
-      <p class="kicker">regime 1 &middot; n &asymp; 16</p>
+      <p class="kicker">technique 1 &middot; insertion sort</p>
       <h2>The Leaf</h2>
     </div>
   </div>
-  <p class="lede">Where the ≤16 cutoff fires before quicksort ever partitions.</p>
+  <p class="lede">Where the cutoff fires before quicksort ever partitions.</p>
 
   <p>
     <strong>Insertion sort</strong> shifts each new element backward past every
     larger element already placed — quadratic in the worst case, but with no
     recursion, no pivot selection, and a strictly sequential access pattern. At
-    n = 16 that quadratic cost is 256 simple compare-and-shift steps; the
-    constant factor is what matters, and insertion sort's is tiny.
+    n = 16 that quadratic cost is at most 120 simple compare-and-shift steps;
+    the constant factor is what matters, and insertion sort's is tiny.
   </p>
   <p>
     Plain quicksort's constant factor is not. At n = 16 it still recurses
-    roughly four levels deep, and every level pays a function-call frame,
-    a median-of-three selection, and a Hoare partition loop before it has
-    sorted anything. <code>std::sort</code>'s first decision is to skip all of
-    that: below the threshold it does nothing, and a single final insertion-sort
-    pass — over the whole array, not per partition — cleans up every
-    left-almost-sorted region at once.
+    roughly four levels deep, and every level pays a function-call frame, a
+    median-of-three selection, and a Hoare partition loop before it has sorted
+    anything. <code>std::sort</code>'s first decision is to skip all of that:
+    at 16 elements or fewer it never partitions, and the final insertion-sort
+    pass is the whole sort. Here the cutoff is the entire difference, and it
+    is worth 2&times;.
   </p>
 
   <div class="table-scroll">
     <table>
       <thead><tr><th>n</th><th>quicksort</th><th>std::sort</th><th>speedup</th></tr></thead>
       <tbody>
-        <tr><td>16</td><td>4.06</td><td>2.16</td><td>1.88&times;</td></tr>
-        <tr><td>32</td><td>4.03</td><td>2.21</td><td>1.82&times;</td></tr>
+        <tr><td>16</td><td>2.09</td><td>1.04</td><td>2.01&times;</td></tr>
+        <tr><td>32</td><td>2.52</td><td>1.85</td><td>1.36&times;</td></tr>
       </tbody>
     </table>
   </div>
+  <p class="lede">
+    ns / (n&middot;log&#8322;n). At n = 32 <code>std::sort</code> partitions
+    once and leaves two halves for the final pass, and the margin is already
+    down to 1.36&times;.
+  </p>
 
   <hr class="rule">
 
   <div class="regime-head">
     <span class="regime-num">2</span>
     <div>
-      <p class="kicker">regime 2 &middot; n = 64 &ndash; 4,096</p>
-      <h2>The Widening Middle</h2>
+      <p class="kicker">technique 2 &middot; quicksort partition</p>
+      <h2>The Middle</h2>
     </div>
   </div>
-  <p class="lede">Where both implementations are running the identical partition — and the gap keeps growing, smoothly, with no crossover.</p>
+  <p class="lede">Where both implementations run the same partition — and cost the same, apart from the leaves.</p>
 
   <p>
     Above the leaf, both algorithms do the same thing: pick a median-of-three
     pivot, partition with two inward-walking pointers, recurse on each side.
-    <code>std::sort</code>'s only edge here is that it stops recursing at 16
-    elements instead of 1 — so this regime is a clean measurement of what that
-    one decision is worth as recursion gets deeper. Measured honestly,
-    quicksort never catches up: the margin runs 2.0&times; at n&nbsp;=&nbsp;64
-    up to 2.7&times; at n&nbsp;=&nbsp;4,096, rising the whole way.
+    The only difference is the bottom of the tree. Quicksort recurses into
+    every partition of 16 or fewer elements; <code>std::sort</code> leaves them
+    alone and finishes them all in one linear pass at the end.
   </p>
-  <p>
-    The reason is call count, not cache behavior. Raw quicksort recurses to
-    partitions of size 1 — roughly <code>2n</code> total calls — while
-    <code>std::sort</code> stops at 16 and cleans up with one linear
-    insertion-sort pass over the whole array, roughly <code>n/8</code> calls.
-    That fixed per-call overhead (a stack frame, a median-of-three selection,
-    a partition loop) recurs at every level all the way down for plain
-    quicksort; <code>std::sort</code> pays it only down to the cutoff. The
-    share of that overhead in the total shrinks for neither algorithm in a way
-    that produces a crossover — it just keeps compounding in
-    <code>std::sort</code>'s favor.
-  </p>
-
-  <div class="table-scroll">
-    <table>
-      <thead><tr><th>n</th><th>quicksort</th><th>std::sort</th><th>speedup</th></tr></thead>
-      <tbody>
-        <tr><td>64</td><td>3.91</td><td>1.92</td><td>2.04&times;</td></tr>
-        <tr><td>128</td><td>5.24</td><td>2.30</td><td>2.28&times;</td></tr>
-        <tr><td>256</td><td>3.74</td><td>1.57</td><td>2.39&times;</td></tr>
-        <tr><td>512</td><td>2.76</td><td>1.18</td><td>2.35&times;</td></tr>
-        <tr><td>1,024</td><td>2.47</td><td>1.01</td><td>2.44&times;</td></tr>
-        <tr><td>2,048</td><td>2.45</td><td>0.95</td><td>2.58&times;</td></tr>
-        <tr><td>4,096</td><td>2.44</td><td>0.90</td><td>2.69&times;</td></tr>
-      </tbody>
-    </table>
-  </div>
 
   <hr class="rule">
 
   <div class="regime-head">
     <span class="regime-num">3</span>
     <div>
-      <p class="kicker">regime 3 &middot; n &ge; 8,192</p>
+      <p class="kicker">technique 3 &middot; heapsort</p>
       <h2>The Safety Net</h2>
     </div>
   </div>
-  <p class="lede">Where a decision built for adversarial input stays dormant on ordinary random data — and the widening gap from Regime 2 simply keeps going.</p>
+  <p class="lede">Where a decision built for hostile input stays dormant on ordinary data.</p>
 
   <p>
     <strong>Heapsort</strong> is <code>std::sort</code>'s second decision: if
     recursion ever passes depth 2&middot;log&#8322;n, abandon quicksort and
     switch to heapsort, which is slower on average but has no input that makes
-    it quadratic. It exists to stop a hostile or already-sorted array from
-    driving naive quicksort toward O(n²) — on the uniform random data measured
-    here, that depth limit is essentially never reached, and heapsort never
-    runs. It is insurance, and its cost shows up nowhere in this benchmark;
-    its payoff only shows up on inputs this benchmark doesn't contain.
+    it quadratic. On random data it never runs.
   </p>
   <p>
-    So what explains the numbers below? Nothing new — the same recursion-
-    overhead mechanism from Regime 2, continuing. There is no discontinuity at
-    n&nbsp;=&nbsp;8,192 in a correctly measured run: quicksort's own
-    <code>ns/(n&middot;log&#8322;n)</code> is nearly flat across this entire
-    range (2.42 down to 2.33), and so is <code>std::sort</code>'s decline
-    (0.87 down to 0.69). If cache capacity affected the two differently, it
-    would show up here — above the 16-element cutoff they run the
-    <em>identical</em> partition code, so a cache effect would have to hit
-    both equally. The margin keeps widening anyway, slowly, from 2.8&times; to
-    3.4&times;, for the same amortization reason as Regime 2: fixed overhead
-    recurs at every level for plain quicksort and doesn't for
-    <code>std::sort</code>.
+    Nor does it run on the inputs people usually worry about. Already-sorted,
+    reverse-sorted and all-equal arrays are easy for a median-of-three pivot:
+    the median of the first, middle and last elements of a sorted range is its
+    true median, so every split is even. (Sorted input is the worst case for a
+    quicksort that pivots on the <em>first</em> element, which is the problem
+    median-of-three solves.) The fallback is for inputs built to defeat
+    median-of-three itself:
+  </p>
+  <ul style="margin:0; padding-left:1.3em;">
+    <li><strong>Organ pipe</strong> &mdash; ascending to the middle, then
+      descending. Worked through below.</li>
+    <li><strong>Median-of-three killers</strong> &mdash; sequences arranged so
+      that every pivot is the second-smallest element of its range. Musser
+      designed introsort, with this fallback, after showing that such inputs
+      drive median-of-three quicksort to O(n²).</li>
+    <li><strong>An adversary</strong> &mdash; McIlroy's &ldquo;killer
+      adversary&rdquo; assigns values during the sort itself, choosing each
+      answer so the pivot turns out as bad as possible. It defeats any
+      quicksort whose pivot choice it can watch, and matters wherever an
+      attacker controls the data being sorted.</li>
+  </ul>
+  <h3 style="margin-top:2rem;">Example: an organ pipe</h3>
+  <p>
+    The ends of an organ pipe are both small and its middle is the largest
+    value, so median-of-three always lands on something near the bottom.
+  </p>
+  <figure style="margin:1.6rem 0 0.4rem;">
+    <div class="table-scroll">
+      <svg class="chart" viewBox="0 0 640 150" role="img" aria-label="An organ-pipe array of 24 values rising from 0 to 12 and falling back to 1. Median-of-three samples positions 1, 12 and 23, holding 1, 12 and 1, and picks 1 as the pivot." style="min-width:520px">
+        <rect x="11.6" y="126.0" width="18.7" height="2.0" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="21.0" y="121.0" text-anchor="middle" class="axis-label">0</text>
+        <rect x="37.6" y="119.5" width="18.7" height="8.5" rx="1.5" style="fill:var(--copper)"></rect>
+        <text x="47.0" y="114.5" text-anchor="middle" class="axis-label">1</text>
+        <rect x="63.6" y="111.0" width="18.7" height="17.0" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="73.0" y="106.0" text-anchor="middle" class="axis-label">2</text>
+        <rect x="89.6" y="102.5" width="18.7" height="25.5" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="99.0" y="97.5" text-anchor="middle" class="axis-label">3</text>
+        <rect x="115.6" y="94.0" width="18.7" height="34.0" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="125.0" y="89.0" text-anchor="middle" class="axis-label">4</text>
+        <rect x="141.6" y="85.5" width="18.7" height="42.5" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="151.0" y="80.5" text-anchor="middle" class="axis-label">5</text>
+        <rect x="167.6" y="77.0" width="18.7" height="51.0" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="177.0" y="72.0" text-anchor="middle" class="axis-label">6</text>
+        <rect x="193.6" y="68.5" width="18.7" height="59.5" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="203.0" y="63.5" text-anchor="middle" class="axis-label">7</text>
+        <rect x="219.6" y="60.0" width="18.7" height="68.0" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="229.0" y="55.0" text-anchor="middle" class="axis-label">8</text>
+        <rect x="245.6" y="51.5" width="18.7" height="76.5" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="255.0" y="46.5" text-anchor="middle" class="axis-label">9</text>
+        <rect x="271.6" y="43.0" width="18.7" height="85.0" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="281.0" y="38.0" text-anchor="middle" class="axis-label">10</text>
+        <rect x="297.6" y="34.5" width="18.7" height="93.5" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="307.0" y="29.5" text-anchor="middle" class="axis-label">11</text>
+        <rect x="323.6" y="26.0" width="18.7" height="102.0" rx="1.5" style="fill:var(--copper)"></rect>
+        <text x="333.0" y="21.0" text-anchor="middle" class="axis-label">12</text>
+        <rect x="349.6" y="34.5" width="18.7" height="93.5" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="359.0" y="29.5" text-anchor="middle" class="axis-label">11</text>
+        <rect x="375.6" y="43.0" width="18.7" height="85.0" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="385.0" y="38.0" text-anchor="middle" class="axis-label">10</text>
+        <rect x="401.6" y="51.5" width="18.7" height="76.5" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="411.0" y="46.5" text-anchor="middle" class="axis-label">9</text>
+        <rect x="427.6" y="60.0" width="18.7" height="68.0" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="437.0" y="55.0" text-anchor="middle" class="axis-label">8</text>
+        <rect x="453.6" y="68.5" width="18.7" height="59.5" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="463.0" y="63.5" text-anchor="middle" class="axis-label">7</text>
+        <rect x="479.6" y="77.0" width="18.7" height="51.0" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="489.0" y="72.0" text-anchor="middle" class="axis-label">6</text>
+        <rect x="505.6" y="85.5" width="18.7" height="42.5" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="515.0" y="80.5" text-anchor="middle" class="axis-label">5</text>
+        <rect x="531.6" y="94.0" width="18.7" height="34.0" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="541.0" y="89.0" text-anchor="middle" class="axis-label">4</text>
+        <rect x="557.6" y="102.5" width="18.7" height="25.5" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="567.0" y="97.5" text-anchor="middle" class="axis-label">3</text>
+        <rect x="583.6" y="111.0" width="18.7" height="17.0" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="593.0" y="106.0" text-anchor="middle" class="axis-label">2</text>
+        <rect x="609.6" y="119.5" width="18.7" height="8.5" rx="1.5" style="fill:var(--copper)"></rect>
+        <text x="619.0" y="114.5" text-anchor="middle" class="axis-label">1</text>
+        <text x="47.0" y="144.0" text-anchor="middle" class="axis-label" style="fill:var(--copper)">first+1</text>
+        <text x="333.0" y="144.0" text-anchor="middle" class="axis-label" style="fill:var(--copper)">middle</text>
+        <text x="619.0" y="144.0" text-anchor="middle" class="axis-label" style="fill:var(--copper)">last−1</text>
+      </svg>
+      <svg class="chart" viewBox="0 0 640 150" role="img" aria-label="After partitioning around 1: the pivot at the front, 2 elements on the small side, 21 on the large side." style="min-width:520px; margin-top:0.6rem">
+        <rect x="11.6" y="119.5" width="18.7" height="8.5" rx="1.5" style="fill:var(--text-muted)"></rect>
+        <text x="21.0" y="114.5" text-anchor="middle" class="axis-label">1</text>
+        <rect x="37.6" y="126.0" width="18.7" height="2.0" rx="1.5" style="fill:var(--copper)"></rect>
+        <text x="47.0" y="121.0" text-anchor="middle" class="axis-label">0</text>
+        <rect x="63.6" y="119.5" width="18.7" height="8.5" rx="1.5" style="fill:var(--copper)"></rect>
+        <text x="73.0" y="114.5" text-anchor="middle" class="axis-label">1</text>
+        <rect x="89.6" y="102.5" width="18.7" height="25.5" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="99.0" y="97.5" text-anchor="middle" class="axis-label">3</text>
+        <rect x="115.6" y="94.0" width="18.7" height="34.0" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="125.0" y="89.0" text-anchor="middle" class="axis-label">4</text>
+        <rect x="141.6" y="85.5" width="18.7" height="42.5" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="151.0" y="80.5" text-anchor="middle" class="axis-label">5</text>
+        <rect x="167.6" y="77.0" width="18.7" height="51.0" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="177.0" y="72.0" text-anchor="middle" class="axis-label">6</text>
+        <rect x="193.6" y="68.5" width="18.7" height="59.5" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="203.0" y="63.5" text-anchor="middle" class="axis-label">7</text>
+        <rect x="219.6" y="60.0" width="18.7" height="68.0" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="229.0" y="55.0" text-anchor="middle" class="axis-label">8</text>
+        <rect x="245.6" y="51.5" width="18.7" height="76.5" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="255.0" y="46.5" text-anchor="middle" class="axis-label">9</text>
+        <rect x="271.6" y="43.0" width="18.7" height="85.0" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="281.0" y="38.0" text-anchor="middle" class="axis-label">10</text>
+        <rect x="297.6" y="34.5" width="18.7" height="93.5" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="307.0" y="29.5" text-anchor="middle" class="axis-label">11</text>
+        <rect x="323.6" y="26.0" width="18.7" height="102.0" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="333.0" y="21.0" text-anchor="middle" class="axis-label">12</text>
+        <rect x="349.6" y="34.5" width="18.7" height="93.5" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="359.0" y="29.5" text-anchor="middle" class="axis-label">11</text>
+        <rect x="375.6" y="43.0" width="18.7" height="85.0" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="385.0" y="38.0" text-anchor="middle" class="axis-label">10</text>
+        <rect x="401.6" y="51.5" width="18.7" height="76.5" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="411.0" y="46.5" text-anchor="middle" class="axis-label">9</text>
+        <rect x="427.6" y="60.0" width="18.7" height="68.0" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="437.0" y="55.0" text-anchor="middle" class="axis-label">8</text>
+        <rect x="453.6" y="68.5" width="18.7" height="59.5" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="463.0" y="63.5" text-anchor="middle" class="axis-label">7</text>
+        <rect x="479.6" y="77.0" width="18.7" height="51.0" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="489.0" y="72.0" text-anchor="middle" class="axis-label">6</text>
+        <rect x="505.6" y="85.5" width="18.7" height="42.5" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="515.0" y="80.5" text-anchor="middle" class="axis-label">5</text>
+        <rect x="531.6" y="94.0" width="18.7" height="34.0" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="541.0" y="89.0" text-anchor="middle" class="axis-label">4</text>
+        <rect x="557.6" y="102.5" width="18.7" height="25.5" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="567.0" y="97.5" text-anchor="middle" class="axis-label">3</text>
+        <rect x="583.6" y="111.0" width="18.7" height="17.0" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="593.0" y="106.0" text-anchor="middle" class="axis-label">2</text>
+        <rect x="609.6" y="111.0" width="18.7" height="17.0" rx="1.5" style="fill:var(--slate-soft)"></rect>
+        <text x="619.0" y="106.0" text-anchor="middle" class="axis-label">2</text>
+        <text x="21.0" y="144" text-anchor="middle" class="axis-label">pivot</text>
+        <text x="60.0" y="144" text-anchor="middle" class="axis-label" style="fill:var(--copper)">2</text>
+        <text x="359.0" y="144" text-anchor="middle" class="axis-label">21 elements, still an organ pipe</text>
+      </svg>
+    </div>
+    <figcaption class="lede" style="font-size:0.88rem; margin-top:0.6rem;">
+      <strong>Top:</strong> an organ pipe of 24. libstdc++ samples first+1,
+      middle and last&minus;1 &mdash; values 1, 12 and 1 &mdash; and takes the
+      median, 1: the second-smallest value in the array. <strong>Bottom:</strong>
+      after partitioning around it, 2 elements land on one side and 21 on the
+      other, and the large side keeps the same shape.
+    </figcaption>
+  </figure>
+  <p>
+    At full size the same thing repeats at every level. With 65,536 elements
+    the first split leaves 3 on the small side; the small side doubles each
+    level after that, so the large side shrinks by only a few percent at a
+    time:
   </p>
 
   <div class="table-scroll">
     <table>
-      <thead><tr><th>n</th><th>quicksort</th><th>std::sort</th><th>speedup</th></tr></thead>
+      <thead><tr><th>level</th><th>range</th><th>small side</th><th>large side</th></tr></thead>
       <tbody>
-        <tr><td>8,192</td><td>2.42</td><td>0.87</td><td>2.80&times;</td></tr>
-        <tr><td>16,384</td><td>2.40</td><td>0.83</td><td>2.90&times;</td></tr>
-        <tr><td>32,768</td><td>2.39</td><td>0.80</td><td>3.00&times;</td></tr>
-        <tr><td>65,536</td><td>2.38</td><td>0.77</td><td>3.09&times;</td></tr>
-        <tr><td>131,072</td><td>2.37</td><td>0.75</td><td>3.16&times;</td></tr>
-        <tr><td>262,144</td><td>2.35</td><td>0.73</td><td>3.23&times;</td></tr>
-        <tr><td>524,288</td><td>2.33</td><td>0.71</td><td>3.29&times;</td></tr>
-        <tr><td>1,048,576</td><td>2.33</td><td>0.69</td><td>3.38&times;</td></tr>
+        <tr><td>0</td><td>65,536</td><td>3</td><td>65,533</td></tr>
+        <tr><td>1</td><td>65,533</td><td>6</td><td>65,527</td></tr>
+        <tr><td>2</td><td>65,527</td><td>12</td><td>65,515</td></tr>
+        <tr><td>3</td><td>65,515</td><td>24</td><td>65,491</td></tr>
+        <tr><td>9</td><td>64,003</td><td>1,536</td><td>62,467</td></tr>
       </tbody>
     </table>
   </div>
+
+  <p>
+    The recursion reaches the depth limit, 2&middot;log&#8322;65,536 = 32,
+    where random input never goes past 25, and libstdc++ hands the remaining
+    ranges to heapsort &mdash; 125 times in all. Counting calls to libstdc++'s
+    heapsort with a debugger confirms it: 125 for this organ pipe, one for
+    McIlroy's adversary, and zero for random, sorted, reverse-sorted and
+    all-equal input. It is insurance, and on the data this page measures it
+    never pays out.
+  </p>
 
 </div>
 
@@ -654,7 +784,7 @@
     <summary>View full data table</summary>
     <div class="table-scroll">
       <table id="fullTable">
-        <thead><tr><th>n</th><th>quicksort ns/(n&middot;log&#8322;n)</th><th>std::sort ns/(n&middot;log&#8322;n)</th><th>speedup</th></tr></thead>
+        <thead><tr><th>n</th><th>quicksort ns/(n&middot;log&#8322;n)</th><th>leaves removed</th><th>std::sort ns/(n&middot;log&#8322;n)</th><th>speedup</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -663,38 +793,43 @@
   <hr class="rule">
 
   <p style="color:var(--text-secondary); max-width:68ch;">
-    Three decisions, and — because this repository's plain quicksort
-    implements the exact same partition std::sort uses internally — a fair
-    way to measure what they're worth. The insertion-sort cutoff is doing
-    essentially all the work measured here: a real, monotonically widening
-    margin from 1.8&times; at n&nbsp;=&nbsp;16 to 3.4&times; at
-    n&nbsp;=&nbsp;1,048,576, driven by recursion overhead that std::sort pays
-    once per ~16 elements and plain quicksort pays at every level down to 1.
-    There is no separate cache-related regime and no crossover — that was an
-    artifact of measuring with a harness this repo's own benchmarks have
-    already warned against. The depth-limited heapsort fallback buys nothing
-    on this data at all; its payoff only shows up on inputs — adversarial or
-    already-sorted — that this benchmark doesn't contain.
+    Three techniques, and — because this repository's plain quicksort runs the
+    same kind of partition libstdc++ uses internally — a fair way to measure
+    what they're worth. In the middle and above, <code>std::sort</code> and
+    quicksort do the same partitioning at the same cost; the whole difference
+    is at the bottom of the tree, where one final insertion pass does the
+    leaves' work for about half of what recursing into them costs. That is
+    worth 2&times; at n&nbsp;=&nbsp;16 and settles to 1.1&ndash;1.2&times;
+    from n&nbsp;=&nbsp;128 up. The depth-limited heapsort fallback never runs on
+    this data; its payoff only shows up on hostile inputs like the organ pipe
+    above.
+  </p>
+  <p style="color:var(--text-secondary); max-width:68ch;">
+    clang's libc++ is 3&times; faster than this at a million elements, with
+    the same three techniques. <a href="libcxx_sort.html">What libc++ Adds</a>
+    shows where that comes from.
   </p>
 
   <footer>
     <table class="files">
       <tbody>
         <tr><th>quicksort.cpp</th><td>Median-of-three Hoare quicksort, no cutoff, no depth limit — the control</td></tr>
-        <tr><th>std_sort.cpp</th><td><code>std::sort</code> algorithm; re-benchmarked here with a corrected harness</td></tr>
-        <tr><th>timing_size_breakdown.md</th><td>Source of the corrected numbers above, plus the ≤16-partition time breakdown and the methodology note</td></tr>
+        <tr><th>std_sort.cpp</th><td><code>std::sort</code> over n = 16 to 1,048,576</td></tr>
+        <tr><th>quicksort_breakdown.cpp</th><td>The instrumented quicksort behind the node-size table and the leaves-removed line</td></tr>
+        <tr><th>timing_size_breakdown.md</th><td>The full tables behind the numbers above</td></tr>
       </tbody>
     </table>
-    <p>Apple M5 &middot; clang &middot; -O2 &middot; random int32 &middot; independent buffers refilled outside the timed region &middot; best of 7 runs.</p>
-    <p>Companion page: <a href="sort_mechanisms.html">Sort Mechanisms</a> — how each algorithm moves data.</p>
+    <p>Apple M5 performance core, 4.4 GHz after warm-up &middot; GCC 16.2 with libstdc++ (<code>g++-16 -O2 -std=c++17 -isysroot $(xcrun --show-sdk-path)</code>) &middot; random int32, a different input for every sort &middot; best of 7 trials, median of 5 runs.</p>
+    <p>Companion pages: <a href="sort_mechanisms.html">Sort Mechanisms</a> — how each algorithm moves data; <a href="libcxx_sort.html">What libc++ Adds</a> — clang's version of the same sort.</p>
   </footer>
 </div>
 
 <script>
 (function () {
-  var N = [16,32,64,128,256,512,1024,2048,4096,8192,16384,32768,65536,131072,262144,524288,1048576];
-  var QS = [4.06,4.03,3.91,5.24,3.74,2.76,2.47,2.45,2.44,2.42,2.40,2.39,2.38,2.37,2.35,2.33,2.33];
-  var SS = [2.16,2.21,1.92,2.30,1.57,1.18,1.01,0.95,0.90,0.87,0.83,0.80,0.77,0.75,0.73,0.71,0.69];
+  var N  = [16,32,64,128,256,512,1024,2048,4096,8192,16384,32768,65536,131072,262144,524288,1048576];
+  var QS = [2.09,2.52,2.41,2.35,2.36,2.32,2.31,2.30,2.28,2.25,2.22,2.24,2.21,2.21,2.23,2.24,2.23];
+  var LF = [null,1.24,1.38,1.47,1.57,1.62,1.68,1.72,1.75,1.75,1.75,1.80,1.81,1.82,1.85,1.88,1.88];
+  var SS = [1.04,1.85,1.89,2.00,1.99,1.98,2.01,1.97,2.01,1.99,2.00,1.99,1.95,1.98,2.01,2.02,2.04];
   var SPD = QS.map(function (v, i) { return v / SS[i]; });
 
   function fmtN(n) { return n >= 1000 ? n.toLocaleString('en-US') : String(n); }
@@ -708,36 +843,19 @@
     return e;
   }
 
-  // ---------------- Chart A: two lines, ns/(n log2 n) ----------------
+  // ---------------- Chart A: three lines, ns/(n log2 n) ----------------
   (function () {
     var svg = document.getElementById('chartA');
-    var W = 900, H = 380, ML = 46, MR = 16, MT = 34, MB = 40;
+    var W = 900, H = 380, ML = 46, MR = 16, MT = 20, MB = 40;
     var pw = W - ML - MR, ph = H - MT - MB;
     var n = N.length;
-    var yMax = 5.6, yMin = 0.4;
+    var yMax = 2.7, yMin = 0.8;
 
     function x(i) { return ML + (pw * i / (n - 1)); }
     function y(v) { return MT + ph * (1 - (v - yMin) / (yMax - yMin)); }
 
-    // regime bands
-    var bands = [
-      { from: 0, to: 1, label: 'Regime 1 · leaf' },
-      { from: 1, to: 8, label: 'Regime 2 · widening middle' },
-      { from: 8, to: 16, label: 'Regime 3 · safety net' }
-    ];
-    var bandFill = ['var(--surface-sunken)', 'transparent', 'var(--surface-sunken)'];
-    bands.forEach(function (b, bi) {
-      var x0 = x(b.from) - (b.from === 0 ? 0 : (x(b.from) - x(b.from - 1)) / 2);
-      var x1 = x(b.to) + (b.to === n - 1 ? 0 : (x(b.to + 1) - x(b.to)) / 2);
-      svg.appendChild(el('rect', { x: x0, y: MT, width: x1 - x0, height: ph, fill: bandFill[bi] }));
-      var lbl = el('text', { x: (x0 + x1) / 2, y: MT - 12, class: 'band-label', 'text-anchor': 'middle' });
-      lbl.textContent = b.label;
-      svg.appendChild(lbl);
-      if (bi > 0) svg.appendChild(el('line', { x1: x0, x2: x0, y1: MT, y2: MT + ph, class: 'gridline', 'stroke-dasharray': '2,3' }));
-    });
-
     // y gridlines
-    [1, 2, 3, 4, 5].forEach(function (v) {
+    [1.0, 1.5, 2.0, 2.5].forEach(function (v) {
       svg.appendChild(el('line', { x1: ML, x2: ML + pw, y1: y(v), y2: y(v), class: 'gridline' }));
       var t = el('text', { x: ML - 8, y: y(v) + 3, class: 'axis-label', 'text-anchor': 'end' });
       t.textContent = v.toFixed(1);
@@ -755,18 +873,28 @@
     axTitle.textContent = 'n (elements, log scale)';
     svg.appendChild(axTitle);
 
-    function path(vals, color) {
-      var d = vals.map(function (v, i) { return (i === 0 ? 'M' : 'L') + x(i) + ',' + y(v); }).join(' ');
-      svg.appendChild(el('path', { d: d, fill: 'none', stroke: color, 'stroke-width': 2.25, 'stroke-linejoin': 'round' }));
+    // a line through the non-null points
+    function path(vals, color, dashed) {
+      var d = '', started = false;
+      vals.forEach(function (v, i) {
+        if (v === null) return;
+        d += (started ? 'L' : 'M') + x(i) + ',' + y(v) + ' ';
+        started = true;
+      });
+      var attrs = { d: d, fill: 'none', stroke: color, 'stroke-width': 2.25, 'stroke-linejoin': 'round' };
+      if (dashed) attrs['stroke-dasharray'] = '6,5';
+      svg.appendChild(el('path', attrs));
     }
     path(QS, cvar('--slate'));
+    path(LF, cvar('--text-muted'), true);
     path(SS, cvar('--copper'));
 
     var tip = document.getElementById('tipA');
     var wrap = svg.parentElement;
-    [QS, SS].forEach(function (vals, si) {
-      var color = si === 0 ? cvar('--slate') : cvar('--copper');
+    [[QS, '--slate'], [LF, '--text-muted'], [SS, '--copper']].forEach(function (s) {
+      var vals = s[0], color = cvar(s[1]);
       vals.forEach(function (v, i) {
+        if (v === null) return;
         var c = el('circle', { cx: x(i), cy: y(v), r: 4, fill: color, stroke: cvar('--surface'), 'stroke-width': 1.5 });
         c.style.cursor = 'pointer';
         c.addEventListener('mouseenter', function (ev) { showTip(i, ev); });
@@ -779,6 +907,7 @@
       var r = wrap.getBoundingClientRect();
       tip.innerHTML = '<div class="n">n = ' + fmtN(N[i]) + '</div>' +
         '<div class="row"><span>quicksort</span><span>' + QS[i].toFixed(2) + '</span></div>' +
+        (LF[i] === null ? '' : '<div class="row"><span>leaves removed</span><span>' + LF[i].toFixed(2) + '</span></div>') +
         '<div class="row"><span>std::sort</span><span>' + SS[i].toFixed(2) + '</span></div>';
       tip.style.left = (ev.clientX - r.left) + 'px';
       tip.style.top = (ev.clientY - r.top) + 'px';
@@ -786,13 +915,13 @@
     }
   })();
 
-  // ---------------- Chart B: diverging bars, speedup ratio ----------------
+  // ---------------- Chart B: bars, speedup ratio ----------------
   (function () {
     var svg = document.getElementById('chartB');
     var W = 900, H = 340, ML = 46, MR = 16, MT = 26, MB = 40;
     var pw = W - ML - MR, ph = H - MT - MB;
     var n = N.length;
-    var lo = 1.0, hi = 3.6;
+    var lo = 1.0, hi = 2.2;
     var baseline = 1.0;
 
     function x(i) { return ML + (pw * i / (n - 1)); }
@@ -804,11 +933,10 @@
     bt.textContent = '1.0× parity';
     svg.appendChild(bt);
 
-    [1, 1.5, 2, 2.5, 3, 3.5].forEach(function (v) {
-      if (v < lo || v > hi) return;
+    [1.25, 1.5, 1.75, 2.0].forEach(function (v) {
       svg.appendChild(el('line', { x1: ML, x2: ML + pw, y1: y(v), y2: y(v), class: 'gridline' }));
       var t = el('text', { x: ML - 8, y: y(v) + 3, class: 'axis-label', 'text-anchor': 'end' });
-      t.textContent = v.toFixed(1) + '×';
+      t.textContent = v.toFixed(2) + '×';
       svg.appendChild(t);
     });
 
@@ -857,7 +985,9 @@
     var tbody = document.querySelector('#fullTable tbody');
     N.forEach(function (nv, i) {
       var tr = document.createElement('tr');
-      tr.innerHTML = '<td>' + fmtN(nv) + '</td><td>' + QS[i].toFixed(2) + '</td><td>' + SS[i].toFixed(2) + '</td><td>' + SPD[i].toFixed(2) + '&times;</td>';
+      tr.innerHTML = '<td>' + fmtN(nv) + '</td><td>' + QS[i].toFixed(2) + '</td><td>' +
+        (LF[i] === null ? '&mdash;' : LF[i].toFixed(2)) + '</td><td>' + SS[i].toFixed(2) +
+        '</td><td>' + SPD[i].toFixed(2) + '&times;</td>';
       tbody.appendChild(tr);
     });
   })();

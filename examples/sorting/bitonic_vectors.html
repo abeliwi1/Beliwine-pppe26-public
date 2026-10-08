@@ -1,0 +1,270 @@
+<title>Bitonic Sort in Registers</title>
+<!-- Bitonic Sort in Registers -- generated for the pppe26 repo; opens standalone
+     in any browser, no server and no external assets beyond the web fonts, which
+     fall back to system faces offline.  Companion to bitonic_diagram.html. -->
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  /* Layout: one reading column; each ISA is a section with one code panel,
+     preceded by a shared lane diagram and step table.  Palette and type follow
+     bitonic_diagram.html: teal marks lanes that keep the min, orange the max. */
+  :root{
+    --ground:#F6F8F9; --surface:#FFFFFF; --panel:#FBFCFD;
+    --ink:#16202B; --muted:#5D6D7B; --rule:#DAE1E7; --rule-soft:#E9EEF2;
+    --min:#0E7C86; --max:#C0611D;
+    --min-wash:#E4F1F2; --max-wash:#FBEDE1;
+    --code-bg:#F1F4F6;
+    --display:"IBM Plex Sans Condensed",ui-sans-serif,system-ui,sans-serif;
+    --body:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --ground:#0F151A; --surface:#172029; --panel:#141C24;
+      --ink:#E3EAF0; --muted:#91A1B0; --rule:#2B3945; --rule-soft:#212C36;
+      --min:#3FBDC7; --max:#EE9448;
+      --min-wash:#153034; --max-wash:#33220F;
+      --code-bg:#121A21;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0F151A; --surface:#172029; --panel:#141C24;
+    --ink:#E3EAF0; --muted:#91A1B0; --rule:#2B3945; --rule-soft:#212C36;
+    --min:#3FBDC7; --max:#EE9448;
+    --min-wash:#153034; --max-wash:#33220F;
+    --code-bg:#121A21;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  body{
+    background:var(--ground); color:var(--ink);
+    font-family:var(--body); font-size:17px; line-height:1.65;
+    margin:0; padding-block:clamp(28px,6vw,72px) 96px; padding-inline:clamp(16px,5vw,32px);
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:840px; margin:0 auto; display:flex; flex-direction:column; gap:48px}
+  .measure{max-width:66ch}
+  header{display:flex; flex-direction:column; gap:14px; padding-bottom:34px; border-bottom:1px solid var(--rule)}
+  .eyebrow{font-family:var(--mono); font-size:11.5px; font-weight:500; letter-spacing:.16em; text-transform:uppercase; color:var(--muted)}
+  h1{font-family:var(--display); font-weight:700; font-size:clamp(40px,8vw,62px); line-height:.98; letter-spacing:-.02em; margin:0; text-wrap:balance}
+  .standfirst{font-size:clamp(17px,2.4vw,19.5px); color:var(--muted); margin:0; max-width:60ch}
+  section{display:flex; flex-direction:column; gap:16px; min-width:0}
+  h2{font-family:var(--display); font-weight:600; font-size:clamp(23px,3.6vw,30px); line-height:1.12; letter-spacing:-.01em; margin:0; display:flex; align-items:baseline; gap:13px; flex-wrap:wrap; text-wrap:balance}
+  .tag{font-family:var(--mono); font-size:12.5px; font-weight:500; color:var(--muted); border:1px solid var(--rule); border-radius:3px; padding:1px 7px; flex:none; transform:translateY(-2px)}
+  p{margin:0}
+  strong{font-weight:600}
+  code{font-family:var(--mono); font-size:.88em; background:var(--code-bg); border:1px solid var(--rule-soft); border-radius:3px; padding:.05em .35em}
+  .min{color:var(--min); font-weight:600}
+  .max{color:var(--max); font-weight:600}
+  .scroll{overflow-x:auto; min-width:0}
+  figure{margin:4px 0 0; background:var(--panel); border:1px solid var(--rule); border-radius:5px; padding:20px 18px 14px; display:flex; flex-direction:column; gap:14px; min-width:0}
+  figcaption{font-size:14px; line-height:1.55; color:var(--muted); border-top:1px solid var(--rule-soft); padding-top:12px; margin:0}
+  figcaption b{color:var(--ink); font-weight:600}
+
+  /* lane diagram */
+  table.lanes{border-collapse:separate; border-spacing:4px; font-family:var(--mono); font-size:14px; font-variant-numeric:tabular-nums; margin:0 auto}
+  table.lanes th{font-weight:500; font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); text-align:right; padding-right:10px; white-space:nowrap}
+  table.lanes thead th{text-align:center; padding:0; letter-spacing:0}
+  table.lanes td{width:2.6em; height:2.2em; text-align:center; border:1px solid var(--rule); border-radius:3px; background:var(--surface)}
+  table.lanes td.m{background:var(--min-wash); border-color:var(--min); color:var(--min); font-weight:600}
+  table.lanes td.x{background:var(--max-wash); border-color:var(--max); color:var(--max); font-weight:600}
+  table.lanes td.dim{color:var(--muted)}
+  table.lanes tr.gap td, table.lanes tr.gap th{height:.4em; border:none; background:none; padding:0}
+
+  /* data tables */
+  table.data{border-collapse:collapse; width:100%; font-family:var(--mono); font-size:13.5px; font-variant-numeric:tabular-nums}
+  table.data th, table.data td{padding:6px 8px; text-align:left; border-bottom:1px solid var(--rule-soft); white-space:nowrap}
+  table.data thead th{font-weight:500; color:var(--muted); font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid var(--rule)}
+  table.data tbody tr:last-child td{border-bottom:none}
+  table.data td.num{text-align:right}
+  table.data tr.cross td{color:var(--muted)}
+
+  pre{margin:0; background:var(--code-bg); border:1px solid var(--rule); border-radius:5px; padding:14px 16px; overflow-x:auto; font-family:var(--mono); font-size:13px; line-height:1.55; color:var(--ink); tab-size:4}
+  pre .c{color:var(--muted)}
+  pre .op{color:var(--min); font-weight:500}
+
+  .facts{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1px; background:var(--rule); border:1px solid var(--rule); border-radius:5px; overflow:hidden}
+  .fact{background:var(--surface); padding:14px 16px; display:flex; flex-direction:column; gap:3px; min-width:0}
+  .fact dt{font-family:var(--mono); font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
+  .fact dd{margin:0; font-family:var(--display); font-size:24px; font-weight:600; letter-spacing:-.01em}
+  .fact .sub{font-size:12.5px; font-family:var(--body); font-weight:400; color:var(--muted); letter-spacing:0}
+  dl{margin:0}
+
+  footer{border-top:1px solid var(--rule); padding-top:22px; font-size:14px; color:var(--muted); display:flex; flex-direction:column; gap:8px}
+  a{color:var(--min); text-underline-offset:3px}
+  a:focus-visible{outline:2px solid var(--min); outline-offset:3px; border-radius:2px}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Sorting networks &middot; 16 &times; int32</div>
+    <h1>Bitonic Sort in Registers</h1>
+    <p class="standfirst">The 16-element bitonic network is ten steps. Every step is the same three moves, and each instruction set spells them differently.</p>
+  </header>
+
+  <section>
+    <h2>One step, three moves</h2>
+    <p class="measure">In a step, every element is paired with a <strong>partner</strong> a fixed distance <code>d</code> away, so lane <code>g</code> meets lane <code>g&nbsp;xor&nbsp;d</code>. Then:</p>
+    <ol class="measure" style="margin:0; padding-left:1.4em; display:flex; flex-direction:column; gap:4px">
+      <li><strong>Permute</strong> a copy of the register so each lane holds its partner.</li>
+      <li>Take the <span class="min">min</span> and the <span class="max">max</span> of the two, lane by lane.</li>
+      <li><strong>Blend</strong>: each lane keeps either the min or the max, chosen by a fixed mask.</li>
+    </ol>
+    <figure>
+      <div class="scroll">
+        <table class="lanes" aria-label="One step on eight lanes with distance 1">
+          <thead><tr><th></th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th></tr></thead>
+          <tbody>
+            <tr><th>v</th><td>7</td><td>3</td><td>9</td><td>1</td><td>4</td><td>8</td><td>2</td><td>6</td></tr>
+            <tr><th>partner</th><td class="dim">3</td><td class="dim">7</td><td class="dim">1</td><td class="dim">9</td><td class="dim">8</td><td class="dim">4</td><td class="dim">6</td><td class="dim">2</td></tr>
+            <tr class="gap"><th></th><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><th>min</th><td>3</td><td>3</td><td>1</td><td>1</td><td>4</td><td>4</td><td>2</td><td>2</td></tr>
+            <tr><th>max</th><td>7</td><td>7</td><td>9</td><td>9</td><td>8</td><td>8</td><td>6</td><td>6</td></tr>
+            <tr class="gap"><th></th><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr><th>keep</th><td class="m">min</td><td class="x">max</td><td class="x">max</td><td class="m">min</td><td class="m">min</td><td class="x">max</td><td class="x">max</td><td class="m">min</td></tr>
+            <tr><th>result</th><td class="m">3</td><td class="x">7</td><td class="x">9</td><td class="m">1</td><td class="m">4</td><td class="x">8</td><td class="x">6</td><td class="m">2</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <figcaption><b>Step 1 on eight lanes</b> (<code>d&nbsp;=&nbsp;1</code>). Adjacent pairs swap to meet their partner; min and max are symmetric, so both lanes of a pair hold the same two values; the mask decides which lane gets which. Here it alternates direction, ascending, descending, ascending, descending, which builds the bitonic runs the later steps merge. As an 8-bit mask with bit <code>g</code> set where lane <code>g</code> keeps the min: <code>0b10011001</code> = <code>0x99</code>.</figcaption>
+    </figure>
+    <p class="measure">The ten steps differ only in <code>d</code> and the mask. Lane <code>g</code> keeps the min when <code>(g&nbsp;&amp;&nbsp;d)&nbsp;==&nbsp;0</code> differs from <code>(g&nbsp;&amp;&nbsp;k)&nbsp;!=&nbsp;0</code>, where <code>k</code> is the size of the runs the stage is building:</p>
+    <div class="scroll">
+      <table class="data">
+        <thead><tr><th>step</th><th>k</th><th>d</th><th>partner of lane g</th><th>keep-min mask, 16 lanes</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>2</td><td>1</td><td>g xor 1</td><td>0x9999</td></tr>
+          <tr><td>2</td><td>4</td><td>2</td><td>g xor 2</td><td>0xC3C3</td></tr>
+          <tr><td>3</td><td>4</td><td>1</td><td>g xor 1</td><td>0xA5A5</td></tr>
+          <tr><td>4</td><td>8</td><td>4</td><td>g xor 4</td><td>0xF00F</td></tr>
+          <tr><td>5</td><td>8</td><td>2</td><td>g xor 2</td><td>0xCC33</td></tr>
+          <tr><td>6</td><td>8</td><td>1</td><td>g xor 1</td><td>0xAA55</td></tr>
+          <tr><td>7</td><td>16</td><td>8</td><td>g xor 8</td><td>0x00FF</td></tr>
+          <tr><td>8</td><td>16</td><td>4</td><td>g xor 4</td><td>0x0F0F</td></tr>
+          <tr><td>9</td><td>16</td><td>2</td><td>g xor 2</td><td>0x3333</td></tr>
+          <tr><td>10</td><td>16</td><td>1</td><td>g xor 1</td><td>0x5555</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="measure">So the real question for each instruction set is how wide a register is, and therefore which distances stay inside one register and which cross between registers.</p>
+  </section>
+
+  <section>
+    <h2>AVX-512 <span class="tag">16 lanes &middot; 1 register</span></h2>
+    <p class="measure">All 16 elements fit in one <code>zmm</code> register, so every step is the same three moves on one register. A general permute (<code>vpermd</code>) lines up any partner; a mask register selects min or max per lane.</p>
+<pre><span class="c">// one step: lane g meets lane g ^ D, keeps the min where KEEP_MIN has bit g</span>
+template &lt;int D, uint16_t KEEP_MIN&gt;
+static inline __m512i step(__m512i v) {
+    const __m512i idx = _mm512_xor_si512(
+        _mm512_setr_epi32(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15), _mm512_set1_epi32(D));
+    __m512i p  = <span class="op">_mm512_permutexvar_epi32</span>(idx, v);           <span class="c">// vpermd</span>
+    __m512i mn = <span class="op">_mm512_min_epi32</span>(v, p), mx = <span class="op">_mm512_max_epi32</span>(v, p);
+    return <span class="op">_mm512_mask_blend_epi32</span>(KEEP_MIN, mx, mn);       <span class="c">// mn where bit set</span>
+}
+
+__m512i v = _mm512_loadu_si512(a);
+v = step&lt;1,0x9999&gt;(v);
+v = step&lt;2,0xC3C3&gt;(v);  v = step&lt;1,0xA5A5&gt;(v);
+v = step&lt;4,0xF00F&gt;(v);  v = step&lt;2,0xCC33&gt;(v);  v = step&lt;1,0xAA55&gt;(v);
+v = step&lt;8,0x00FF&gt;(v);  v = step&lt;4,0x0F0F&gt;(v);  v = step&lt;2,0x3333&gt;(v);  v = step&lt;1,0x5555&gt;(v);
+_mm512_storeu_si512(a, v);</pre>
+    <p class="measure">The compiler improves on this. Because each partner index is a constant, clang replaces <code>vpermd</code> with a cheaper fixed shuffle for each distance (<code>vpshufd</code> within 128-bit lanes for <code>d</code> = 1 and 2, <code>vpermq</code> or <code>vshufi64x2</code> for 4 and 8). It folds the blend into the max: compute the min in every lane, then a <strong>masked</strong> <code>vpmaxsd&nbsp;…&nbsp;{k1}</code> overwrites only the lanes that keep the max. Each step becomes three vector instructions:</p>
+<pre>vpshufd  $177, %zmm0, %zmm1          <span class="c"># partner: swap adjacent lanes</span>
+vpminsd  %zmm1, %zmm0, %zmm2         <span class="c"># min everywhere</span>
+kmovw    %eax, %k1                   <span class="c"># mask 0x6666: lanes that keep the max</span>
+vpmaxsd  %zmm1, %zmm0, %zmm2 {%k1}   <span class="c"># max, only in those lanes</span></pre>
+  </section>
+
+  <section>
+    <h2>AVX2 <span class="tag">8 lanes &middot; 2 registers</span></h2>
+    <p class="measure">A <code>ymm</code> register holds 8, so <code>v0</code> is lanes 0&ndash;7 and <code>v1</code> is lanes 8&ndash;15. Distances 1, 2 and 4 stay inside a register; distance 8 is the other register. The mask becomes an 8-bit blend immediate per register, the low or high byte of the 16-bit mask above.</p>
+<pre><span class="c">// partners within one ymm register</span>
+static __m256i rot1(__m256i v) { return <span class="op">_mm256_shuffle_epi32</span>(v, _MM_SHUFFLE(2,3,0,1)); }  <span class="c">// d = 1</span>
+static __m256i rot2(__m256i v) { return <span class="op">_mm256_shuffle_epi32</span>(v, _MM_SHUFFLE(1,0,3,2)); }  <span class="c">// d = 2</span>
+static __m256i rot4(__m256i v) { return <span class="op">_mm256_permute2x128_si256</span>(v, v, 0x01); }         <span class="c">// d = 4: swap halves</span>
+
+template &lt;int SEL&gt;   <span class="c">// SEL bit g set: lane g keeps the min</span>
+static __m256i cas(__m256i v, __m256i p) {
+    return <span class="op">_mm256_blend_epi32</span>(<span class="op">_mm256_max_epi32</span>(v, p), <span class="op">_mm256_min_epi32</span>(v, p), SEL);
+}
+
+v0 = cas&lt;0x99&gt;(v0, rot1(v0));  v1 = cas&lt;0x99&gt;(v1, rot1(v1));   <span class="c">// step 1</span>
+<span class="c">// ... steps 2-6 the same way ...</span>
+v0 = cas&lt;0x55&gt;(v0, rot1(v0));  v1 = cas&lt;0xAA&gt;(v1, rot1(v1));   <span class="c">// step 6</span>
+
+__m256i lo = <span class="op">_mm256_min_epi32</span>(v0, v1);                        <span class="c">// step 7, d = 8: across registers,</span>
+v1 = <span class="op">_mm256_max_epi32</span>(v0, v1);  v0 = lo;                      <span class="c">// no permute and no blend</span>
+
+v0 = cas&lt;0x0F&gt;(v0, rot4(v0));  v1 = cas&lt;0x0F&gt;(v1, rot4(v1));   <span class="c">// step 8</span>
+v0 = cas&lt;0x33&gt;(v0, rot2(v0));  v1 = cas&lt;0x33&gt;(v1, rot2(v1));   <span class="c">// step 9</span>
+v0 = cas&lt;0x55&gt;(v0, rot1(v0));  v1 = cas&lt;0x55&gt;(v1, rot1(v1));   <span class="c">// step 10</span></pre>
+    <p class="measure">A step that crosses registers is the cheapest kind: the partner is already sitting in the other register, and the min goes to one, the max to the other. AVX2 has no mask registers, so every in-register step pays for an explicit <code>vpblendd</code>.</p>
+  </section>
+
+  <section>
+    <h2>Highway <span class="tag">portable &middot; written for 4 lanes</span></h2>
+    <p class="measure">Google Highway expresses the same moves in portable operations. The repo's version fixes the vector at four lanes (<code>FixedTag&lt;int32_t,&nbsp;4&gt;</code>), so 16 elements are four registers: distances 1 and 2 are in-register, 4 and 8 cross between registers.</p>
+<pre>using D4 = hn::FixedTag&lt;int32_t, 4&gt;;
+
+<span class="c">// d = 1, ascending pairs: [a,b,c,d] -&gt; [min, max, min, max]</span>
+V4 rv = <span class="op">hn::Reverse2</span>(d4, v);                       <span class="c">// partner: [b,a,d,c]</span>
+V4 lo = <span class="op">hn::Min</span>(v, rv), hi = <span class="op">hn::Max</span>(v, rv);
+return <span class="op">hn::OddEven</span>(hi, lo);                        <span class="c">// even lanes lo, odd lanes hi</span>
+
+<span class="c">// d = 2, ascending: [min02, min13, max02, max13]</span>
+V4 rv = <span class="op">hn::CombineShiftRightBytes</span>&lt;8&gt;(d4, v, v);  <span class="c">// partner: [c,d,a,b]</span>
+V4 lo = <span class="op">hn::Min</span>(v, rv), hi = <span class="op">hn::Max</span>(v, rv);
+return <span class="op">hn::Combine</span>(d4, <span class="op">hn::UpperHalf</span>(d2, hi), <span class="op">hn::LowerHalf</span>(lo));
+
+<span class="c">// d = 4 or 8: across registers, as in AVX2</span>
+V4 t = <span class="op">hn::Min</span>(v0, v1);  v1 = <span class="op">hn::Max</span>(v0, v1);  v0 = t;</pre>
+    <p class="measure">There is no portable "blend by constant mask", so the blend is spelled as lane interleaves (<code>OddEven</code>) and half-swaps (<code>Combine</code>, <code>LowerHalf</code>, <code>UpperHalf</code>). The fixed tag is the important choice: the same source compiles for NEON, SSE4, AVX2 or AVX-512, but always at four lanes, so on an AVX-512 machine it still uses 128-bit registers. Using the full width means writing to <code>ScalableTag</code> and choosing the partner permutes per width, which the AVX-512 and AVX2 versions above do by hand.</p>
+  </section>
+
+  <section>
+    <h2>ARM NEON on the M5 <span class="tag">4 lanes &middot; 4 registers</span></h2>
+    <p class="measure">NEON registers are 128 bits, four <code>int32</code>, so the layout is the same as the Highway version: four registers, distances 1 and 2 in-register, 4 and 8 across. Each in-register step is one partner shuffle, a min, a max and a bitwise select with a constant mask.</p>
+<pre><span class="c">// d = 1: vrev64q swaps adjacent lanes, [a,b,c,d] -&gt; [b,a,d,c]</span>
+static int32x4_t cas_adj(int32x4_t v, uint32x4_t sel) {
+    int32x4_t rv = <span class="op">vrev64q_s32</span>(v);
+    return <span class="op">vbslq_s32</span>(sel, <span class="op">vminq_s32</span>(v, rv), <span class="op">vmaxq_s32</span>(v, rv));   <span class="c">// sel lanes take the min</span>
+}
+
+<span class="c">// d = 2: vextq rotates by two lanes, [a,b,c,d] -&gt; [c,d,a,b]</span>
+static int32x4_t cas_skip2(int32x4_t v, uint32x4_t sel) {
+    int32x4_t rv = <span class="op">vextq_s32</span>(v, v, 2);
+    return <span class="op">vbslq_s32</span>(sel, <span class="op">vminq_s32</span>(v, rv), <span class="op">vmaxq_s32</span>(v, rv));
+}
+
+v0 = cas_adj(v0, m_mixed);  v1 = cas_adj(v1, m_mixed);       <span class="c">// step 1: mask {min,max,max,min}</span>
+v2 = cas_adj(v2, m_mixed);  v3 = cas_adj(v3, m_mixed);
+<span class="c">// ...</span>
+t = <span class="op">vminq_s32</span>(v0, v1);  v1 = <span class="op">vmaxq_s32</span>(v0, v1);  v0 = t;    <span class="c">// step 4, d = 4: across registers</span>
+t = <span class="op">vmaxq_s32</span>(v2, v3);  v3 = <span class="op">vminq_s32</span>(v2, v3);  v2 = t;    <span class="c">// (this pair runs descending)</span></pre>
+    <p class="measure">As on AVX-512, the compiler sees through the blend. The masks are constants, so clang turns each <code>vbslq_s32</code> into lane moves (<code>trn2</code>, <code>ext</code>, <code>mov</code>); the compiled network has no <code>bsl</code> at all, and no branch.</p>
+  </section>
+
+  <section>
+    <h2>Side by side</h2>
+    <div class="scroll">
+      <table class="data">
+        <thead><tr><th></th><th>lanes</th><th>registers for 16</th><th>steps needing a permute</th><th>blend</th><th class="num">compiled</th></tr></thead>
+        <tbody>
+          <tr><td>AVX-512</td><td>16</td><td>1</td><td>10 of 10</td><td>masked max (k register)</td><td class="num">56</td></tr>
+          <tr><td>AVX2</td><td>8</td><td>2</td><td>9 of 10</td><td><code>vpblendd</code> immediate</td><td class="num">83</td></tr>
+          <tr><td>NEON (M5)</td><td>4</td><td>4</td><td>7 of 10</td><td>folded into lane moves</td><td class="num">145</td></tr>
+          <tr><td>Highway, 4-lane, on M5</td><td>4</td><td>4</td><td>7 of 10</td><td><code>OddEven</code>, <code>Combine</code></td><td class="num">197</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="measure">"Compiled" is the instruction count of the whole 16-element function from clang <code>-O2</code>, loads and stores included (the x86 rows cross-compiled with <code>-mavx2</code> or <code>-mavx512f</code>). Wider registers mean fewer registers to keep, and the work per step falls with them. On the M5 the two 4-lane versions sort 16 random <code>int32</code>s in <strong>8.5&nbsp;ns</strong> (NEON) and <strong>10.6&nbsp;ns</strong> (Highway); Highway's extra 52 instructions are register moves and <code>dup</code>s spent assembling its blends. The x86 versions were not timed for this page.</p>
+  </section>
+
+  <footer>
+    <p>The network itself, step by step: <a href="https://claude.ai/artifact/Wjew3jEjEzFQYBTvPzubop">Bitonic Sort</a>. Code: <code>bitonic_sort_simd.cpp</code> (NEON) and <code>bitonic_sort_highway.cpp</code> (Highway) in <code>examples/sorting/</code>; the AVX2 version is from the repo's x86 comparison (<code>sort_compare_n16_x86.cpp</code>, in git history); the AVX-512 version was written for this page, compiled for <code>-mavx512f</code>, and checked against a model of the network on 20,000 random inputs, not run on AVX-512 hardware.</p>
+    <p>Timings: Apple M5 performance core at 4.4&nbsp;GHz, clang <code>-O2</code>, a different random input for every sort, best of 7 trials, median of 5 runs.</p>
+  </footer>
+</div>

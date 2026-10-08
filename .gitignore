@@ -83,6 +83,7 @@ examples/sorting/insertion_sort
 examples/sorting/newintrosort
 examples/sorting/newintrosort_heapsortfallback
 examples/sorting/quicksort
+examples/sorting/quicksort_breakdown
 examples/sorting/sort_compare_large
 examples/sorting/sort_compare_n16
 examples/sorting/std_sort

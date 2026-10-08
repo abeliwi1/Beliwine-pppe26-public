@@ -90,7 +90,7 @@ Toolchains, only needed for the directories that use them:
   [cilk/](examples/cilk/) Makefile expects it at `~/opencilk`.
 * **Java** — JDK 17+ and Maven for [java_rag_pipeline/](examples/java_rag_pipeline/).
 
-These examples have been tested on at least two machines (Apple M5, MacOSX using clang 17.0, and AMD Ryzen, Pop!_OS 24.04 LTS using clang 16.?). They will not necessarily run on your machine. You can ask Claude or another tool to adapt them to your machine and that should work.  In past versions of the course, I have distributed Docker files that provide a uniform execution environment. I think that is now more difficult and less reliable.
+These examples have been tested on at least two machines (Apple M5, MacOSX using clang 17.0, and AMD Ryzen, Pop!_OS 24.04 LTS using clang 18.1 and g++ 13.3). They will not necessarily run on your machine. You can ask Claude or another tool to adapt them to your machine and that should work.  In past versions of the course, I have distributed Docker files that provide a uniform execution environment. I think that is now more difficult and less reliable.
 
 This means that the results you get from examples and activities will vary with software, hardware, etc. They many even vary widely, i.e. not have the same form. This is interesting and something to raise with the instructor and TAs. 
 

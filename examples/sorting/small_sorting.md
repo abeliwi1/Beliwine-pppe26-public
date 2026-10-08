@@ -6,53 +6,60 @@ Sorting small, fixed-size arrays is a surprisingly deep problem.  At large n
 (thousands to millions of elements), O(n log n) algorithms dominate and the
 differences between them are modest.  At n=16 the landscape inverts: recursion
 overhead, branch mispredictions, and loop setup costs often exceed the actual
-comparison work, and the choice of algorithm can change the result by 5×.
+comparison work, and the choice of algorithm changes the result by 16×.
 
 This document covers six implementations benchmarked at n=16 on an Apple M5
-(ARM NEON, 4.0 GHz).  All times are the best of 7 trials on the same random
-`int32` array.
+performance core, measured at 4.3–4.5 GHz after warm-up, clang `-O2`.  Every
+sort gets a different random `int32` array, because sorting the same array
+over and over lets the branch predictor learn it.  Each time is the best of 7
+trials, and the table is the median of 5 runs.
 
 ## Results
 
 | Algorithm | Time | ns/elem | vs std::sort |
 |---|---|---|---|
-| **bitonic NEON** | **19 ns** | **1.2** | **2.95× faster** |
-| bitonic Highway (portable) | 24 ns | 1.5 | 2.33× faster |
-| bitonic scalar (80 CAS) | 23 ns | 1.4 | 2.43× faster |
-| insertion sort | 49 ns | 3.1 | 1.14× faster |
-| std::sort (introsort) | 56 ns | 3.5 | 1.00× (reference) |
-| quicksort (median-of-3) | 75 ns | 4.7 | 1.34× **slower** |
+| **bitonic NEON** | **8.5 ns** | **0.53** | **6.8× faster** |
+| bitonic Highway (portable) | 10.6 ns | 0.66 | 5.5× faster |
+| bitonic scalar (80 CAS) | 23.7 ns | 1.48 | 2.5× faster |
+| std::sort (introsort) | 58.2 ns | 3.64 | 1.00× (reference) |
+| insertion sort | 62.2 ns | 3.89 | 1.07× slower |
+| quicksort (median-of-3) | 120–140 ns | 7.5–8.8 | 2.1–2.4× **slower** |
+
+The two SIMD rows are the same to within 0.1 ns on every run.  The branchy
+rows move more from run to run (std::sort 54–67 ns, quicksort 120–154 ns,
+scalar bitonic 19–29 ns), but the order never changes.
 
 ## Algorithm Analysis
 
-### std::sort — fastest scalar option (25 ns)
+### std::sort — insertion sort in disguise (58 ns)
 
-`std::sort` in libc++/libstdc++ is an introsort: quicksort with a heapsort
-fallback and, crucially, an insertion-sort cutoff for small partitions.  At
-n=16 the cutoff fires immediately — the implementation never recurses at all.
-It effectively runs a hand-tuned insertion sort with compiler-optimised
-register allocation, which is why it beats the hand-written quicksort by 1.72×.
+`std::sort` in libc++ is an introsort: quicksort with a heapsort fallback and
+an insertion-sort cutoff for small partitions.  libc++'s cutoff is 24
+elements, so at n=16 it never partitions at all — it goes straight to
+insertion sort.  That is why it and the hand-written insertion sort below land
+within 7% of each other.
 
-### Quicksort — median-of-3, no cutoff (43 ns, baseline)
+### Quicksort — median-of-3, no cutoff (120–140 ns)
 
 Classic recursive quicksort with median-of-three pivot selection but no
-small-partition optimisation.  At n=16 the recursion tree is 4 levels deep,
-each level paying a function-call frame, stack manipulation, and branch
-prediction for the partition loop.  The algorithm does correct O(n log n) work
-but the constant factor is large relative to n=16's tiny data size.  This
+small-partition optimisation.  At n=16 the recursion tree is about 4 levels
+deep, each level paying a function call, a median-of-three selection, and a
+partition loop whose branches follow the data.  The algorithm does correct
+O(n log n) work, but the constant factor is large relative to n=16.  This
 implementation intentionally omits the small-partition cutoff to isolate
-recursion overhead.
+recursion overhead, and it is 2.1–2.4× slower than `std::sort` for it.
 
-### Insertion sort (37 ns, 1.16× faster than quicksort)
+### Insertion sort (62 ns)
 
-Insertion sort beats pure quicksort at n=16 because it is iterative, has
-near-zero setup cost, and accesses memory sequentially (good prefetch
-behaviour).  At n=16, O(n²) = 256 operations, but each operation is a simple
-shift — no recursive calls, no pivot selection.  The ns/n² constant (~0.14)
-remains stable from n=4 up to ~n=32, after which cache-friendly O(n log n)
-sorts pull ahead.
+Insertion sort is iterative, has near-zero setup cost, and accesses memory
+sequentially.  At n=16 its quadratic cost is at most 120 compare-and-shift
+steps, each a simple shift with no recursive call and no pivot selection.  Its
+weakness is the inner loop's exit test: on random data it is unpredictable,
+and the predictor misses it about once per element.  `std::sort` is at least
+as fast at every size measured, since below 24 elements it *is* an insertion
+sort.
 
-### Bitonic scalar — 80 CAS, branchless (56 ns, 1.30× slower)
+### Bitonic scalar — 80 CAS, branchless (23.7 ns, 2.5× faster than std::sort)
 
 [bitonic_diagram.html](bitonic_diagram.html) builds the network up step by
 step, from a single comparator to a full traced run — open it in a browser
@@ -60,59 +67,61 @@ before reading the rest of this section.
 
 The bitonic sorting network executes a predetermined sequence of 80
 compare-and-swap (CAS) operations with no branches, no recursion, and no
-data-dependent control flow.  Despite being branchless, it is the *slowest*
-implementation at n=16.  The reason is instruction count: 80 CAS operations
-each expand to two instructions (min + max), giving 160 scalar instructions
-versus ~50 for insertion sort.  The branch-free property matters only when
-mispredictions dominate; at n=16 they do not.
+data-dependent control flow.  clang compiles each CAS to a compare and two
+conditional selects, 337 instructions in all (160 `cmp` + 160 `csel` + loads
+and stores), and not one branch.  It is 2.5× faster than `std::sort`, because
+on random input the branchy sorts pay for mispredictions and the network never
+does.
 
-### Bitonic NEON — fastest overall (13 ns, 3.31× faster than quicksort)
+### Bitonic NEON — fastest overall (8.5 ns, 6.8× faster than std::sort)
 
 The same 10-step bitonic network ported to ARM NEON processes all 16 elements
 packed into four `int32x4_t` registers.  Each comparator step operates on 4
-elements simultaneously with `vminq`/`vmaxq`/`vrev64q`/`vextq` instructions,
-reducing 80 scalar CAS operations to roughly 40 NEON instructions.  The result
-is a 4.3× reduction in instruction count and a 3.31× wall-clock speedup over
-quicksort.  This implementation is the ARM-specific version of Algorithm 1 from
+elements simultaneously with `vminq`/`vmaxq`/`vrev64q`/`vextq`.  clang
+compiles the whole network to 145 instructions — 34 `smin`, 34 `smax`, 28
+`rev64` and 44 lane shuffles and moves — against 337 for the scalar network.
+The constant-mask `vbslq_s32` blends in the source become lane moves; there is
+no `bsl` in the output.  2.3× fewer instructions, 2.8× faster than the scalar
+network.  This implementation is the ARM-specific version of Algorithm 1 from
 [arXiv:1704.08579](https://arxiv.org/abs/1704.08579).
 
-### Bitonic Highway — portable SIMD (17 ns, 2.53× faster)
+### Bitonic Highway — portable SIMD (10.6 ns, 5.5× faster than std::sort)
 
 Google Highway rewrites the same network using portable SIMD intrinsics
 (`Reverse2`, `CombineShiftRightBytes`, `OddEven`, `LowerHalf`/`UpperHalf`/
 `Combine`) that compile to NEON on ARM and to SSE4/AVX2/AVX-512 on x86 from
-a single source file.  On this machine it selects NEON and achieves 17 ns —
-about 30% slower than the raw NEON version.  The gap comes from the
-`Combine`/`LowerHalf`/`UpperHalf` triple used to implement the "lower half
-from one result, upper half from another" blends that the raw NEON `vbslq_s32`
-does in a single instruction.  The portability is the payoff.
+a single source file.  On this machine it selects NEON and runs in 10.6 ns —
+25% slower than the raw NEON version.  It compiles to 197 instructions: the
+same 140-instruction core of `smin`/`smax`/`rev64`/shuffles, plus 64 extra
+register moves and `dup`s where the "lower half from one result, upper half
+from another" blends are assembled from `LowerHalf`/`UpperHalf`/`Combine`.
+The portability is the payoff.
 
 ## Key Takeaways
 
 **Recursion overhead dominates at n=16.**  The hand-written quicksort is the
-second-slowest algorithm despite having O(n log n) complexity.  Function-call
-overhead, stack frames, and branch prediction for tiny partitions cost more
-than the sorting work itself.
+slowest algorithm despite having O(n log n) complexity: 2.1–2.4× slower than
+`std::sort`, which does not recurse at this size.
 
-**Branch-free ≠ fast for scalar code.**  Bitonic scalar is branchless but
-executes 80 CAS pairs — the highest instruction count of any implementation.
-Branchlessness only wins when mispredictions are the bottleneck, which is not
-the case at n=16 with a 4-level recursion tree.
+**Branch-free wins at n=16 on random data, even in scalar code.**  The scalar
+network does 80 compare-and-swaps where insertion sort does about 60 shifts,
+and it is still 2.5× faster than `std::sort`, because none of its instructions
+is a branch the predictor can miss.
 
 **SIMD is the right tool for fixed small-n sorts.**  When n is a power of two
 and small enough to fit in a handful of registers, a sorting network is the
 ideal structure: it maps directly onto SIMD min/max/permute pipelines and
 eliminates all control flow.  The NEON version runs 4 comparators per
-instruction and saturates the execution units.
+instruction and is 6.8× faster than `std::sort`.
 
 **std::sort's cutoff is the right engineering trade-off.**  Library introsort
-wins the scalar category not through a clever algorithm but through an
-engineering choice: fall back to insertion sort below a threshold (typically
-16–32 elements).  This is the correct decision for general-purpose code and
-explains why `std::sort` outperforms hand-rolled quicksort at small n.
+wins the scalar comparison-sort category not through a clever algorithm but
+through an engineering choice: fall back to insertion sort below a threshold
+(24 elements in libc++, 16 in libstdc++).  That is why `std::sort` is 2.1–2.4×
+faster than hand-rolled quicksort at n=16.
 
-**Portable SIMD incurs a measurable but acceptable cost.**  Highway is 30%
-slower than raw NEON at n=16 (17 ns vs 13 ns), but it is correct on every
+**Portable SIMD incurs a measurable but acceptable cost.**  Highway is 25%
+slower than raw NEON at n=16 (10.6 ns vs 8.5 ns), but it is correct on every
 Highway-supported target.  For an embedded sort kernel used as a building
 block in a larger hybrid algorithm (e.g., as the base case of a vectorised
 merge sort), this trade-off is usually worthwhile.
