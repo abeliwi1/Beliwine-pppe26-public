@@ -61,6 +61,14 @@ instruction moves through three distinct steps:
    branch turns out to have been mispredicted, everything behind it in the
    buffer is discarded before it was ever official.
 
+> **Try it:**
+> [rob_snapshot.html](rob_snapshot.html) — one moment inside the ROB while
+> a quicksort partition loop runs: instructions decoded but not yet in the
+> buffer, waiting on a RAW dependency, executing, completed but stuck behind
+> a load that missed L1, and retired. The core is already two iterations past
+> a predicted branch; a second figure shows that speculative work kept or
+> squashed when the branch resolves. Double-click to open; no server needed.
+
 Two properties of the ROB explain everything the examples measure.
 
 **It reorders by dependency, not by distance.** The hardware does not care

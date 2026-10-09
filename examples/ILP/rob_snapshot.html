@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Reorder Buffer Snapshot -- generated for the pppe26 repo; opens standalone
+     in any browser, no server and no external assets beyond the web fonts, which
+     fall back to system faces offline. -->
+<title>Reorder Buffer Snapshot</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column; each figure scrolls sideways on its own at phone width */
+:root {
+  --bg: #f5f6f8; --surface: #ffffff; --fg: #1b2230; --muted: #5d6778; --line: #c6cdd8;
+  --wait-bg: #fbe5bd; --wait-fg: #774700;
+  --exec-bg: #d4e4fa; --exec-fg: #1a4c8a;
+  --done-bg: #d0eed9; --done-fg: #1b6838;
+  --ret-bg: #e4e7ec; --ret-fg: #697181;
+  --raw: #c3342a; --spec: #6a4dbd;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12161d; --surface: #1a2029; --fg: #e4e8ef; --muted: #9aa3b3; --line: #3a4455;
+  --wait-bg: #4a3410; --wait-fg: #f5c66d; --exec-bg: #173357; --exec-fg: #a0c8f7;
+  --done-bg: #143b25; --done-fg: #91dcab; --ret-bg: #262c36; --ret-fg: #8b94a3;
+  --raw: #ff7b6f; --spec: #a88ff0; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12161d; --surface: #1a2029; --fg: #e4e8ef; --muted: #9aa3b3; --line: #3a4455;
+  --wait-bg: #4a3410; --wait-fg: #f5c66d; --exec-bg: #173357; --exec-fg: #a0c8f7;
+  --done-bg: #143b25; --done-fg: #91dcab; --ret-bg: #262c36; --ret-fg: #8b94a3;
+  --raw: #ff7b6f; --spec: #a88ff0; color-scheme: dark }
+
+body { background: var(--bg); color: var(--fg); font: 15px/1.6 var(--sans); padding-inline: 16px; padding-block: 32px 48px; }
+main { max-width: 880px; margin: 0 auto; display: grid; gap: 28px; }
+h1 { font-size: 1.75rem; font-weight: 600; margin: 0; text-wrap: balance; }
+h2 { font-size: 1.1rem; font-weight: 600; margin: 0; text-wrap: balance; }
+p { margin: 0; max-width: 68ch; }
+.lede { color: var(--muted); }
+code, pre { font-family: var(--mono); font-size: 0.88em; }
+pre { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; margin: 0; overflow-x: auto; line-height: 1.5; }
+section { display: grid; gap: 12px; min-width: 0; }
+figure { margin: 0; display: grid; gap: 10px; min-width: 0; }
+.scroll { overflow-x: auto; }
+.scroll svg { display: block; width: 100%; min-width: 700px; height: auto; }
+figcaption { color: var(--muted); font-size: 0.9rem; max-width: 72ch; }
+
+.states { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+.state { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; display: grid; gap: 4px; min-width: 0; }
+.pill { justify-self: start; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; padding: 1px 8px; border-radius: 4px; }
+.pill.fe { border: 1px dashed var(--muted); color: var(--muted); }
+.pill.wait { background: var(--wait-bg); color: var(--wait-fg); }
+.pill.exec { background: var(--exec-bg); color: var(--exec-fg); }
+.pill.done { background: var(--done-bg); color: var(--done-fg); }
+.pill.ret { background: var(--ret-bg); color: var(--ret-fg); }
+.state p { font-size: 0.88rem; color: var(--muted); }
+
+/* SVG styling */
+svg text { font-family: var(--sans); font-size: 12px; }
+.sect { fill: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; }
+.row { fill: var(--surface); stroke: var(--line); }
+.row.faded { opacity: 0.55; }
+.row.fe { fill: none; stroke: var(--muted); stroke-dasharray: 4 3; }
+.robbox { fill: none; stroke: var(--line); stroke-width: 1.5; }
+.free { fill: none; stroke: var(--line); stroke-dasharray: 4 3; }
+.chip.wait { fill: var(--wait-bg); } .chipt.wait { fill: var(--wait-fg); }
+.chip.exec { fill: var(--exec-bg); } .chipt.exec { fill: var(--exec-fg); }
+.chip.done { fill: var(--done-bg); } .chipt.done { fill: var(--done-fg); }
+.chip.ret  { fill: var(--ret-bg); }  .chipt.ret  { fill: var(--ret-fg); }
+.chip.fe { fill: none; stroke: var(--muted); stroke-dasharray: 3 2; } .chipt.fe { fill: var(--muted); }
+.chipt { font-size: 10.5px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; }
+.ins { fill: var(--fg); font-family: var(--mono); font-size: 12.5px; }
+.note { fill: var(--muted); font-size: 11.5px; }
+.div { stroke: var(--spec); stroke-dasharray: 5 4; stroke-width: 1.4; }
+.divt, .brkt { fill: var(--spec); font-size: 11.5px; font-weight: 500; }
+.brk { fill: none; stroke: var(--spec); stroke-width: 1.6; }
+.ptr { fill: var(--fg); font-size: 12px; font-weight: 600; }
+.ptrl { stroke: var(--fg); stroke-width: 1.4; }
+.ah-ptr { fill: var(--fg); }
+.raw { fill: none; stroke: var(--raw); stroke-width: 1.7; }
+.rawt { fill: var(--raw); font-size: 11.5px; font-weight: 600; font-family: var(--mono); }
+.ah-raw { fill: var(--raw); }
+.ok { fill: none; stroke: var(--muted); stroke-width: 1.3; stroke-dasharray: 4 3; }
+.okt { fill: var(--muted); font-size: 11.5px; font-family: var(--mono); }
+.ah-ok { fill: var(--muted); }
+.m { stroke: var(--line); fill: var(--surface); }
+.m.br { stroke: var(--fg); stroke-width: 1.5; }
+.m.keep { fill: var(--done-bg); stroke: none; }
+.m.gone { fill: none; stroke: var(--raw); stroke-dasharray: 4 3; }
+.mt { fill: var(--fg); font-family: var(--mono); font-size: 12px; }
+.mt.gone { fill: var(--muted); }
+.mt.keep { fill: var(--done-fg); }
+.strike { stroke: var(--raw); stroke-width: 1.3; }
+.keept { fill: var(--done-fg); font-size: 12px; }
+.gonet { fill: var(--raw); font-size: 12px; }
+.brkg { fill: none; stroke: var(--raw); stroke-width: 1.6; }
+.qa ul { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; max-width: 68ch; }
+.qa li { padding-left: 2px; }
+.q { font-style: italic; color: var(--muted); }
+/* the hosted version of this page got a reset from its runtime; standalone,
+   it brings its own */
+body { margin: 0; }
+</style>
+</head>
+<body>
+
+<main>
+  <header style="display:grid; gap:8px">
+    <h1>Reorder Buffer Snapshot</h1>
+    <p class="lede">One moment inside an out-of-order core while it runs the scan loop from <code>quicksort.cpp</code>, <code>while (a[++i] &lt; pivot) {}</code>. The branch predictor has guessed "keep scanning" twice, so the core is already two iterations ahead of what it has proven.</p>
+  </header>
+
+  <section>
+    <h2>The loop</h2>
+<pre>L1: add  x9, x9, #1           // ++i
+    ldr  w8, [x0, x9, lsl #2]  // a[i]
+    cmp  w8, w10               // a[i] vs pivot
+    b.lt L1                    // keep scanning while a[i] &lt; pivot</pre>
+    <p>Rename gives every result its own physical register. In the diagram, <code>x9</code> becomes <code>p11</code>, <code>p14</code>, <code>p17</code> in successive iterations, <code>w8</code> becomes <code>p12</code>, <code>p15</code>, and the flags become <code>f13</code>, <code>f16</code>. That's why iteration 2 can run while iteration 1 is still waiting: the only true dependencies left are read-after-write (RAW).</p>
+  </section>
+
+  <section>
+    <h2>The five states</h2>
+    <div class="states">
+      <div class="state"><span class="pill fe">decoded</span><p>Fetched and decoded, but not yet renamed or given a ROB entry. Before the pipeline.</p></div>
+      <div class="state"><span class="pill wait">waiting</span><p>In the ROB and the scheduler. At least one source register hasn't been produced yet.</p></div>
+      <div class="state"><span class="pill exec">executing</span><p>Operands ready, issued to a functional unit. In the pipeline.</p></div>
+      <div class="state"><span class="pill done">completed</span><p>Result written to its physical register. Still waits for everything older to finish.</p></div>
+      <div class="state"><span class="pill ret">retired</span><p>Reached the head while completed. Its result becomes architectural state and the entry is freed.</p></div>
+    </div>
+  </section>
+
+  <figure>
+    <div class="scroll"><svg viewBox="0 0 840 692" role="img" aria-label="A reorder buffer snapshot during quicksort's partition scan. A load that missed L1 blocks retirement at the head; the compare and branch that read its result wait on RAW dependencies; instructions past the predicted-taken branch have already executed speculatively but cannot retire."><defs><marker id="ah-raw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah-raw" d="M0,0 L10,5 L0,10 z"/></marker><marker id="ah-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah-ok" d="M0,0 L10,5 L0,10 z"/></marker><marker id="ah-ptr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ah-ptr" d="M0,0 L10,5 L0,10 z"/></marker></defs><text class="sect" x="170" y="20">RETIRED · committed to architectural state, ROB entry freed</text><rect class="row faded" x="170" y="30" width="470" height="34" rx="5"/><rect class="chip ret" x="178" y="37" width="92" height="20" rx="4"/><text class="chipt ret" x="224" y="51" text-anchor="middle">retired</text><text class="ins" x="282" y="52">cmp  f10 ← p9, w10</text><text class="note" x="630" y="52" text-anchor="end">iteration 0</text><rect class="row faded" x="170" y="66" width="470" height="34" rx="5"/><rect class="chip ret" x="178" y="73" width="92" height="20" rx="4"/><text class="chipt ret" x="224" y="87" text-anchor="middle">retired</text><text class="ins" x="282" y="88">b.lt f10 → L1</text><text class="note" x="630" y="88" text-anchor="end">was taken, as predicted</text><rect class="robbox" x="160" y="126" width="490" height="446" rx="8"/><text class="sect" x="170" y="118">REORDER BUFFER · program order, oldest at top</text><rect class="row" x="170" y="140" width="470" height="34" rx="5"/><rect class="chip done" x="178" y="147" width="92" height="20" rx="4"/><text class="chipt done" x="224" y="161" text-anchor="middle">completed</text><text class="ins" x="282" y="162">add  p11 ← p8 + 1</text><text class="note" x="630" y="162" text-anchor="end">retires this cycle</text><rect class="row" x="170" y="180" width="470" height="34" rx="5"/><rect class="chip exec" x="178" y="187" width="92" height="20" rx="4"/><text class="chipt exec" x="224" y="201" text-anchor="middle">executing</text><text class="ins" x="282" y="202">ldr  p12 ← [x0 + p11·4]</text><text class="note" x="630" y="202" text-anchor="end">L1 miss, waiting on L2</text><rect class="row" x="170" y="220" width="470" height="34" rx="5"/><rect class="chip wait" x="178" y="227" width="92" height="20" rx="4"/><text class="chipt wait" x="224" y="241" text-anchor="middle">waiting</text><text class="ins" x="282" y="242">cmp  f13 ← p12, w10</text><text class="note" x="630" y="242" text-anchor="end">needs p12</text><rect class="row" x="170" y="260" width="470" height="34" rx="5"/><rect class="chip wait" x="178" y="267" width="92" height="20" rx="4"/><text class="chipt wait" x="224" y="281" text-anchor="middle">waiting</text><text class="ins" x="282" y="282">b.lt f13 → L1</text><text class="note" x="630" y="282" text-anchor="end">predicted taken</text><rect class="row spec" x="170" y="320" width="470" height="34" rx="5"/><rect class="chip done" x="178" y="327" width="92" height="20" rx="4"/><text class="chipt done" x="224" y="341" text-anchor="middle">completed</text><text class="ins" x="282" y="342">add  p14 ← p11 + 1</text><text class="note" x="630" y="342" text-anchor="end">done, can&#x27;t retire yet</text><rect class="row spec" x="170" y="360" width="470" height="34" rx="5"/><rect class="chip exec" x="178" y="367" width="92" height="20" rx="4"/><text class="chipt exec" x="224" y="381" text-anchor="middle">executing</text><text class="ins" x="282" y="382">ldr  p15 ← [x0 + p14·4]</text><text class="note" x="630" y="382" text-anchor="end">L1 hit</text><rect class="row spec" x="170" y="400" width="470" height="34" rx="5"/><rect class="chip wait" x="178" y="407" width="92" height="20" rx="4"/><text class="chipt wait" x="224" y="421" text-anchor="middle">waiting</text><text class="ins" x="282" y="422">cmp  f16 ← p15, w10</text><text class="note" x="630" y="422" text-anchor="end">needs p15</text><rect class="row spec" x="170" y="440" width="470" height="34" rx="5"/><rect class="chip wait" x="178" y="447" width="92" height="20" rx="4"/><text class="chipt wait" x="224" y="461" text-anchor="middle">waiting</text><text class="ins" x="282" y="462">b.lt f16 → L1</text><text class="note" x="630" y="462" text-anchor="end">predicted taken</text><rect class="row spec" x="170" y="480" width="470" height="34" rx="5"/><rect class="chip exec" x="178" y="487" width="92" height="20" rx="4"/><text class="chipt exec" x="224" y="501" text-anchor="middle">executing</text><text class="ins" x="282" y="502">add  p17 ← p14 + 1</text><text class="note" x="630" y="502" text-anchor="end">ALU, 1 cycle</text><rect class="free" x="170" y="520" width="470" height="34" rx="5"/><text class="note" x="405" y="542" text-anchor="middle">free entry</text><line class="div" x1="170" y1="307" x2="268" y2="307"/><line class="div" x1="542" y1="307" x2="640" y2="307"/><text class="divt" x="405" y="311" text-anchor="middle">b.lt predicted taken · fetch went back to L1</text><text class="ptr" x="118" y="161" text-anchor="end">head</text><line class="ptrl" x1="124" y1="157" x2="166" y2="157" marker-end="url(#ah-ptr)"/><text class="ptr" x="118" y="541" text-anchor="end">tail</text><line class="ptrl" x1="124" y1="537" x2="166" y2="537" marker-end="url(#ah-ptr)"/><path class="brk" d="M150 322 L142 322 L142 512 L150 512"/><text class="brkt" x="134" y="404" text-anchor="end">predicted</text><text class="brkt" x="134" y="419" text-anchor="end">path:</text><text class="brkt" x="134" y="434" text-anchor="end">speculative</text><path class="raw" d="M641 197 C684 197, 684 237, 643 237" marker-end="url(#ah-raw)"/><text class="rawt" x="680" y="221.0">RAW p12</text><path class="raw" d="M641 237 C684 237, 684 277, 643 277" marker-end="url(#ah-raw)"/><text class="rawt" x="680" y="261.0">RAW f13</text><path class="raw" d="M641 377 C684 377, 684 417, 643 417" marker-end="url(#ah-raw)"/><text class="rawt" x="680" y="401.0">RAW p15</text><path class="raw" d="M641 417 C684 417, 684 457, 643 457" marker-end="url(#ah-raw)"/><text class="rawt" x="680" y="441.0">RAW f16</text><path class="ok" d="M641 157 C790 157, 790 337, 643 337" marker-end="url(#ah-ok)"/><text class="okt" x="758" y="251.0">p11 ready</text><path class="ok" d="M641 337 C790 337, 790 497, 643 497" marker-end="url(#ah-ok)"/><text class="okt" x="758" y="421.0">p14 ready</text><text class="sect" x="170" y="600">FRONT END · fetched and decoded, not yet renamed or in the ROB</text><rect class="row fe" x="170" y="610" width="470" height="34" rx="5"/><rect class="chip fe" x="178" y="617" width="92" height="20" rx="4"/><text class="chipt fe" x="224" y="631" text-anchor="middle">decoded</text><text class="ins" x="282" y="632">ldr  w8, [x0, x9, lsl #2]</text><text class="note" x="630" y="632" text-anchor="end">iteration 3</text><rect class="row fe" x="170" y="646" width="470" height="34" rx="5"/><rect class="chip fe" x="178" y="653" width="92" height="20" rx="4"/><text class="chipt fe" x="224" y="667" text-anchor="middle">decoded</text><text class="ins" x="282" y="668">cmp  w8, w10</text><text class="note" x="630" y="668" text-anchor="end">iteration 3</text></svg></div>
+    <figcaption>Red arcs are RAW dependencies that aren't satisfied yet: the consumer is stuck in "waiting" until the producer finishes. Grey dashed arcs are RAW dependencies already satisfied, which is why the <code>add</code>s ran early. The load at row 2 missed in L1, so nothing below it can retire, not even the completed instructions. Everything under the purple line was fetched only because <code>b.lt f13</code> was predicted taken; it executes normally but stays speculative until that branch resolves.</figcaption>
+  </figure>
+
+  <section>
+    <h2>When the branch resolves</h2>
+    <p>The load returns, then <code>cmp f13</code> runs, then <code>b.lt f13</code> executes and checks its prediction. The same speculative work then goes one of two ways.</p>
+  </section>
+
+  <figure>
+    <div class="scroll"><svg viewBox="0 0 840 332" role="img" aria-label="When the branch resolves: if the prediction was right, the speculative entries keep their results and retire in order; if wrong, every entry younger than the branch is squashed and fetch restarts at the fall-through path."><text class="sect" x="60" y="22">PREDICTED RIGHT · branch was taken</text><rect class="m old" x="60" y="36" width="300" height="22" rx="4"/><text class="mt old" x="72" y="51">add  p11</text><rect class="m old" x="60" y="63" width="300" height="22" rx="4"/><text class="mt old" x="72" y="78">ldr  p12</text><rect class="m old" x="60" y="90" width="300" height="22" rx="4"/><text class="mt old" x="72" y="105">cmp  f13</text><rect class="m br" x="60" y="117" width="300" height="22" rx="4"/><text class="mt br" x="72" y="132">b.lt f13</text><rect class="m keep" x="60" y="154" width="300" height="22" rx="4"/><text class="mt keep" x="72" y="169">add  p14</text><rect class="m keep" x="60" y="181" width="300" height="22" rx="4"/><text class="mt keep" x="72" y="196">ldr  p15</text><rect class="m keep" x="60" y="208" width="300" height="22" rx="4"/><text class="mt keep" x="72" y="223">cmp  f16</text><rect class="m keep" x="60" y="235" width="300" height="22" rx="4"/><text class="mt keep" x="72" y="250">b.lt f16</text><rect class="m keep" x="60" y="262" width="300" height="22" rx="4"/><text class="mt keep" x="72" y="277">add  p17</text><text class="note" x="350" y="132" text-anchor="end">b.lt resolves taken</text><text class="keept" x="350" y="169" text-anchor="end">results kept</text><path class="brk" d="M50 154 L42 154 L42 280 L50 280"/><text class="keept" x="60" y="304">Nothing is redone. These retire in order</text><text class="keept" x="60" y="320">as soon as the load at the head completes.</text><text class="sect" x="480" y="22">PREDICTED WRONG · branch fell through</text><rect class="m old" x="480" y="36" width="300" height="22" rx="4"/><text class="mt old" x="492" y="51">add  p11</text><rect class="m old" x="480" y="63" width="300" height="22" rx="4"/><text class="mt old" x="492" y="78">ldr  p12</text><rect class="m old" x="480" y="90" width="300" height="22" rx="4"/><text class="mt old" x="492" y="105">cmp  f13</text><rect class="m br" x="480" y="117" width="300" height="22" rx="4"/><text class="mt br" x="492" y="132">b.lt f13</text><rect class="m gone" x="480" y="154" width="300" height="22" rx="4"/><text class="mt gone" x="492" y="169">add  p14</text><line class="strike" x1="488" y1="165" x2="772" y2="165"/><rect class="m gone" x="480" y="181" width="300" height="22" rx="4"/><text class="mt gone" x="492" y="196">ldr  p15</text><line class="strike" x1="488" y1="192" x2="772" y2="192"/><rect class="m gone" x="480" y="208" width="300" height="22" rx="4"/><text class="mt gone" x="492" y="223">cmp  f16</text><line class="strike" x1="488" y1="219" x2="772" y2="219"/><rect class="m gone" x="480" y="235" width="300" height="22" rx="4"/><text class="mt gone" x="492" y="250">b.lt f16</text><line class="strike" x1="488" y1="246" x2="772" y2="246"/><rect class="m gone" x="480" y="262" width="300" height="22" rx="4"/><text class="mt gone" x="492" y="277">add  p17</text><line class="strike" x1="488" y1="273" x2="772" y2="273"/><text class="note" x="770" y="132" text-anchor="end">b.lt resolves not taken</text><text class="gonet" x="770" y="169" text-anchor="end">squashed</text><path class="brkg" d="M470 154 L462 154 L462 280 L470 280"/><text class="ptr" x="456" y="158" text-anchor="end">tail</text><text class="gonet" x="480" y="304">Entries freed, p14–p17 returned to the free list,</text><text class="gonet" x="480" y="320">fetch restarts at the fall-through: the j-scan.</text></svg></div>
+    <figcaption>A correct prediction costs nothing: the work done early simply retires. A wrong one discards every entry younger than the branch, around 13–20 cycles of lost work on current Zen and Apple cores. In the partition loop on random data, with a median-like pivot, the branch is close to a coin flip, so this happens on a large share of scan steps.</figcaption>
+  </figure>
+  <section class="qa">
+    <h2>Does branch prediction wait for the instruction to be decoded?</h2>
+    <p class="q">A question from class.</p>
+    <p>No. The predictor sits at the very front of the pipeline, ahead of decode, and works from addresses rather than instructions. The iteration 3 instructions in the front end above show this: they were fetched because the predictor called <code>b.lt f16</code> taken long before that branch could execute.</p>
+    <ul>
+      <li><strong>What it sees:</strong> the address of the block about to be fetched, plus the history of recent branch outcomes.</li>
+      <li><strong>Branch target buffer (BTB):</strong> a cache indexed by address. It says whether the block holds a branch, where it is, what kind it is, and its target, so the front end knows a branch is there before any bytes are decoded.</li>
+      <li><strong>Direction predictor:</strong> a TAGE-style table indexed by the address hashed with history says taken or not taken. A return stack predicts the target of each <code>ret</code>.</li>
+      <li><strong>Decoupled front end:</strong> the predictor runs ahead, filling a queue of fetch addresses that fetch and decode follow. If it had to wait for decode, every taken branch would leave a gap of several cycles.</li>
+    </ul>
+    <p>Decode still has two jobs. The first time a branch is seen, the BTB has no entry, so fetch falls through. When the decoder finds a direct jump or call, it redirects fetch itself, because the target is encoded in the instruction. That costs a few cycles, far less than a misprediction. A conditional branch the BTB missed is usually treated as not taken until it executes. Decode also corrects stale BTB entries that claim a branch where there isn't one.</p>
+    <p>Whether a prediction was right is only known when the branch <em>executes</em>, as the second figure shows. The partition loop's branches are long past the BTB-miss stage: the predictor knows exactly where they are and where they go. What it can't know is their direction, because <code>a[++i] &lt; pivot</code> on random data is close to a coin flip.</p>
+  </section>
+</main>
+</body>
+</html>

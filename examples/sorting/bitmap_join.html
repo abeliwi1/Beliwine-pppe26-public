@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Bitmap Join -- generated for the pppe26 repo; opens standalone
+     in any browser, no server and no external assets beyond the web fonts, which
+     fall back to system faces offline. -->
+<title>Bitmap Join</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column, matching the reorder-buffer page; each figure scrolls on its own at phone width */
+:root {
+  --bg: #f5f6f8; --surface: #ffffff; --fg: #1b2230; --muted: #5d6778; --line: #c6cdd8;
+  --big-bg: #fbe5bd; --big-fg: #774700;      /* too big: belongs on the right */
+  --small-bg: #d4e4fa; --small-fg: #1a4c8a;  /* too small: belongs on the left */
+  --done-bg: #d0eed9; --done-fg: #1b6838;
+  --swap: #6a4dbd;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12161d; --surface: #1a2029; --fg: #e4e8ef; --muted: #9aa3b3; --line: #3a4455;
+  --big-bg: #4a3410; --big-fg: #f5c66d; --small-bg: #173357; --small-fg: #a0c8f7;
+  --done-bg: #143b25; --done-fg: #91dcab; --swap: #a88ff0; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12161d; --surface: #1a2029; --fg: #e4e8ef; --muted: #9aa3b3; --line: #3a4455;
+  --big-bg: #4a3410; --big-fg: #f5c66d; --small-bg: #173357; --small-fg: #a0c8f7;
+  --done-bg: #143b25; --done-fg: #91dcab; --swap: #a88ff0; color-scheme: dark }
+
+body { background: var(--bg); color: var(--fg); font: 15px/1.6 var(--sans); padding-inline: 16px; padding-block: 32px 48px; }
+main { max-width: 900px; margin: 0 auto; display: grid; gap: 28px; }
+h1 { font-size: 1.75rem; font-weight: 600; margin: 0; text-wrap: balance; }
+h2 { font-size: 1.1rem; font-weight: 600; margin: 0; text-wrap: balance; }
+p { margin: 0; max-width: 68ch; }
+.lede { color: var(--muted); }
+code, pre { font-family: var(--mono); font-size: 0.88em; }
+pre { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; margin: 0; overflow-x: auto; line-height: 1.5; }
+section { display: grid; gap: 12px; min-width: 0; }
+figure { margin: 0; display: grid; gap: 10px; min-width: 0; }
+.scroll { overflow-x: auto; }
+.scroll svg { display: block; width: 100%; min-width: 720px; height: auto; }
+figcaption { color: var(--muted); font-size: 0.9rem; max-width: 72ch; }
+ul { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; max-width: 68ch; }
+
+table { border-collapse: collapse; font-size: 0.9rem; font-variant-numeric: tabular-nums; min-width: 640px; }
+th, td { text-align: left; padding: 6px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+td.m { font-family: var(--mono); font-size: 0.85rem; }
+td.n { font-family: var(--mono); font-weight: 600; color: var(--swap); text-align: center; }
+tr.end td { color: var(--muted); }
+
+/* SVG */
+svg text { font-family: var(--sans); font-size: 12px; }
+.sect { fill: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; }
+.piv { fill: var(--fg); font-family: var(--mono); font-size: 13px; font-weight: 600; }
+.j { fill: var(--muted); font-family: var(--mono); font-size: 11px; }
+.jl { fill: var(--muted); font-size: 11px; font-style: italic; }
+.gap { fill: var(--muted); font-size: 16px; letter-spacing: 0.2em; }
+.c { fill: var(--surface); stroke: var(--line); }
+.c.hiL, .c.left { fill: var(--big-bg); stroke: none; }
+.c.hiR { fill: var(--small-bg); stroke: none; }
+.c.moved { fill: var(--done-bg); stroke: none; }
+.v { fill: var(--fg); font-family: var(--mono); font-size: 14px; font-weight: 500; }
+.v.hiL, .v.left { fill: var(--big-fg); }
+.v.hiR { fill: var(--small-fg); }
+.v.moved { fill: var(--done-fg); }
+.bit { fill: none; stroke: var(--line); }
+.bit.b1.L { fill: var(--big-fg); stroke: none; }
+.bit.b1.R { fill: var(--small-fg); stroke: none; }
+.bt { fill: var(--muted); font-family: var(--mono); font-size: 12px; }
+.bt.b1 { fill: var(--surface); font-weight: 600; }
+.rule { fill: var(--muted); font-family: var(--mono); font-size: 11.5px; }
+.reg { fill: var(--fg); font-family: var(--mono); font-size: 13px; font-weight: 600; }
+.regn { fill: var(--muted); font-size: 11.5px; }
+.arc { fill: none; stroke: var(--swap); stroke-width: 1.6; }
+.dot { fill: var(--swap); }
+.arct { fill: var(--swap); font-size: 11.5px; font-weight: 500; paint-order: stroke; stroke: var(--bg); stroke-width: 5px; stroke-linejoin: round; }
+.left-t { fill: var(--big-fg); font-size: 12px; }
+.done-t { fill: var(--done-fg); font-size: 12px; }
+/* the hosted version of this page got a reset from its runtime; standalone,
+   it brings its own */
+body { margin: 0; }
+</style>
+</head>
+<body>
+
+<main>
+  <header style="display:grid; gap:8px">
+    <h1>Bitmap Join</h1>
+    <p class="lede">How libc++'s <code>std::sort</code> partitions without a single branch on the data. It compares a block of elements from each end against the pivot, records the answers as bits, then pairs the bits up to decide which elements to swap. This is the BlockQuicksort scheme of Edelkamp and Weiß, implemented as <code>__bitset_partition</code> in <code>&lt;__algorithm/sort.h&gt;</code>.</p>
+  </header>
+
+  <section>
+    <p>The real blocks are 64 elements, one per bit of a <code>uint64_t</code>. The figures shrink them to 8 so every bit is visible. The left block runs forward from <code>first</code>; the right block runs backward from <code>lm1</code> (last − 1), so bit <em>j</em> on the right is the element <em>j</em> places in from the end.</p>
+  </section>
+
+  <section>
+    <h2>Step 1: compare and record</h2>
+  </section>
+  <figure>
+    <div class="scroll"><svg viewBox="0 0 900 226" role="img" aria-label="Each element of an 8-element left block and right block is compared with the pivot 50. The outcome goes into one bit of a bitset with no branch: left bits mark elements that are too big, right bits mark elements that are too small."><text class="sect" x="40" y="22">LEFT BLOCK · a[first + j]</text><text class="sect" x="856" y="22" text-anchor="end">RIGHT BLOCK · a[lm1 − j]</text><text class="piv" x="450" y="22" text-anchor="middle">pivot = 50</text><text class="jl" x="32" y="46" text-anchor="end">j</text><text class="jl" x="864" y="46">j</text><text class="j" x="60.0" y="46" text-anchor="middle">0</text><text class="j" x="836.0" y="46" text-anchor="middle">0</text><text class="j" x="104.0" y="46" text-anchor="middle">1</text><text class="j" x="792.0" y="46" text-anchor="middle">1</text><text class="j" x="148.0" y="46" text-anchor="middle">2</text><text class="j" x="748.0" y="46" text-anchor="middle">2</text><text class="j" x="192.0" y="46" text-anchor="middle">3</text><text class="j" x="704.0" y="46" text-anchor="middle">3</text><text class="j" x="236.0" y="46" text-anchor="middle">4</text><text class="j" x="660.0" y="46" text-anchor="middle">4</text><text class="j" x="280.0" y="46" text-anchor="middle">5</text><text class="j" x="616.0" y="46" text-anchor="middle">5</text><text class="j" x="324.0" y="46" text-anchor="middle">6</text><text class="j" x="572.0" y="46" text-anchor="middle">6</text><text class="j" x="368.0" y="46" text-anchor="middle">7</text><text class="j" x="528.0" y="46" text-anchor="middle">7</text><rect class="c " x="40" y="56" width="40" height="40" rx="4"/><text class="v " x="60.0" y="81" text-anchor="middle">12</text><rect class="c " x="816" y="56" width="40" height="40" rx="4"/><text class="v " x="836.0" y="81" text-anchor="middle">77</text><rect class="bit b0" x="48" y="110" width="24" height="22" rx="3"/><text class="bt b0" x="60.0" y="126" text-anchor="middle">0</text><rect class="bit b0" x="824" y="110" width="24" height="22" rx="3"/><text class="bt b0" x="836.0" y="126" text-anchor="middle">0</text><rect class="c hiL" x="84" y="56" width="40" height="40" rx="4"/><text class="v hiL" x="104.0" y="81" text-anchor="middle">71</text><rect class="c hiR" x="772" y="56" width="40" height="40" rx="4"/><text class="v hiR" x="792.0" y="81" text-anchor="middle">23</text><rect class="bit b1 L" x="92" y="110" width="24" height="22" rx="3"/><text class="bt b1 L" x="104.0" y="126" text-anchor="middle">1</text><rect class="bit b1 R" x="780" y="110" width="24" height="22" rx="3"/><text class="bt b1 R" x="792.0" y="126" text-anchor="middle">1</text><rect class="c " x="128" y="56" width="40" height="40" rx="4"/><text class="v " x="148.0" y="81" text-anchor="middle">33</text><rect class="c " x="728" y="56" width="40" height="40" rx="4"/><text class="v " x="748.0" y="81" text-anchor="middle">91</text><rect class="bit b0" x="136" y="110" width="24" height="22" rx="3"/><text class="bt b0" x="148.0" y="126" text-anchor="middle">0</text><rect class="bit b0" x="736" y="110" width="24" height="22" rx="3"/><text class="bt b0" x="748.0" y="126" text-anchor="middle">0</text><rect class="c hiL" x="172" y="56" width="40" height="40" rx="4"/><text class="v hiL" x="192.0" y="81" text-anchor="middle">88</text><rect class="c hiR" x="684" y="56" width="40" height="40" rx="4"/><text class="v hiR" x="704.0" y="81" text-anchor="middle">8</text><rect class="bit b1 L" x="180" y="110" width="24" height="22" rx="3"/><text class="bt b1 L" x="192.0" y="126" text-anchor="middle">1</text><rect class="bit b1 R" x="692" y="110" width="24" height="22" rx="3"/><text class="bt b1 R" x="704.0" y="126" text-anchor="middle">1</text><rect class="c " x="216" y="56" width="40" height="40" rx="4"/><text class="v " x="236.0" y="81" text-anchor="middle">5</text><rect class="c " x="640" y="56" width="40" height="40" rx="4"/><text class="v " x="660.0" y="81" text-anchor="middle">56</text><rect class="bit b0" x="224" y="110" width="24" height="22" rx="3"/><text class="bt b0" x="236.0" y="126" text-anchor="middle">0</text><rect class="bit b0" x="648" y="110" width="24" height="22" rx="3"/><text class="bt b0" x="660.0" y="126" text-anchor="middle">0</text><rect class="c hiL" x="260" y="56" width="40" height="40" rx="4"/><text class="v hiL" x="280.0" y="81" text-anchor="middle">64</text><rect class="c " x="596" y="56" width="40" height="40" rx="4"/><text class="v " x="616.0" y="81" text-anchor="middle">61</text><rect class="bit b1 L" x="268" y="110" width="24" height="22" rx="3"/><text class="bt b1 L" x="280.0" y="126" text-anchor="middle">1</text><rect class="bit b0" x="604" y="110" width="24" height="22" rx="3"/><text class="bt b0" x="616.0" y="126" text-anchor="middle">0</text><rect class="c " x="304" y="56" width="40" height="40" rx="4"/><text class="v " x="324.0" y="81" text-anchor="middle">40</text><rect class="c hiR" x="552" y="56" width="40" height="40" rx="4"/><text class="v hiR" x="572.0" y="81" text-anchor="middle">30</text><rect class="bit b0" x="312" y="110" width="24" height="22" rx="3"/><text class="bt b0" x="324.0" y="126" text-anchor="middle">0</text><rect class="bit b1 R" x="560" y="110" width="24" height="22" rx="3"/><text class="bt b1 R" x="572.0" y="126" text-anchor="middle">1</text><rect class="c hiL" x="348" y="56" width="40" height="40" rx="4"/><text class="v hiL" x="368.0" y="81" text-anchor="middle">97</text><rect class="c " x="508" y="56" width="40" height="40" rx="4"/><text class="v " x="528.0" y="81" text-anchor="middle">84</text><rect class="bit b1 L" x="356" y="110" width="24" height="22" rx="3"/><text class="bt b1 L" x="368.0" y="126" text-anchor="middle">1</text><rect class="bit b0" x="516" y="110" width="24" height="22" rx="3"/><text class="bt b0" x="528.0" y="126" text-anchor="middle">0</text><text class="gap" x="448.0" y="81" text-anchor="middle">· · ·</text><text class="rule" x="40" y="160">bit j = !(a[first+j] &lt; pivot)</text><text class="rule" x="856" y="160" text-anchor="end">bit j = a[lm1−j] &lt; pivot</text><text class="reg" x="40" y="194">left_bitset  = 0b10101010</text><text class="regn" x="40" y="212">set bits {1, 3, 5, 7}: too big, belong on the right</text><text class="reg" x="856" y="194" text-anchor="end">right_bitset = 0b01001010</text><text class="regn" x="856" y="212" text-anchor="end">set bits {1, 3, 6}: too small, belong on the left</text></svg></div>
+    <figcaption>Every element is compared with the pivot, and the boolean result is shifted into its bit: <code>bitset |= uint64_t(result) &lt;&lt; j</code>. Nothing branches on the answer, so there is nothing to mispredict, and the compiler can vectorize the loop. A set bit on the left marks an element that is too big for the left side; a set bit on the right marks one that is too small for the right.</figcaption>
+  </figure>
+
+  <section>
+    <h2>Step 2: the join</h2>
+    <p>Each set bit on the left needs a partner from the right to trade places with. The join pairs them in order: the lowest set bit on the left with the lowest set bit on the right, then the next pair, until one bitset runs out. This is <code>__swap_bitmap_pos</code>:</p>
+<pre>while (left != 0 &amp;&amp; right != 0) {
+    int l = ctz(left);   left  = blsr(left);    // ctz: index of lowest set bit
+    int r = ctz(right);  right = blsr(right);   // blsr: clear lowest set bit, x &amp; (x - 1)
+    swap(first[l], lm1[-r]);
+}
+first += (left  == 0) ? 64 : 0;   // a side advances only when its block is used up
+lm1   -= (right == 0) ? 64 : 0;</pre>
+  </section>
+  <figure>
+    <div class="scroll"><svg viewBox="0 0 900 252" role="img" aria-label="The join pairs the first set bit of the left bitset with the first set bit of the right bitset, the second with the second, and so on, swapping each pair. Three swaps empty the right bitset; one left element, 97, is still marked and waits for the next right block."><text class="jl" x="32" y="166" text-anchor="end">j</text><text class="jl" x="864" y="166">j</text><text class="j" x="60.0" y="166" text-anchor="middle">0</text><text class="j" x="836.0" y="166" text-anchor="middle">0</text><text class="j" x="104.0" y="166" text-anchor="middle">1</text><text class="j" x="792.0" y="166" text-anchor="middle">1</text><text class="j" x="148.0" y="166" text-anchor="middle">2</text><text class="j" x="748.0" y="166" text-anchor="middle">2</text><text class="j" x="192.0" y="166" text-anchor="middle">3</text><text class="j" x="704.0" y="166" text-anchor="middle">3</text><text class="j" x="236.0" y="166" text-anchor="middle">4</text><text class="j" x="660.0" y="166" text-anchor="middle">4</text><text class="j" x="280.0" y="166" text-anchor="middle">5</text><text class="j" x="616.0" y="166" text-anchor="middle">5</text><text class="j" x="324.0" y="166" text-anchor="middle">6</text><text class="j" x="572.0" y="166" text-anchor="middle">6</text><text class="j" x="368.0" y="166" text-anchor="middle">7</text><text class="j" x="528.0" y="166" text-anchor="middle">7</text><rect class="c " x="40" y="176" width="40" height="40" rx="4"/><text class="v " x="60.0" y="201" text-anchor="middle">12</text><rect class="c " x="816" y="176" width="40" height="40" rx="4"/><text class="v " x="836.0" y="201" text-anchor="middle">77</text><rect class="c moved" x="84" y="176" width="40" height="40" rx="4"/><text class="v moved" x="104.0" y="201" text-anchor="middle">23</text><rect class="c moved" x="772" y="176" width="40" height="40" rx="4"/><text class="v moved" x="792.0" y="201" text-anchor="middle">71</text><rect class="c " x="128" y="176" width="40" height="40" rx="4"/><text class="v " x="148.0" y="201" text-anchor="middle">33</text><rect class="c " x="728" y="176" width="40" height="40" rx="4"/><text class="v " x="748.0" y="201" text-anchor="middle">91</text><rect class="c moved" x="172" y="176" width="40" height="40" rx="4"/><text class="v moved" x="192.0" y="201" text-anchor="middle">8</text><rect class="c moved" x="684" y="176" width="40" height="40" rx="4"/><text class="v moved" x="704.0" y="201" text-anchor="middle">88</text><rect class="c " x="216" y="176" width="40" height="40" rx="4"/><text class="v " x="236.0" y="201" text-anchor="middle">5</text><rect class="c " x="640" y="176" width="40" height="40" rx="4"/><text class="v " x="660.0" y="201" text-anchor="middle">56</text><rect class="c moved" x="260" y="176" width="40" height="40" rx="4"/><text class="v moved" x="280.0" y="201" text-anchor="middle">30</text><rect class="c " x="596" y="176" width="40" height="40" rx="4"/><text class="v " x="616.0" y="201" text-anchor="middle">61</text><rect class="c " x="304" y="176" width="40" height="40" rx="4"/><text class="v " x="324.0" y="201" text-anchor="middle">40</text><rect class="c moved" x="552" y="176" width="40" height="40" rx="4"/><text class="v moved" x="572.0" y="201" text-anchor="middle">64</text><rect class="c left" x="348" y="176" width="40" height="40" rx="4"/><text class="v left" x="368.0" y="201" text-anchor="middle">97</text><rect class="c " x="508" y="176" width="40" height="40" rx="4"/><text class="v " x="528.0" y="201" text-anchor="middle">84</text><text class="gap" x="448.0" y="201" text-anchor="middle">· · ·</text><path class="arc" d="M104.0 172 C104.0 -12.0, 792.0 -12.0, 792.0 172"/><circle class="dot" cx="104.0" cy="172" r="3"/><circle class="dot" cx="792.0" cy="172" r="3"/><text class="arct" x="448.0" y="28" text-anchor="middle">swap 1: left bit 1 ↔ right bit 1</text><path class="arc" d="M192.0 172 C192.0 38.7, 704.0 38.7, 704.0 172"/><circle class="dot" cx="192.0" cy="172" r="3"/><circle class="dot" cx="704.0" cy="172" r="3"/><text class="arct" x="448.0" y="66" text-anchor="middle">swap 2: left bit 3 ↔ right bit 3</text><path class="arc" d="M280.0 172 C280.0 89.3, 572.0 89.3, 572.0 172"/><circle class="dot" cx="280.0" cy="172" r="3"/><circle class="dot" cx="572.0" cy="172" r="3"/><text class="arct" x="426.0" y="104" text-anchor="middle">swap 3: left bit 5 ↔ right bit 6</text><text class="left-t" x="40" y="242">bit 7 still set in left_bitset: 97 waits for the next right block</text><text class="done-t" x="856" y="242" text-anchor="end">right_bitset = 0: this block is finished</text></svg></div>
+    <figcaption>The same blocks after the join. Green cells were swapped. The left block had four misplaced elements and the right had three, so after three swaps <code>right_bitset</code> is empty and the left still has bit 7 set. The right side moves on to a fresh block; the left keeps its block and its remaining bit, which pairs with the first set bit of the next right block.</figcaption>
+  </figure>
+
+  <section>
+    <h2>The join, one iteration at a time</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>iter</th><th>left_bitset</th><th>ctz</th><th>right_bitset</th><th>ctz</th><th>swap</th><th>values</th></tr></thead>
+        <tbody>
+<tr><td>1</td><td class="m">10101010</td><td class="n">1</td><td class="m">01001010</td><td class="n">1</td><td class="m">first[1] ↔ lm1[−1]</td><td class="m">71 ↔ 23</td></tr>
+<tr><td>2</td><td class="m">10101000</td><td class="n">3</td><td class="m">01001000</td><td class="n">3</td><td class="m">first[3] ↔ lm1[−3]</td><td class="m">88 ↔ 8</td></tr>
+<tr><td>3</td><td class="m">10100000</td><td class="n">5</td><td class="m">01000000</td><td class="n">6</td><td class="m">first[5] ↔ lm1[−6]</td><td class="m">64 ↔ 30</td></tr>
+<tr class="end"><td>exit</td><td class="m">10100000</td><td class="n">–</td><td class="m">01000000</td><td class="n">–</td><td colspan="2">right is empty: <code>lm1 -= 8</code>, refill it; left keeps bit 7</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Why it beats a Hoare partition</h2>
+    <ul>
+      <li><strong>Hoare</strong> branches on every comparison: scan until an element is on the wrong side, stop, swap. On random data each of those branches is close to a coin flip, so about half of them mispredict.</li>
+      <li><strong>The bitmap version</strong> separates deciding from moving. The compare loop has no data-dependent branch. The join loop's only branch is "are both bitsets non-empty?", which depends on how many bits are set, not on any single comparison, so it costs about one mispredict per block, not one per element.</li>
+      <li>The price is extra work: every element is compared and written into a bit even when it is already on the right side, and each swap needs <code>ctz</code> and <code>blsr</code>. ARM64 has no single <code>ctz</code> instruction, so it takes <code>rbit</code> plus <code>clz</code>. Lecture 08 measures the trade as a large win: the branch-free partition is why clang's <code>std::sort</code> is about 3x faster than GCC's at a million elements.</li>
+    </ul>
+    <p>Two details are left out of the figures. Before the block loop, the pivot is moved to <code>first</code> and two short unguarded scans skip the elements already in place. After it, fewer than two blocks remain; <code>__bitset_partition_partial_blocks</code> fills partial bitsets, and <code>__swap_bitmap_pos_within</code> moves any leftover marked elements to the middle. libc++ uses this partition only for arithmetic types sorted with a comparator it knows is branch-free, such as the default <code>std::less</code>.</p>
+  </section>
+</main>
+</body>
+</html>

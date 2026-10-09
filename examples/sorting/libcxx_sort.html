@@ -507,6 +507,12 @@ while (left_bits &amp;&amp; right_bits) {
     compared and recorded, even ones already on the right side &mdash; and it
     trades that for a straight run of work with nothing to mispredict.
   </p>
+  <p>
+    <a href="bitmap_join.html">Bitmap Join</a> works step 3 through on a pair
+    of 8-element blocks: which bits get set, how <code>ctz</code> pairs the
+    left word with the right one, and what happens to a marked element whose
+    block runs out of partners first.
+  </p>
 
   <h3 style="margin-top:2rem;">The control: switch the partition off</h3>
   <p>

@@ -1,0 +1,94 @@
+<svg xmlns='http://www.w3.org/2000/svg' xml:space='preserve' style='white-space:pre' width='960' height='795' viewBox='0 0 960 795'>
+<defs><marker id='ah' viewBox='0 0 10 10' refX='9' refY='5' markerWidth='7' markerHeight='7' orient='auto-start-reverse'><path d='M0,0 L10,5 L0,10 z' fill='#000'/></marker></defs>
+<rect width='960' height='795' fill='#fff'/>
+<text x='20' y='34' font-family='Helvetica, Arial, sans-serif' font-size='18' font-weight='bold'>The loop</text>
+<rect x='20' y='48' width='420' height='127' fill='#f4f4f4' stroke='#999'/>
+<text x='36.0' y='78' font-family='Menlo, Consolas, monospace' font-size='16'>s = 0</text>
+<text x='36.0' y='102' font-family='Menlo, Consolas, monospace' font-size='16'>for i in 0 .. n-1:</text>
+<text x='74.4' y='126' font-family='Menlo, Consolas, monospace' font-size='16'>s = s + a[i] * b[i]</text>
+<text x='36.0' y='150' font-family='Menlo, Consolas, monospace' font-size='16'>return s</text>
+<text x='470' y='34' font-family='Helvetica, Arial, sans-serif' font-size='18' font-weight='bold'>Where the variables live</text>
+<text x='480' y='72' font-family='Menlo, Consolas, monospace' font-size='15'><tspan font-weight='bold'>x0</tspan>  address of a</text>
+<text x='480' y='93' font-family='Menlo, Consolas, monospace' font-size='15'><tspan font-weight='bold'>x1</tspan>  address of b</text>
+<text x='480' y='114' font-family='Menlo, Consolas, monospace' font-size='15'><tspan font-weight='bold'>x2</tspan>  s</text>
+<text x='480' y='135' font-family='Menlo, Consolas, monospace' font-size='15'><tspan font-weight='bold'>x3</tspan>  n</text>
+<text x='480' y='156' font-family='Menlo, Consolas, monospace' font-size='15'><tspan font-weight='bold'>x8</tspan>  i</text>
+<text x='20' y='203' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>Arm64, destination first.  <tspan font-family='Menlo, Consolas, monospace'>add x2, x2, x9</tspan> means x2 ← x2 + x9.  <tspan font-family='Menlo, Consolas, monospace'>lsl #3</tspan> multiplies i by 8, the size of one element.</text>
+<text x='20' y='229' font-family='Helvetica, Arial, sans-serif' font-size='18' font-weight='bold'>Two executions of the loop body</text>
+<text x='322' y='253' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#555'>instruction</text>
+<text x='570' y='253' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#555'>what it does</text>
+<text x='258' y='253' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#555' text-anchor='end'>draw RAW hazards here</text>
+<text x='322' y='273' font-family='Menlo, Consolas, monospace' font-size='14'>loop:</text>
+<rect x='270' y='279' width='648' height='238' fill='#f7f7f7' stroke='#888'/>
+<text x='940' y='398.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' text-anchor='middle' transform='rotate(90 940 398.0)'>iteration i</text>
+<text x='296' y='301.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' text-anchor='end'>1</text>
+<text x='322' y='301.0' font-family='Menlo, Consolas, monospace' font-size='15'>ldr  x9,  [x0, x8, lsl #3]</text>
+<text x='570' y='301.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#333'>x9  ← a[i]   (address a + 8·i)</text>
+<circle cx='262' cy='296.0' r='3' fill='#000'/>
+<line x1='270' x2='918' y1='313' y2='313' stroke='#d0d0d0'/>
+<text x='296' y='335.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' text-anchor='end'>2</text>
+<text x='322' y='335.0' font-family='Menlo, Consolas, monospace' font-size='15'>ldr  x10, [x1, x8, lsl #3]</text>
+<text x='570' y='335.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#333'>x10 ← b[i]   (address b + 8·i)</text>
+<circle cx='262' cy='330.0' r='3' fill='#000'/>
+<line x1='270' x2='918' y1='347' y2='347' stroke='#d0d0d0'/>
+<text x='296' y='369.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' text-anchor='end'>3</text>
+<text x='322' y='369.0' font-family='Menlo, Consolas, monospace' font-size='15'>mul  x9,  x9,  x10</text>
+<text x='570' y='369.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#333'>x9  ← a[i] · b[i]</text>
+<circle cx='262' cy='364.0' r='3' fill='#000'/>
+<line x1='270' x2='918' y1='381' y2='381' stroke='#d0d0d0'/>
+<text x='296' y='403.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' text-anchor='end'>4</text>
+<text x='322' y='403.0' font-family='Menlo, Consolas, monospace' font-size='15'>add  x2,  x2,  x9</text>
+<text x='570' y='403.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#333'>s   ← s + a[i] · b[i]</text>
+<circle cx='262' cy='398.0' r='3' fill='#000'/>
+<line x1='270' x2='918' y1='415' y2='415' stroke='#d0d0d0'/>
+<text x='296' y='437.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' text-anchor='end'>5</text>
+<text x='322' y='437.0' font-family='Menlo, Consolas, monospace' font-size='15'>add  x8,  x8,  #1</text>
+<text x='570' y='437.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#333'>i   ← i + 1</text>
+<circle cx='262' cy='432.0' r='3' fill='#000'/>
+<line x1='270' x2='918' y1='449' y2='449' stroke='#d0d0d0'/>
+<text x='296' y='471.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' text-anchor='end'>6</text>
+<text x='322' y='471.0' font-family='Menlo, Consolas, monospace' font-size='15'>cmp  x8,  x3</text>
+<text x='570' y='471.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#333'>compare i with n (writes flags)</text>
+<circle cx='262' cy='466.0' r='3' fill='#000'/>
+<line x1='270' x2='918' y1='483' y2='483' stroke='#d0d0d0'/>
+<text x='296' y='505.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' text-anchor='end'>7</text>
+<text x='322' y='505.0' font-family='Menlo, Consolas, monospace' font-size='15'>b.lt loop</text>
+<text x='570' y='505.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#333'>if i &lt; n (reads flags): to loop</text>
+<circle cx='262' cy='500.0' r='3' fill='#000'/>
+<rect x='270' y='517' width='648' height='238' fill='#ececec' stroke='#888'/>
+<text x='940' y='636.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' text-anchor='middle' transform='rotate(90 940 636.0)'>iteration i + 1</text>
+<text x='296' y='539.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' text-anchor='end'>8</text>
+<text x='322' y='539.0' font-family='Menlo, Consolas, monospace' font-size='15'>ldr  x9,  [x0, x8, lsl #3]</text>
+<text x='570' y='539.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#333'>x9  ← a[i+1]   (address a + 8·(i+1))</text>
+<circle cx='262' cy='534.0' r='3' fill='#000'/>
+<line x1='270' x2='918' y1='551' y2='551' stroke='#d0d0d0'/>
+<text x='296' y='573.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' text-anchor='end'>9</text>
+<text x='322' y='573.0' font-family='Menlo, Consolas, monospace' font-size='15'>ldr  x10, [x1, x8, lsl #3]</text>
+<text x='570' y='573.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#333'>x10 ← b[i+1]   (address b + 8·(i+1))</text>
+<circle cx='262' cy='568.0' r='3' fill='#000'/>
+<line x1='270' x2='918' y1='585' y2='585' stroke='#d0d0d0'/>
+<text x='296' y='607.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' text-anchor='end'>10</text>
+<text x='322' y='607.0' font-family='Menlo, Consolas, monospace' font-size='15'>mul  x9,  x9,  x10</text>
+<text x='570' y='607.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#333'>x9  ← a[i+1] · b[i+1]</text>
+<circle cx='262' cy='602.0' r='3' fill='#000'/>
+<line x1='270' x2='918' y1='619' y2='619' stroke='#d0d0d0'/>
+<text x='296' y='641.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' text-anchor='end'>11</text>
+<text x='322' y='641.0' font-family='Menlo, Consolas, monospace' font-size='15'>add  x2,  x2,  x9</text>
+<text x='570' y='641.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#333'>s   ← s + a[i+1] · b[i+1]</text>
+<circle cx='262' cy='636.0' r='3' fill='#000'/>
+<line x1='270' x2='918' y1='653' y2='653' stroke='#d0d0d0'/>
+<text x='296' y='675.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' text-anchor='end'>12</text>
+<text x='322' y='675.0' font-family='Menlo, Consolas, monospace' font-size='15'>add  x8,  x8,  #1</text>
+<text x='570' y='675.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#333'>i   ← i + 2</text>
+<circle cx='262' cy='670.0' r='3' fill='#000'/>
+<line x1='270' x2='918' y1='687' y2='687' stroke='#d0d0d0'/>
+<text x='296' y='709.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' text-anchor='end'>13</text>
+<text x='322' y='709.0' font-family='Menlo, Consolas, monospace' font-size='15'>cmp  x8,  x3</text>
+<text x='570' y='709.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#333'>compare i with n (writes flags)</text>
+<circle cx='262' cy='704.0' r='3' fill='#000'/>
+<line x1='270' x2='918' y1='721' y2='721' stroke='#d0d0d0'/>
+<text x='296' y='743.0' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' text-anchor='end'>14</text>
+<text x='322' y='743.0' font-family='Menlo, Consolas, monospace' font-size='15'>b.lt loop</text>
+<text x='570' y='743.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#333'>if i &lt; n (reads flags): to loop</text>
+<circle cx='262' cy='738.0' r='3' fill='#000'/>
+</svg>
