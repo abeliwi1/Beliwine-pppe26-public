@@ -175,7 +175,44 @@ int sets_reachable(int lda, const Geometry& g) {
     //   - What if the row is not a whole number of cache lines?
     //   - What if the set index advances by exactly 0 per step?
     (void)lda; (void)g;
-    return 1;   // <-- replace
+    // Each double occupies 8 bytes. Moving down one row skips lda doubles.
+    const long long row_bytes = 8LL * lda;
+
+    // If the row occupies a whole number of cache lines,
+    // each step down the column advances the set index by a fixed amount!
+    if (row_bytes % g.line == 0) {
+        // calculate adv steps
+        const int advance = static_cast<int>(
+            (row_bytes / g.line) % g.sets);
+
+        if (advance == 0) {
+            return 1; // column lands in one single set
+        }
+
+        // Repeatedly adding advance modulo g.sets visits this many sets.
+        // A column has only N elements, so it cannot touch more than N sets.
+        return min(N, g.sets / gcd(advance, g.sets));
+    }
+
+    // For fractional cache-line strides, the set advance can vary. (technically won't happen for our initial ten cases)
+    // Tracking the sets touched by all N elements instead.
+    vector<bool> reached(g.sets, false);
+    int count = 0;
+
+    for (int row = 0; row < N; row++) {
+        // Integer division converts the byte offset to a cache-line number.
+        // Modulo converts that line number to a set index.
+        const int set = static_cast<int>(
+            (row * row_bytes / g.line) % g.sets);
+
+        // Count each distinct set only once.
+        if (!reached[set]) {
+            reached[set] = true;
+            count++;
+        }
+    }
+
+    return count;
 }
 
 // ===================================================================
