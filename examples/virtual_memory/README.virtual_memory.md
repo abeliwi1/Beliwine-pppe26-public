@@ -40,13 +40,13 @@ make data       # run them all and refresh the .txt / .csv outputs (~30 s)
 | Mapped memory that is resident | **4.1 %** — 66.6 MB virtual, 2.7 MB real | `address_space` |
 | Largest reservation accepted | **512 GB** with `MAP_NORESERVE`, **16 GB** without | `lazy_alloc` |
 | Cost of reserving 64 GB | +65,536 MB virtual, **+0.1 MB resident** | `lazy_alloc` |
-| Page tables per 1 GB touched | 44 KB → **2,100 KB** (8 B per 4 KB page) | `lazy_alloc` |
-| First touch of a 4 KB page | **853 ns**, one minor fault each | `fault_cost` |
-| First touch, 2 MB pages | **277 ns** per 4 KB — 512× fewer faults | `fault_cost` |
-| A page already present | **12 ns**, no fault | `fault_cost` |
-| A major fault (page on the SSD) | **55.2 µs** | `fault_cost` |
-| `fork` of a 256 MB process | **2.3 ms**, 0 bytes copied | `cow_fork` |
-| Each page the child then writes | **1,308 ns**, one copy-on-write fault | `cow_fork` |
+| Page tables per 1 GB touched | 48 KB → **2,104 KB** (8 B per 4 KB page) | `lazy_alloc` |
+| First touch of a 4 KB page | **733 ns**, one minor fault each | `fault_cost` |
+| First touch, 2 MB pages | **293 ns** per 4 KB — 512× fewer faults | `fault_cost` |
+| A page already present | **11 ns**, no fault | `fault_cost` |
+| A major fault (page on the SSD) | **53.8 µs** | `fault_cost` |
+| `fork` of a 256 MB process | **2.7 ms**, no pages copied (only the page tables) | `cow_fork` |
+| Each page the child then writes | **1,264 ns**, one copy-on-write fault | `cow_fork` |
 | Same virtual address in two processes | different memory, or the same — one `mmap` flag | `same_address` |
 
 ---
@@ -92,5 +92,6 @@ swapped bits are still readable and `lazy_alloc` uses them.
 | Topic | Directory |
 |---|---|
 | Caches, and the TLB's capacity cliff | [../memory_hierarchy/](../memory_hierarchy/README.memory.md) |
-| Threads, which share all of this | [../openmp/](../openmp/) &middot; [../cilk/](../cilk/README.cilk.md) |
-| False sharing: two threads, one frame, no logical sharing | [../false_sharing/](../false_sharing/README.false_sharing.md) |
+| Processes and threads: why one has its own page table and the other does not | [Lecture 09](../../course_materials/09.threads.md) |
+| Threads in practice, all sharing one address space | [../openmp/](../openmp/) &middot; [../cilk/](../cilk/README.cilk.md) |
+| False sharing: two threads, one cache line, no logical sharing | [../false_sharing/](../false_sharing/README.false_sharing.md) |

@@ -395,7 +395,8 @@ physical address  =  frame 17 &times; 4096 + 564  =  <span class="p">0x11234</sp
       <span class="cap">A common confusion</span>
       <p>
         The page table is not consulted by your program, your compiler, or even the operating system
-        on each access — it is walked by <em>hardware</em>, on every load and store, invisibly. The
+        on each access — it is used by <em>hardware</em>, on every load and store, invisibly (a small
+        cache of recent translations, the TLB, means the table itself is rarely walked). The
         operating system's job is only to build and maintain the tables. This is why virtual memory
         costs so little in the common case and why it cannot be turned off for a program that would
         rather go fast.
@@ -431,7 +432,7 @@ physical address  =  frame 17 &times; 4096 + 564  =  <span class="p">0x11234</sp
       <summary>Check yourself</summary>
       <p>
         Two processes each print the address of a variable, and both print
-        <code>0x7ffd4a2b18</code>. Are they using the same memory?
+        <code>0x7ffd4a2b18c0</code>. Are they using the same memory?
       </p>
       <p>
         <strong>Almost certainly not.</strong> They are using the same <em>name</em>. Unless the two
@@ -472,7 +473,7 @@ physical address  =  frame 17 &times; 4096 + 564  =  <span class="p">0x11234</sp
     <p>
       So <code>malloc</code> keeps a pool. When you ask for 24 bytes it carves them from a chunk it
       already owns, and returns in a few dozen nanoseconds without the kernel being involved at all.
-      Only when the pool runs low does it go to the kernel — for a megabyte or more at a time.
+      Only when the pool runs low does it go to the kernel, and then for a large chunk at a time.
     </p>
 
     <figure>
@@ -563,7 +564,7 @@ physical address  =  frame 17 &times; 4096 + 564  =  <span class="p">0x11234</sp
           <tr>
             <td><code>malloc(10&nbsp;MB)</code></td>
             <td>Too big to carve out, so malloc asks the kernel directly with <code>mmap</code>. The
-                kernel notes a new region in the page table and returns — <em>without allocating any
+                kernel records a new region in its list of the process's mappings and returns — <em>without allocating any
                 physical memory.</em> The pages arrive one at a time, as you write to them.</td>
           </tr>
         </tbody>
@@ -614,7 +615,7 @@ physical address  =  frame 17 &times; 4096 + 564  =  <span class="p">0x11234</sp
     <h2>fork</h2>
 
     <p class="lede">
-      <code>fork</code> is the only way to create a process on a Unix system, and it works in a way
+      <code>fork</code> is the classic way to create a process on a Unix system, and it works in a way
       that surprises nearly everyone the first time: it does not start a new program. It makes a
       duplicate of the one already running.
     </p>
@@ -722,14 +723,22 @@ if (pid == 0) {
       ever happens.
     </p>
 
+    <p>
+      Compare creating a <em>thread</em>. A new thread gets a stack and its own registers, but no
+      page table at all: it uses the one its process already has, so every page is shared and
+      nothing is ever copied. That is the whole difference between the two abstractions, seen from
+      the page table's side — a process has its own table, a thread does not.
+    </p>
+
     <div class="box confusion">
       <span class="cap">A common confusion</span>
       <p>
         A program prints one line, then forks, and the line appears <em>twice</em>. Nothing printed
         it twice. Output is buffered inside the process, and if the buffer had not yet been flushed
         when <code>fork</code> ran, the child inherited a copy of it — and both processes flushed it
-        on exit. Flush before forking, and the problem disappears. This is not a hypothetical; it
-        happened while writing the companion page, and cost the child's entire output.
+        on exit. Flush before forking, and the problem disappears. The mirror image is just as easy to
+        hit, and it happened while writing the companion page: a child that ends with
+        <code>_exit</code> skips the flush, and its entire output is lost.
       </p>
     </div>
 
@@ -797,8 +806,8 @@ if (pid == 0) {
       This chapter deliberately contains no measurements. Its companion is all measurement:
       <a href="vm_reality.html">The Address Is Not The Memory</a> runs each of these mechanisms on a
       real machine and reports what they cost — a 128 TiB address space that is 0.00005% used, 64 GB
-      allocated for 0.1 MB of actual memory, 853 ns for the first touch of a page, and a 256 MB
-      <code>fork</code> that copies nothing in 2.3 ms.
+      allocated for 0.1 MB of actual memory, 733 ns for the first touch of a page, and a 256 MB
+      <code>fork</code> that copies no pages in 2.7 ms.
     </p>
     <p>
       For what happens to an address <em>after</em> it has been translated — caches, and why the

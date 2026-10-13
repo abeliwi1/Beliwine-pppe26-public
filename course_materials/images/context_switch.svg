@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="500" viewBox="0 0 920 500" role="img" aria-label="A context switch on core 0: process A runs, the OS saves A's registers and program counter into A's context, loads B's from B's context and switches to B's page table, then B runs; a second switch brings A back.">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#333"/>
+    </marker>
+    <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="8" height="8" fill="#eee"/>
+      <line x1="0" y1="0" x2="0" y2="8" stroke="#999" stroke-width="3"/>
+    </pattern>
+  </defs>
+  <rect width="920" height="500" fill="#fff"/>
+
+  <g font-family="Helvetica, Arial, sans-serif" fill="#222">
+    <!-- timeline -->
+    <text x="20" y="98" font-size="15" font-weight="bold">core 0</text>
+    <rect x="90" y="75" width="230" height="36" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="205" y="98" font-size="14" text-anchor="middle">process A runs</text>
+    <rect x="320" y="75" width="70" height="36" fill="url(#hatch)" stroke="#888"/>
+    <rect x="390" y="75" width="230" height="36" rx="4" fill="#fbe3d0" stroke="#c05621" stroke-width="1.5"/>
+    <text x="505" y="98" font-size="14" text-anchor="middle">process B runs</text>
+    <rect x="620" y="75" width="70" height="36" fill="url(#hatch)" stroke="#888"/>
+    <rect x="690" y="75" width="200" height="36" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="790" y="98" font-size="14" text-anchor="middle">process A runs again</text>
+
+    <text x="355" y="62" font-size="13" text-anchor="middle" fill="#555">context switch</text>
+    <text x="655" y="62" font-size="13" text-anchor="middle" fill="#555">context switch</text>
+    <text x="655" y="132" font-size="12" text-anchor="middle" fill="#555">save B, load A</text>
+
+    <line x1="90" y1="30" x2="890" y2="30" stroke="#999" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <text x="890" y="22" font-size="12" text-anchor="end" fill="#555">time</text>
+
+    <!-- zoom lines from the first switch down to the core -->
+    <line x1="320" y1="111" x2="225" y2="165" stroke="#aaa" stroke-dasharray="4 3"/>
+    <line x1="390" y1="111" x2="485" y2="165" stroke="#aaa" stroke-dasharray="4 3"/>
+
+    <!-- the core -->
+    <rect x="225" y="165" width="260" height="100" rx="6" fill="#f6f6f6" stroke="#444" stroke-width="1.5"/>
+    <text x="355" y="187" font-size="14" font-weight="bold" text-anchor="middle">core 0, during the switch</text>
+    <rect x="245" y="198" width="220" height="26" fill="#fff" stroke="#888"/>
+    <text x="355" y="216" font-size="13" text-anchor="middle">registers and program counter</text>
+    <rect x="245" y="230" width="220" height="26" fill="#fff" stroke="#888"/>
+    <text x="355" y="248" font-size="13" text-anchor="middle">page table register</text>
+
+    <!-- saved contexts in memory -->
+    <text x="355" y="318" font-size="13" text-anchor="middle" fill="#555">kept by the OS, in memory</text>
+
+    <rect x="60" y="330" width="250" height="150" rx="6" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="185" y="353" font-size="14" font-weight="bold" text-anchor="middle">process A's context</text>
+    <text x="80" y="380" font-size="13">registers and program counter</text>
+    <text x="80" y="402" font-size="13">page table (A's address space)</text>
+    <text x="80" y="424" font-size="13">open files, process ID, owner</text>
+    <text x="80" y="456" font-size="12" fill="#555">saved here while A is stopped</text>
+
+    <rect x="400" y="330" width="250" height="150" rx="6" fill="#fbe3d0" stroke="#c05621" stroke-width="1.5"/>
+    <text x="525" y="353" font-size="14" font-weight="bold" text-anchor="middle">process B's context</text>
+    <text x="420" y="380" font-size="13">registers and program counter</text>
+    <text x="420" y="402" font-size="13">page table (B's address space)</text>
+    <text x="420" y="424" font-size="13">open files, process ID, owner</text>
+    <text x="420" y="456" font-size="12" fill="#555">loaded from here to resume B</text>
+
+    <!-- 1: save A -->
+    <path d="M 270 224 C 200 260, 185 290, 185 328" fill="none" stroke="#2b6cb0" stroke-width="2" marker-end="url(#arrow)"/>
+    <circle cx="196" cy="276" r="11" fill="#2b6cb0"/>
+    <text x="196" y="281" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">1</text>
+    <text x="118" y="270" font-size="13" text-anchor="end" fill="#2b6cb0">save A's</text>
+    <text x="118" y="286" font-size="13" text-anchor="end" fill="#2b6cb0">registers and PC</text>
+
+    <!-- 2: load B -->
+    <path d="M 525 328 C 525 290, 510 245, 465 213" fill="none" stroke="#c05621" stroke-width="2" marker-end="url(#arrow)"/>
+    <circle cx="522" cy="292" r="11" fill="#c05621"/>
+    <text x="522" y="297" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">2</text>
+    <text x="542" y="296" font-size="13" fill="#c05621">load B's</text>
+    <text x="542" y="312" font-size="13" fill="#c05621">registers and PC</text>
+
+    <!-- 3: switch page tables -->
+    <path d="M 650 402 C 760 400, 760 245, 487 243" fill="none" stroke="#c05621" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+    <circle cx="733" cy="318" r="11" fill="#c05621"/>
+    <text x="733" y="323" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">3</text>
+    <text x="753" y="314" font-size="13" fill="#c05621">point the core at</text>
+    <text x="753" y="330" font-size="13" fill="#c05621">B's page table</text>
+
+    <!-- caption -->
+    <text x="890" y="430" font-size="13" text-anchor="end" fill="#333">The stopped process can't tell it</text>
+    <text x="890" y="448" font-size="13" text-anchor="end" fill="#333">was switched out, except that</text>
+    <text x="890" y="466" font-size="13" text-anchor="end" fill="#333">the clock jumped forward.</text>
+  </g>
+</svg>

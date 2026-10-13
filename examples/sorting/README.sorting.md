@@ -183,3 +183,17 @@ Comparable-scale sorts for context: [newintrosort.cpp](newintrosort.cpp) /
 (introsort variants with an explicit heapsort safety net) and
 [sort_compare_large.cpp](sort_compare_large.cpp) (large-n comparison
 harness).
+
+## 4. Putting it all together: AVX-512 on Zen 5
+
+Is the modest NEON result a property of the idea, or of 4-lane registers?
+[putting_it_all_together.md](putting_it_all_together.md) answers on an AMD
+Zen 5 with AVX-512. It compiles one partition at 4, 8 and 16 lanes, replaces
+the insertion-sort leaves with bitonic networks of up to 256 keys held in zmm
+registers, and then closes the gap to Highway's `hwy::VQSort` one design
+choice at a time. Changing only the partition, 16 lanes is no better than 8
+(1.35–1.51× at 1M). With the leaves and the partition both rebuilt, the
+16-lane sort is 6.9× faster than `std::sort` at 1M, ahead of 8 lanes (6.3×)
+and 4 lanes (3.9×).
+
+**Implementation:** [avx512_sort.cpp](avx512_sort.cpp)

@@ -1,0 +1,121 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='1180' height='1052' viewBox='0 0 1180 1052' role='img' aria-label='The address space of one process on 64-bit Linux, from the kernel at the top down to the never-mapped first 64 KB, with the permissions of each region.'>
+<rect width='1180' height='1052' fill='#fff'/>
+<text x='20' y='34' font-family='Helvetica, Arial, sans-serif' font-size='19' font-weight='bold' fill='#222'>One process's address space on 64-bit Linux</text>
+<text x='20' y='58' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#555'>High addresses at the top. Not to scale: almost all of the address space is unmapped. See a real one with <tspan font-family='Menlo, Consolas, monospace'>cat /proc/self/maps</tspan>.</text>
+<text x='330' y='100' font-family='Menlo, Consolas, monospace' font-size='12' text-anchor='end' fill='#555'>0xffff ffff ffff ffff</text>
+<rect x='340' y='96' width='290' height='56' fill='#d9d9d9' stroke='#555' stroke-width='1.3'/>
+<text x='485.0' y='129' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' text-anchor='middle' fill='#333'>kernel</text>
+<text x='668' y='129' font-family='Menlo, Consolas, monospace' font-size='12' text-anchor='middle' fill='#666'>none</text>
+<text x='706' y='120' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>kernel code and data: mapped in every process, but</text>
+<text x='706' y='138' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>user code that touches it crashes</text>
+<text x='330' y='156' font-family='Menlo, Consolas, monospace' font-size='12' text-anchor='end' fill='#555'>0xffff 8000 0000 0000</text>
+<rect x='340' y='152' width='290' height='30' fill='#fff' stroke='#bbb' stroke-dasharray='4 3'/>
+<text x='485.0' y='172.0' font-family='Helvetica, Arial, sans-serif' font-size='13' text-anchor='middle' fill='#999'>unmapped</text>
+<rect x='340' y='182' width='290' height='28' fill='#dbe9f7' stroke='#2b6cb0' stroke-width='1.2'/>
+<text x='352' y='201.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#222'>[vvar]</text>
+<rect x='646' y='185.0' width='44' height='22' rx='4' fill='#dbe9f7' stroke='#2b6cb0' stroke-width='1.3'/><text x='668' y='201.0' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#2b6cb0' text-anchor='middle'>r--</text>
+<text x='706' y='201.0' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>data the kernel keeps up to date, such as the time</text>
+<text x='330' y='186' font-family='Menlo, Consolas, monospace' font-size='12' text-anchor='end' fill='#555'>0x7fff ffff ffff</text>
+<rect x='340' y='210' width='290' height='28' fill='#d4f0de' stroke='#2f855a' stroke-width='1.2'/>
+<text x='352' y='229.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#222'>[vdso]</text>
+<rect x='646' y='213.0' width='44' height='22' rx='4' fill='#d4f0de' stroke='#2f855a' stroke-width='1.3'/><text x='668' y='229.0' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#2f855a' text-anchor='middle'>r-x</text>
+<text x='706' y='229.0' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>kernel code that runs in user space, to skip a system call</text>
+<rect x='340' y='238' width='290' height='28' fill='#fbe3d0' stroke='#c05621' stroke-width='1.2'/>
+<text x='352' y='257.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#222'>stack (main thread)  ↓</text>
+<rect x='646' y='241.0' width='44' height='22' rx='4' fill='#fbe3d0' stroke='#c05621' stroke-width='1.3'/><text x='668' y='257.0' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#c05621' text-anchor='middle'>rw-</text>
+<text x='706' y='257.0' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>locals and call frames; argv and environment at the top</text>
+<text x='330' y='256.0' font-family='Menlo, Consolas, monospace' font-size='12' text-anchor='end' fill='#555'>0x7ffc …</text>
+<rect x='340' y='266' width='290' height='30' fill='#fff' stroke='#bbb' stroke-dasharray='4 3'/>
+<text x='485.0' y='286.0' font-family='Helvetica, Arial, sans-serif' font-size='13' text-anchor='middle' fill='#999'>unmapped</text>
+<rect x='340' y='296' width='290' height='28' fill='#d4f0de' stroke='#2f855a' stroke-width='1.2'/>
+<text x='352' y='315.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#222'>ld-linux-x86-64.so.2</text>
+<rect x='646' y='299.0' width='44' height='22' rx='4' fill='#d4f0de' stroke='#2f855a' stroke-width='1.3'/><text x='668' y='315.0' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#2f855a' text-anchor='middle'>r-x</text>
+<text x='706' y='315.0' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>the dynamic loader, which maps the libraries</text>
+<text x='330' y='314.0' font-family='Menlo, Consolas, monospace' font-size='12' text-anchor='end' fill='#555'>0x7f…</text>
+<rect x='340' y='324' width='290' height='28' fill='#fbe3d0' stroke='#c05621' stroke-width='1.2'/>
+<text x='352' y='343.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#222'>libc.so.6   .data  .bss</text>
+<rect x='646' y='327.0' width='44' height='22' rx='4' fill='#fbe3d0' stroke='#c05621' stroke-width='1.3'/><text x='668' y='343.0' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#c05621' text-anchor='middle'>rw-</text>
+<text x='706' y='343.0' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>the library's globals: each process gets its own copy</text>
+<rect x='340' y='352' width='290' height='28' fill='#dbe9f7' stroke='#2b6cb0' stroke-width='1.2'/>
+<text x='352' y='371.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#222'>libc.so.6   .got (RELRO)</text>
+<rect x='646' y='355.0' width='44' height='22' rx='4' fill='#dbe9f7' stroke='#2b6cb0' stroke-width='1.3'/><text x='668' y='371.0' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#2b6cb0' text-anchor='middle'>r--</text>
+<text x='706' y='371.0' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>addresses filled in at load time, then made read-only</text>
+<rect x='340' y='380' width='290' height='28' fill='#dbe9f7' stroke='#2b6cb0' stroke-width='1.2'/>
+<text x='352' y='399.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#222'>libc.so.6   .rodata</text>
+<rect x='646' y='383.0' width='44' height='22' rx='4' fill='#dbe9f7' stroke='#2b6cb0' stroke-width='1.3'/><text x='668' y='399.0' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#2b6cb0' text-anchor='middle'>r--</text>
+<text x='706' y='399.0' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>the library's constants, shared by every process</text>
+<rect x='340' y='408' width='290' height='28' fill='#d4f0de' stroke='#2f855a' stroke-width='1.2'/>
+<text x='352' y='427.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#222'>libc.so.6   .text</text>
+<rect x='646' y='411.0' width='44' height='22' rx='4' fill='#d4f0de' stroke='#2f855a' stroke-width='1.3'/><text x='668' y='427.0' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#2f855a' text-anchor='middle'>r-x</text>
+<text x='706' y='427.0' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>the library's code, shared by every process that uses it</text>
+<rect x='340' y='436' width='290' height='28' fill='#dbe9f7' stroke='#2b6cb0' stroke-width='1.2'/>
+<text x='352' y='455.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#222'>memory-mapped file</text>
+<rect x='646' y='439.0' width='44' height='22' rx='4' fill='#dbe9f7' stroke='#2b6cb0' stroke-width='1.3'/><text x='668' y='455.0' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#2b6cb0' text-anchor='middle'>r--</text>
+<text x='706' y='455.0' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>a file opened with mmap and read as if it were memory</text>
+<rect x='340' y='464' width='290' height='28' fill='#fbe3d0' stroke='#c05621' stroke-width='1.2'/>
+<text x='352' y='483.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#222'>thread 1 stack</text>
+<rect x='646' y='467.0' width='44' height='22' rx='4' fill='#fbe3d0' stroke='#c05621' stroke-width='1.3'/><text x='668' y='483.0' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#c05621' text-anchor='middle'>rw-</text>
+<text x='706' y='483.0' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>each thread you create gets its own stack here</text>
+<rect x='340' y='492' width='290' height='28' fill='#e6e6e6' stroke='#666666' stroke-width='1.2'/>
+<text x='352' y='511.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#222'>guard page</text>
+<rect x='646' y='495.0' width='44' height='22' rx='4' fill='#e6e6e6' stroke='#666666' stroke-width='1.3'/><text x='668' y='511.0' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#666666' text-anchor='middle'>---</text>
+<text x='706' y='511.0' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>no access: a thread that overflows its stack crashes here</text>
+<rect x='340' y='520' width='290' height='28' fill='#fbe3d0' stroke='#c05621' stroke-width='1.2'/>
+<text x='352' y='539.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#222'>anonymous mapping  ↓</text>
+<rect x='646' y='523.0' width='44' height='22' rx='4' fill='#fbe3d0' stroke='#c05621' stroke-width='1.3'/><text x='668' y='539.0' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#c05621' text-anchor='middle'>rw-</text>
+<text x='706' y='539.0' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>large malloc (about 128 KB and up) and runtime memory</text>
+<rect x='340' y='548' width='290' height='30' fill='#fff' stroke='#bbb' stroke-dasharray='4 3'/>
+<text x='485.0' y='568.0' font-family='Helvetica, Arial, sans-serif' font-size='13' text-anchor='middle' fill='#999'>unmapped</text>
+<text x='706' y='568.0' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#999'>the mmap area grows down, the heap grows up</text>
+<rect x='340' y='578' width='290' height='28' fill='#fbe3d0' stroke='#c05621' stroke-width='1.2'/>
+<text x='352' y='597.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#222'>heap  ↑</text>
+<rect x='646' y='581.0' width='44' height='22' rx='4' fill='#fbe3d0' stroke='#c05621' stroke-width='1.3'/><text x='668' y='597.0' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#c05621' text-anchor='middle'>rw-</text>
+<text x='706' y='597.0' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>small malloc and new</text>
+<rect x='340' y='606' width='290' height='28' fill='#fbe3d0' stroke='#c05621' stroke-width='1.2'/>
+<text x='352' y='625.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#222'>program   .bss</text>
+<rect x='646' y='609.0' width='44' height='22' rx='4' fill='#fbe3d0' stroke='#c05621' stroke-width='1.3'/><text x='668' y='625.0' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#c05621' text-anchor='middle'>rw-</text>
+<text x='706' y='625.0' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>globals that start at zero</text>
+<text x='330' y='624.0' font-family='Menlo, Consolas, monospace' font-size='12' text-anchor='end' fill='#555'>0x55… or 0x56…</text>
+<rect x='340' y='634' width='290' height='28' fill='#fbe3d0' stroke='#c05621' stroke-width='1.2'/>
+<text x='352' y='653.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#222'>program   .data</text>
+<rect x='646' y='637.0' width='44' height='22' rx='4' fill='#fbe3d0' stroke='#c05621' stroke-width='1.3'/><text x='668' y='653.0' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#c05621' text-anchor='middle'>rw-</text>
+<text x='706' y='653.0' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>globals with an initial value</text>
+<rect x='340' y='662' width='290' height='28' fill='#dbe9f7' stroke='#2b6cb0' stroke-width='1.2'/>
+<text x='352' y='681.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#222'>program   .got, .data.rel.ro</text>
+<rect x='646' y='665.0' width='44' height='22' rx='4' fill='#dbe9f7' stroke='#2b6cb0' stroke-width='1.3'/><text x='668' y='681.0' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#2b6cb0' text-anchor='middle'>r--</text>
+<text x='706' y='681.0' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>filled in at load time, then made read-only (RELRO)</text>
+<rect x='340' y='690' width='290' height='28' fill='#dbe9f7' stroke='#2b6cb0' stroke-width='1.2'/>
+<text x='352' y='709.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#222'>program   .rodata</text>
+<rect x='646' y='693.0' width='44' height='22' rx='4' fill='#dbe9f7' stroke='#2b6cb0' stroke-width='1.3'/><text x='668' y='709.0' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#2b6cb0' text-anchor='middle'>r--</text>
+<text x='706' y='709.0' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>string literals and other constants</text>
+<rect x='340' y='718' width='290' height='28' fill='#d4f0de' stroke='#2f855a' stroke-width='1.2'/>
+<text x='352' y='737.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#222'>program   .text</text>
+<rect x='646' y='721.0' width='44' height='22' rx='4' fill='#d4f0de' stroke='#2f855a' stroke-width='1.3'/><text x='668' y='737.0' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#2f855a' text-anchor='middle'>r-x</text>
+<text x='706' y='737.0' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>the program's instructions</text>
+<rect x='340' y='746' width='290' height='28' fill='#dbe9f7' stroke='#2b6cb0' stroke-width='1.2'/>
+<text x='352' y='765.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#222'>program   ELF header</text>
+<rect x='646' y='749.0' width='44' height='22' rx='4' fill='#dbe9f7' stroke='#2b6cb0' stroke-width='1.3'/><text x='668' y='765.0' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#2b6cb0' text-anchor='middle'>r--</text>
+<text x='706' y='765.0' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>tells the loader where everything else goes</text>
+<rect x='340' y='774' width='290' height='30' fill='#fff' stroke='#bbb' stroke-dasharray='4 3'/>
+<text x='485.0' y='794.0' font-family='Helvetica, Arial, sans-serif' font-size='13' text-anchor='middle' fill='#999'>unmapped</text>
+<rect x='340' y='804' width='290' height='28' fill='#e6e6e6' stroke='#666666' stroke-width='1.2'/>
+<text x='352' y='823.0' font-family='Menlo, Consolas, monospace' font-size='13' fill='#222'>first 64 KB</text>
+<rect x='646' y='807.0' width='44' height='22' rx='4' fill='#e6e6e6' stroke='#666666' stroke-width='1.3'/><text x='668' y='823.0' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#666666' text-anchor='middle'>---</text>
+<text x='706' y='823.0' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>never mapped, so dereferencing a null pointer crashes</text>
+<text x='330' y='808' font-family='Menlo, Consolas, monospace' font-size='12' text-anchor='end' fill='#555'>0x10000</text>
+<text x='330' y='836' font-family='Menlo, Consolas, monospace' font-size='12' text-anchor='end' fill='#555'>0x0</text>
+<path d='M 213 298 L 205 298 L 205 546 L 213 546' fill='none' stroke='#888' stroke-width='1.3'/><text x='197' y='422.0' font-family='Helvetica, Arial, sans-serif' font-size='13' font-weight='bold' text-anchor='end' fill='#444'>mmap area</text><text x='197' y='438.0' font-family='Helvetica, Arial, sans-serif' font-size='12' text-anchor='end' fill='#666'>libraries, files, threads</text>
+<path d='M 213 608 L 205 608 L 205 772 L 213 772' fill='none' stroke='#888' stroke-width='1.3'/><text x='197' y='690.0' font-family='Helvetica, Arial, sans-serif' font-size='13' font-weight='bold' text-anchor='end' fill='#444'>the program</text><text x='197' y='706.0' font-family='Helvetica, Arial, sans-serif' font-size='12' text-anchor='end' fill='#666'>its ELF file</text>
+<text x='20' y='872' font-family='Helvetica, Arial, sans-serif' font-size='14' font-weight='bold' fill='#222'>Permissions</text>
+<rect x='20' y='891' width='44' height='22' rx='4' fill='#d4f0de' stroke='#2f855a' stroke-width='1.3'/><text x='42' y='907' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#2f855a' text-anchor='middle'>r-x</text>
+<text x='76' y='907' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>read and execute: code</text>
+<rect x='540' y='891' width='44' height='22' rx='4' fill='#dbe9f7' stroke='#2b6cb0' stroke-width='1.3'/><text x='562' y='907' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#2b6cb0' text-anchor='middle'>r--</text>
+<text x='596' y='907' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>read only: constants, tables fixed after loading</text>
+<rect x='20' y='921' width='44' height='22' rx='4' fill='#fbe3d0' stroke='#c05621' stroke-width='1.3'/><text x='42' y='937' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#c05621' text-anchor='middle'>rw-</text>
+<text x='76' y='937' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>read and write: data, stacks, heap</text>
+<rect x='540' y='921' width='44' height='22' rx='4' fill='#e6e6e6' stroke='#666666' stroke-width='1.3'/><text x='562' y='937' font-family='Menlo, Consolas, monospace' font-size='13' font-weight='bold' fill='#666666' text-anchor='middle'>---</text>
+<text x='596' y='937' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>no access: a fault if touched</text>
+<text x='20' y='972' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>No region is both writable and executable (W^X): data can't be run as code.</text>
+<text x='20' y='992' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>ASLR places the stack, the mmap area, the heap and the program at random addresses on every run;</text>
+<text x='20' y='1012' font-family='Helvetica, Arial, sans-serif' font-size='13' fill='#333'>the addresses on the left are typical values. Code and constants of a shared library are shared by every process using it.</text>
+</svg>

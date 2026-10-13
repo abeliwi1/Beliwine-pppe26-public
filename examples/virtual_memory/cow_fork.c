@@ -10,7 +10,8 @@
  * which separates pages by whether they are shared with another process and
  * whether they have been written:
  *
- *   Shared_Clean    still the parent's frames, untouched since fork
+ *   Shared_Dirty    still the parent's frames: written before the fork,
+ *                   shared since, not yet copied
  *   Private_Dirty   copied, and now this process's own
  *
  * The child reads the whole region first (which copies nothing) and then

@@ -455,9 +455,9 @@ a:focus-visible{outline:2px solid var(--virt);outline-offset:3px;border-radius:2
       <p>
         Nine bits per level means 512 entries of 8 bytes — one 4 KB page per table. Those pages are
         real. Touching 1 GB of anonymous memory on this machine grows the process's page tables from
-        <code>44 KB</code> to <code>2,100 KB</code>: exactly 8 bytes of table per 4 KB page mapped,
-        an 0.2% tax that appears only as you touch. A 64 GB reservation that is never touched costs
-        44 KB, because the tree is built lazily too.
+        <code>48 KB</code> to <code>2,104 KB</code>: exactly 8 bytes of table per 4 KB page mapped,
+        an 0.2% tax that appears only as you touch. A 64 GB reservation that is never touched adds
+        almost nothing, because the tree is built lazily too.
       </p>
     </div>
   </section>
@@ -481,7 +481,7 @@ a:focus-visible{outline:2px solid var(--virt);outline-offset:3px;border-radius:2
           <text x="60" y="24" class="cap sv-virt">virtual size, flat at 64 GB throughout</text>
           <rect x="60" y="34" width="920" height="18" rx="2" class="fill-virt"/>
           <rect x="60" y="34" width="920" height="18" rx="2" class="st-virt" stroke-width="1.25"/>
-          <text x="520" y="47" text-anchor="middle" class="mono-sm sv-virt">65,538 MB reserved &mdash; 4,300&times; the RAM in this machine</text>
+          <text x="520" y="47" text-anchor="middle" class="mono-sm sv-virt">65,538 MB reserved &mdash; about 4&times; the RAM in this machine</text>
 
           <text x="60" y="82" class="cap sv-phys">resident memory, as pages are touched</text>
 
@@ -577,7 +577,7 @@ a:focus-visible{outline:2px solid var(--virt);outline-offset:3px;border-radius:2
     <figure>
       <div class="canvas">
         <svg viewBox="0 0 1040 320" role="img"
-             aria-label="Cost per 4 kilobyte page on a logarithmic scale. An already-present page costs about 10 to 12 nanoseconds. A first touch on 2 megabyte pages costs 277 nanoseconds per 4 kilobytes, on 4 kilobyte pages 853 nanoseconds. A cold file read sequentially costs 1441 nanoseconds, randomly 2485. A single major fault that actually waits for the SSD costs 55,200 nanoseconds.">
+             aria-label="Cost per 4 kilobyte page on a logarithmic scale. An already-present page costs about 9 to 12 nanoseconds. A first touch on 2 megabyte pages costs 293 nanoseconds per 4 kilobytes, on 4 kilobyte pages 733 nanoseconds. A cold file read sequentially costs 1152 nanoseconds, randomly 2308. A single major fault that actually waits for the SSD costs 53,800 nanoseconds.">
           <text x="60" y="22" class="cap sv-faint">nanoseconds per 4 KB of memory, log scale</text>
 
           <line x1="120" y1="272" x2="980" y2="272" class="st-rule" stroke-width="1.25"/>
@@ -599,32 +599,32 @@ a:focus-visible{outline:2px solid var(--virt);outline-offset:3px;border-radius:2
 
           <!-- rows -->
           <text x="112" y="52" text-anchor="end" class="lbl sv-ink w600">already present</text>
-          <rect x="120" y="40" width="164" height="17" class="sv-phys"/>
-          <text x="292" y="53" class="mono sv-dim">12 ns &middot; no fault</text>
+          <rect x="120" y="40" width="167" height="17" class="sv-phys"/>
+          <text x="295" y="53" class="mono sv-dim">11 ns &middot; no fault</text>
 
           <text x="112" y="82" text-anchor="end" class="lbl sv-ink w600">first touch, 2 MB page</text>
-          <rect x="120" y="70" width="391" height="17" class="sv-virt"/>
-          <text x="519" y="83" class="mono sv-dim">277 ns &middot; 128 faults for 256 MB</text>
+          <rect x="120" y="70" width="395" height="17" class="sv-virt"/>
+          <text x="523" y="83" class="mono sv-dim">293 ns &middot; 128 faults for 256 MB</text>
 
           <text x="112" y="112" text-anchor="end" class="lbl sv-ink w600">first touch, 4 KB page</text>
-          <rect x="120" y="100" width="470" height="17" class="sv-virt"/>
-          <text x="598" y="113" class="mono sv-dim">853 ns &middot; 65,539 faults</text>
+          <rect x="120" y="100" width="458" height="17" class="sv-virt"/>
+          <text x="586" y="113" class="mono sv-dim">733 ns &middot; 65,539 faults</text>
 
           <text x="112" y="142" text-anchor="end" class="lbl sv-ink w600">MAP_POPULATE</text>
-          <rect x="120" y="130" width="448" height="17" class="sv-virt" opacity="0.55"/>
-          <text x="576" y="143" class="mono sv-dim">627 ns &middot; paid inside mmap, not saved</text>
+          <rect x="120" y="130" width="435" height="17" class="sv-virt" opacity="0.55"/>
+          <text x="563" y="143" class="mono sv-dim">522 ns &middot; paid inside mmap, not saved</text>
 
           <text x="112" y="172" text-anchor="end" class="lbl sv-ink w600">cold file, sequential</text>
-          <rect x="120" y="160" width="505" height="17" class="sv-cost" opacity="0.6"/>
-          <text x="633" y="173" class="mono sv-dim">1,441 ns &middot; readahead absorbs it</text>
+          <rect x="120" y="160" width="490" height="17" class="sv-cost" opacity="0.6"/>
+          <text x="618" y="173" class="mono sv-dim">1,152 ns &middot; readahead absorbs it</text>
 
           <text x="112" y="202" text-anchor="end" class="lbl sv-ink w600">cold file, random</text>
-          <rect x="120" y="190" width="542" height="17" class="sv-cost" opacity="0.8"/>
-          <text x="670" y="203" class="mono sv-dim">2,485 ns average</text>
+          <rect x="120" y="190" width="538" height="17" class="sv-cost" opacity="0.8"/>
+          <text x="666" y="203" class="mono sv-dim">2,308 ns average</text>
 
           <text x="112" y="232" text-anchor="end" class="lbl sv-cost w600">one major fault</text>
-          <rect x="120" y="220" width="638" height="17" class="sv-cost"/>
-          <text x="766" y="233" class="mono sv-cost w600">55,200 ns &mdash; the SSD</text>
+          <rect x="120" y="220" width="757" height="17" class="sv-cost"/>
+          <text x="885" y="233" class="mono sv-cost w600">53.8 &micro;s</text>
 
           <text x="120" y="308" class="mono-sm sv-faint">
             256 MB per case, fault counts from getrusage. The major-fault figure divides the random
@@ -633,11 +633,9 @@ a:focus-visible{outline:2px solid var(--virt);outline-offset:3px;border-radius:2
         </svg>
       </div>
       <figcaption>
-        <b>Four orders of magnitude between a page you have and a page you must fetch.</b> The
-        55.2 µs major fault is not an OS number, it is the NVMe device's random-read latency showing
-        through — measured independently at 45.8 µs
-        <a href="../memory_hierarchy/cache_map.html">next door</a>. Demand paging is only cheap while
-        the answer is already in memory.
+        <b>Nearly four orders of magnitude between a page you have and a page you must fetch.</b>
+        The 53.8 µs major fault is not an OS number, it is the NVMe device's random-read latency
+        showing through. Demand paging is only cheap while the answer is already in memory.
       </figcaption>
     </figure>
 
@@ -646,11 +644,11 @@ a:focus-visible{outline:2px solid var(--virt);outline-offset:3px;border-radius:2
         <h3>Huge pages make faults rarer, not cheaper</h3>
         <p>256 MB costs 65,539 faults with 4 KB pages and <strong>128</strong> with 2 MB pages —
         exactly one per huge page. Each is more expensive individually (the kernel zeroes 2 MB, not
-        4 KB), but per byte it wins: 853 ns → 277 ns.</p>
+        4 KB), but per byte it wins: 733 ns → 293 ns.</p>
       </div></li>
       <li><span class="n">2</span><div class="body">
         <h3>MAP_POPULATE moves the cost, it does not remove it</h3>
-        <p>The faults are taken inside the <code>mmap</code> call — 627 ns per page there, and then
+        <p>The faults are taken inside the <code>mmap</code> call — 522 ns per page there, and then
         the touch loop runs at warm speed. Useful when you would rather pay at startup than in the
         middle of a request, useless as an optimization.</p>
       </div></li>
@@ -694,7 +692,7 @@ a:focus-visible{outline:2px solid var(--virt);outline-offset:3px;border-radius:2
           <text x="94" y="133" text-anchor="middle" class="mono-sm sv-phys">private, dirty</text>
 
           <!-- state 2 -->
-          <text x="380" y="24" class="cap sv-faint">after fork &mdash; 2.3 ms</text>
+          <text x="380" y="24" class="cap sv-faint">after fork &mdash; 2.7 ms</text>
           <rect x="330" y="34" width="120" height="34" rx="3" class="fill-virt"/>
           <rect x="330" y="34" width="120" height="34" rx="3" class="st-virt" stroke-width="1.25"/>
           <text x="390" y="56" text-anchor="middle" class="lbl sv-ink w600">parent</text>
@@ -733,13 +731,13 @@ a:focus-visible{outline:2px solid var(--virt);outline-offset:3px;border-radius:2
           <line x1="30" y1="190" x2="1010" y2="190" class="st-grid" stroke-width="1"/>
 
           <text x="30" y="214" class="lbl sv-ink w600">The child read all 256 MB first: 0 faults, nothing copied.</text>
-          <text x="30" y="234" class="lbl sv-dim">Then it wrote one byte per page: 65,536 faults at 1,308 ns each, and every page became its own.</text>
+          <text x="30" y="234" class="lbl sv-dim">Then it wrote one byte per page: 65,536 faults at 1,264 ns each, and every page became its own.</text>
           <text x="30" y="262" class="mono-sm sv-faint">Measured from /proc/self/smaps_rollup: Shared_Dirty 256.1 MB &rarr; 0.1 MB, Private_Dirty 0.0 MB &rarr; 256.0 MB.</text>
           <text x="30" y="278" class="mono-sm sv-faint">The parent's own numbers never moved.</text>
         </svg>
       </div>
       <figcaption>
-        <b>A 256 MB copy that costs 2.3 ms and no memory — until it does.</b> This is why
+        <b>A 256 MB copy that costs 2.7 ms and no memory — until it does.</b> This is why
         <code>fork</code>+<code>exec</code> is cheap (the child discards the address space before
         writing much of it) and why a forking server's memory use grows as its children touch pages
         rather than when they start.
@@ -789,21 +787,22 @@ shared + file-backed  &rarr;  both processes get the same frame
         <div class="promise"><span class="cap sv-virt">the promise</span>
           <p>Each process has memory to itself.</p></div>
         <div><span class="cap sv-phys">the mechanism, and its price</span>
-          <p>Separate page tables. Free at runtime; costs a TLB flush at every context switch,
-             and 8 bytes of table per mapped page.</p></div>
+          <p>Separate page tables. Free at runtime; a context switch between processes must switch
+             tables, and cached translations may be lost with it. Threads of one process share a table
+             and avoid this. Plus 8 bytes of table per mapped page.</p></div>
       </div>
       <div class="pair">
         <div class="promise"><span class="cap sv-virt">the promise</span>
           <p>You may allocate more than exists.</p></div>
         <div><span class="cap sv-phys">the mechanism, and its price</span>
           <p>Reservations with no frames behind them. Free until touched; the bill arrives as
-             853 ns per page, or as the OOM killer if the promise cannot be met.</p></div>
+             733 ns per page, or as the OOM killer if the promise cannot be met.</p></div>
       </div>
       <div class="pair">
         <div class="promise"><span class="cap sv-virt">the promise</span>
           <p><code>fork</code> duplicates your memory.</p></div>
         <div><span class="cap sv-phys">the mechanism, and its price</span>
-          <p>Copy-on-write sharing. 2.3 ms for 256 MB; then 1,308 ns for each page the child
+          <p>Copy-on-write sharing. 2.7 ms for 256 MB; then 1,264 ns for each page the child
              actually writes.</p></div>
       </div>
       <div class="pair">
@@ -817,8 +816,8 @@ shared + file-backed  &rarr;  both processes get the same frame
         <div class="promise"><span class="cap sv-virt">the promise</span>
           <p>Memory can outlive RAM.</p></div>
         <div><span class="cap sv-phys">the mechanism, and its price</span>
-          <p>Pages backed by a file or by swap. 55.2 µs per major fault on this NVMe — roughly
-             70,000 instructions of waiting.</p></div>
+          <p>Pages backed by a file or by swap. 53.8 µs per major fault on this NVMe — about
+             275,000 clock cycles of waiting at 5.13 GHz.</p></div>
       </div>
       <div class="pair">
         <div class="promise"><span class="cap sv-virt">the promise</span>

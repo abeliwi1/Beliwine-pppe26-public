@@ -26,6 +26,7 @@ Each number session does not necessarily corerspond to a single day of class. We
 | [05.memoryhierarchy.md](course_materials/05.memoryhierarchy.md) | caches, lines, sets and the cost of a miss |
 | [06.loops.md](course_materials/06.loops.md) | the five loop transformations, and naming the bottleneck before picking one |
 | [07.vectorization.md](course_materials/07.vectorization.md) | vector registers, lanes, and the three ways to program a SIMD unit |
+| [09.threads.md](course_materials/09.threads.md) | processes and threads: the OS abstractions behind parallelism, and what they share |
 
 ### Examples
 
