@@ -6,24 +6,36 @@
 #include <omp.h>
 
 /*
- *  prefixsum.c
+ *  omp_prefix_sum.c
  *
  *  Prefix (inclusive scan): output[i] = input[0] + input[1] + ... + input[i]
  *
  *  The naive parallel attempt is wrong because each element depends on all
- *  previous elements. The correct parallel approach uses two passes:
+ *  previous elements. Two correct parallel versions, both three passes over
+ *  one contiguous block per thread:
  *
- *    Pass 1 (parallel): each thread prefix-sums its own chunk and saves the total.
- *    Pass 2 (serial):   prefix-sum the per-thread totals to get chunk offsets.
- *    Pass 3 (parallel): each thread adds its offset to every element in its chunk.
+ *  scan, then add (prefix_omp):
+ *    Pass 1 (parallel): each thread prefix-sums its own block into out and
+ *                       saves the block's total.
+ *    Pass 2 (serial):   prefix-sum the per-thread totals to get block offsets.
+ *    Pass 3 (parallel): each thread adds its offset to every element of its
+ *                       block of out.
+ *    Memory traffic: read in, write out, then read and write out again.
+ *
+ *  reduce, then scan (prefix_omp_reduce_scan):
+ *    Pass 1 (parallel): each thread only sums its own block of in.
+ *    Pass 2 (serial):   offsets from the block sums, as above.
+ *    Pass 3 (parallel): each thread scans its block of in into out, starting
+ *                       from its offset.
+ *    Memory traffic: read in, then read in and write out.  out is written once.
  *
  *  Compile (clang + libomp on macOS):
  *    clang -Xpreprocessor -fopenmp -O3 \
  *      -I/opt/homebrew/opt/libomp/include \
  *      -L/opt/homebrew/opt/libomp/lib -lomp \
- *      prefixsum.c -o prefixsum
+ *      omp_prefix_sum.c -o omp_prefix_sum
  *
- *  Usage: ./prefixsum [N] [threads]
+ *  Usage: ./omp_prefix_sum [N] [threads]   (defaults: N=100000000, threads=10)
  */
 
 int N = 100000000;
@@ -107,6 +119,56 @@ void prefix_omp(double *in, double *out)
     }
 }
 
+/*
+ * Reduce, then scan: the same three passes, but pass 1 writes nothing.  Each
+ * thread sums its block, pass 2 turns the sums into offsets, and pass 3 scans
+ * each block once, starting from its offset, writing out exactly once.
+ */
+void prefix_omp_reduce_scan(double *in, double *out)
+{
+    double block_sum[NUM_THREADS], offset[NUM_THREADS];
+
+    /* Pass 1 -- sum each block (parallel) */
+    #pragma omp parallel num_threads(NUM_THREADS)
+    {
+        int tid   = omp_get_thread_num();
+        int nthreads = omp_get_num_threads();
+        int chunk = (N + nthreads - 1) / nthreads;
+        int start = tid * chunk;
+        int end   = start + chunk < N ? start + chunk : N;
+        /* A sum, unlike a scan, can be added up in any order, so it can use
+           vector registers and several partial sums at once instead of one
+           chain of dependent adds. */
+        double s = 0.0;
+        #pragma omp simd reduction(+:s)
+        for (int i = start; i < end; i++)
+            s += in[i];
+        block_sum[tid] = s;
+    }
+
+    /* Pass 2 -- each block's offset is the sum of the blocks before it (serial) */
+    double running = 0.0;
+    for (int t = 0; t < NUM_THREADS; t++) {
+        offset[t] = running;
+        running += block_sum[t];
+    }
+
+    /* Pass 3 -- scan each block, starting from its offset (parallel) */
+    #pragma omp parallel num_threads(NUM_THREADS)
+    {
+        int tid   = omp_get_thread_num();
+        int nthreads = omp_get_num_threads();
+        int chunk = (N + nthreads - 1) / nthreads;
+        int start = tid * chunk;
+        int end   = start + chunk < N ? start + chunk : N;
+        double s = offset[tid];
+        for (int i = start; i < end; i++) {
+            s += in[i];
+            out[i] = s;
+        }
+    }
+}
+
 /* Floating-point addition is not associative, so parallel and serial results
    will differ slightly in order. Check relative error instead of exact equality. */
 int verify(double *a, double *b)
@@ -146,12 +208,15 @@ int main(int argc, char *argv[])
     // warm up
     prefix_serial(in, out_s);
     prefix_omp(in, out_omp);
-    printf("results match: %s\n\n", verify(out_s, out_omp) ? "yes" : "NO");
+    printf("results match (scan, then add):   %s\n", verify(out_s, out_omp) ? "yes" : "NO");
+    prefix_omp_reduce_scan(in, out_omp);
+    printf("results match (reduce, then scan): %s\n\n", verify(out_s, out_omp) ? "yes" : "NO");
 
     printf("%-22s  %s\n", "version", "time       GB/s");
     printf("%-22s  %s\n", "-------", "----       ----");
     for (int t = 0; t < TRIALS; t++) TIME("serial",       prefix_serial(in, out_s));
-    for (int t = 0; t < TRIALS; t++) TIME("omp two-pass", prefix_omp(in, out_omp));
+    for (int t = 0; t < TRIALS; t++) TIME("omp scan, then add", prefix_omp(in, out_omp));
+    for (int t = 0; t < TRIALS; t++) TIME("omp reduce, then scan", prefix_omp_reduce_scan(in, out_omp));
 
     free(in); free(out_s); free(out_omp);
     return 0;

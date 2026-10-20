@@ -15,15 +15,16 @@
  *                         (or the enclosing region) has completed.
  *
  *  Unlike cilk_spawn, `task` only creates work -- it does not create a
- *  thread team. Tasks must be generated from inside a `parallel` region,
- *  and to avoid every thread in the team redundantly running the whole
+ *  thread team. To run in parallel, tasks must be generated from inside a
+ *  `parallel` region (outside one they are legal but run on the only
+ *  thread), and to avoid every thread in the team redundantly running the whole
  *  recursion, exactly one thread should generate the task tree: wrap the
  *  top-level call in `#pragma omp single`.
  *
  *  A variable written inside a task and read after `taskwait` must be
- *  marked `shared` -- the OpenMP default for task-local variables is
- *  firstprivate (a private copy), so without the clause the write would
- *  be lost.
+ *  marked `shared` -- a variable that is private where the task is created
+ *  (like the local `a` here) defaults to firstprivate inside the task (a
+ *  private copy), so without the clause the write would be lost.
  *
  *  Fibonacci is the textbook example: not efficient (exponential work), but
  *  the two recursive calls are independent, so it shows the primitives clearly.

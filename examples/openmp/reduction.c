@@ -11,11 +11,12 @@
  *  the identity element for `+` (0.0); at the end of the loop the runtime
  *  combines all the private copies into the original variable.
  *
- *  This is OpenMP's counterpart to a Cilk reducer/hyperobject, but it's
- *  built into the pragma -- no identity/reduce callback functions to
- *  write. The tradeoff is less flexibility: OpenMP predefines a fixed set
- *  of reduction operators (+, -, *, &, |, ^, &&, ||, min, max, ...), while
- *  a Cilk reducer can combine any user-defined type with any function.
+ *  This is OpenMP's counterpart to a Cilk reducer/hyperobject, but for the
+ *  common operators it's built into the pragma -- no identity/reduce
+ *  callback functions to write. OpenMP predefines (+, *, &, |, ^, &&, ||,
+ *  min, max); for any other type or combining function,
+ *  `#pragma omp declare reduction` supplies the combiner and initializer,
+ *  much like the identity/reduce pair of a Cilk reducer.
  *
  *  Compile (clang + libomp on macOS):
  *    clang -Xpreprocessor -fopenmp -O3 \

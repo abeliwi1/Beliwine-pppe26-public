@@ -5,6 +5,7 @@
 #include <stdatomic.h>
 #include <sys/time.h>
 #include <cilk/cilk.h>
+#include <cilk/cilk_api.h>
 
 /*
  *  cilk_prefix_sum.c
@@ -50,8 +51,14 @@ int timeval_subtract(struct timeval *result, struct timeval *y, struct timeval *
     return x->tv_sec < y->tv_sec;
 }
 
-/* Three separate cilk_for loops — different workers may handle the same block
-   in passes 1 and 3, causing cold cache reads in pass 3. */
+/* Two cilk_for loops (passes 1 and 3) around the serial pass 2.
+
+   Pass 1 carries the running sum in a local variable, s, rather than writing
+   out[i] = out[i-1] + in[i].  The serial loop below can use that form because
+   the compiler keeps out[i-1] in a register.  Inside a cilk_for body it
+   doesn't: it reloads out[i-1] from memory every iteration, so each addition
+   waits for the previous store to come back, and one worker ran 4.3x slower
+   than serial (221 ms vs. 51 ms). */
 void prefix_cilk(double *in, double *out)
 {
     int chunk = (N + NBLOCKS - 1) / NBLOCKS;
@@ -61,10 +68,12 @@ void prefix_cilk(double *in, double *out)
         int lo = b * chunk;
         int hi = lo + chunk < N ? lo + chunk : N;
         if (lo >= N) { totals[b] = 0.0; continue; }
-        out[lo] = in[lo];
-        for (int i = lo + 1; i < hi; i++)
-            out[i] = out[i-1] + in[i];
-        totals[b] = out[hi-1];
+        double s = 0.0;
+        for (int i = lo; i < hi; i++) {
+            s += in[i];
+            out[i] = s;
+        }
+        totals[b] = s;
     }
 
     for (int b = 1; b < NBLOCKS; b++)
@@ -85,31 +94,47 @@ void prefix_cilk(double *in, double *out)
  * The same worker that runs pass 1 for block b runs pass 3 for block b,
  * so its cache lines are still warm.
  *
- * The last worker to finish pass 1 runs the serial pass 2 (NBLOCKS additions
+ * The last worker to finish pass 1 runs the serial pass 2 (nblocks additions
  * — nanoseconds), then signals all others via an atomic flag.
- * Spinning is safe because pass 2 is tiny and all NBLOCKS workers run
- * concurrently on separate OS threads.
+ *
+ * Spinning is only safe if every block is running at the same time on its
+ * own worker; otherwise a spinner waits on a block that can never start and
+ * the program hangs. Cilk does not promise that, so two guards enforce it:
+ *   - nblocks is capped at the worker count, so there is a worker for each
+ *     block (a spinner never steals, but at least one worker is always free
+ *     to steal the next unstarted block);
+ *   - grainsize(1) makes every block its own leaf, so no worker runs two
+ *     blocks back to back and spins in the first.
  */
 void prefix_cilk_barrier(double *in, double *out)
 {
-    int chunk = (N + NBLOCKS - 1) / NBLOCKS;
-    double totals[NBLOCKS];
+    int nworkers = __cilkrts_get_nworkers();
+    int nblocks  = NBLOCKS < nworkers ? NBLOCKS : nworkers;
+    int chunk = (N + nblocks - 1) / nblocks;
+    double totals[nblocks];
     _Atomic int n_ready   = 0;
     _Atomic int pass2_done = 0;
 
-    cilk_for (int b = 0; b < NBLOCKS; b++) {
+    #pragma cilk grainsize(1)
+    cilk_for (int b = 0; b < nblocks; b++) {
         int lo = b * chunk;
         int hi = lo + chunk < N ? lo + chunk : N;
 
-        /* Pass 1: local prefix sum */
-        out[lo] = in[lo];
-        for (int i = lo + 1; i < hi; i++)
-            out[i] = out[i-1] + in[i];
-        totals[b] = out[hi-1];
+        /* Pass 1: local prefix sum (an empty block still joins the barrier) */
+        if (lo < N) {
+            double s = 0.0;               /* running sum in a register; see prefix_cilk */
+            for (int i = lo; i < hi; i++) {
+                s += in[i];
+                out[i] = s;
+            }
+            totals[b] = s;
+        } else {
+            totals[b] = 0.0;
+        }
 
         /* Software barrier */
-        if (atomic_fetch_add_explicit(&n_ready, 1, memory_order_acq_rel) == NBLOCKS - 1) {
-            for (int b2 = 1; b2 < NBLOCKS; b2++)
+        if (atomic_fetch_add_explicit(&n_ready, 1, memory_order_acq_rel) == nblocks - 1) {
+            for (int b2 = 1; b2 < nblocks; b2++)
                 totals[b2] += totals[b2-1];
             atomic_store_explicit(&pass2_done, 1, memory_order_release);
         } else {
@@ -118,7 +143,7 @@ void prefix_cilk_barrier(double *in, double *out)
         }
 
         /* Pass 3: add offset */
-        if (b > 0) {
+        if (b > 0 && lo < N) {
             double offset = totals[b-1];
             for (int i = lo; i < hi; i++)
                 out[i] += offset;

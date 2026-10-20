@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="470" viewBox="0 0 1000 470" role="img" aria-label="A tree of calls. fib(4) spawns fib(3) and continues with fib(2); fib(3) spawns fib(2) and continues with fib(1); each fib(2) spawns fib(1) and continues with fib(0). Spawn edges are blue and continuation edges are orange. Calls with no path between them may run at the same time.">
+  <defs><marker id="m2b6cb0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2b6cb0"/></marker><marker id="mc05621" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c05621"/></marker></defs>
+  <rect width="1000" height="470" fill="#fff"/>
+  <g font-family="Helvetica, Arial, sans-serif" fill="#222">
+    <text x="500" y="32" font-size="19" font-weight="bold" text-anchor="middle">The DAG of fib(4)</text>
+    <line x1="500.0" y1="110.0" x2="300.0" y2="168.0" stroke="#2b6cb0" stroke-width="2.5" marker-end="url(#m2b6cb0)"/>
+    <line x1="500.0" y1="110.0" x2="700.0" y2="168.0" stroke="#c05621" stroke-width="2.5" marker-end="url(#mc05621)"/>
+    <line x1="300.0" y1="210.0" x2="180.0" y2="268.0" stroke="#2b6cb0" stroke-width="2.5" marker-end="url(#m2b6cb0)"/>
+    <line x1="300.0" y1="210.0" x2="420.0" y2="268.0" stroke="#c05621" stroke-width="2.5" marker-end="url(#mc05621)"/>
+    <line x1="700.0" y1="210.0" x2="600.0" y2="268.0" stroke="#2b6cb0" stroke-width="2.5" marker-end="url(#m2b6cb0)"/>
+    <line x1="700.0" y1="210.0" x2="800.0" y2="268.0" stroke="#c05621" stroke-width="2.5" marker-end="url(#mc05621)"/>
+    <line x1="180.0" y1="310.0" x2="100.0" y2="368.0" stroke="#2b6cb0" stroke-width="2.5" marker-end="url(#m2b6cb0)"/>
+    <line x1="180.0" y1="310.0" x2="260.0" y2="368.0" stroke="#c05621" stroke-width="2.5" marker-end="url(#mc05621)"/>
+    <rect x="450.0" y="70.0" width="100.0" height="40.0" rx="8" fill="#f7f7f7" stroke="#555" stroke-width="1.5"/>
+    <text x="500.0" y="95.0" font-size="15" text-anchor="middle" fill="#222" font-weight="bold">fib(4)</text>
+    <rect x="250.0" y="170.0" width="100.0" height="40.0" rx="8" fill="#f7f7f7" stroke="#555" stroke-width="1.5"/>
+    <text x="300.0" y="195.0" font-size="15" text-anchor="middle" fill="#222" font-weight="bold">fib(3)</text>
+    <rect x="650.0" y="170.0" width="100.0" height="40.0" rx="8" fill="#f7f7f7" stroke="#555" stroke-width="1.5"/>
+    <text x="700.0" y="195.0" font-size="15" text-anchor="middle" fill="#222" font-weight="bold">fib(2)</text>
+    <rect x="130.0" y="270.0" width="100.0" height="40.0" rx="8" fill="#f7f7f7" stroke="#555" stroke-width="1.5"/>
+    <text x="180.0" y="295.0" font-size="15" text-anchor="middle" fill="#222" font-weight="bold">fib(2)</text>
+    <rect x="370.0" y="270.0" width="100.0" height="40.0" rx="8" fill="#fff" stroke="#555" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text x="420.0" y="295.0" font-size="15" text-anchor="middle" fill="#222">fib(1)</text>
+    <rect x="550.0" y="270.0" width="100.0" height="40.0" rx="8" fill="#fff" stroke="#555" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text x="600.0" y="295.0" font-size="15" text-anchor="middle" fill="#222">fib(1)</text>
+    <rect x="750.0" y="270.0" width="100.0" height="40.0" rx="8" fill="#fff" stroke="#555" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text x="800.0" y="295.0" font-size="15" text-anchor="middle" fill="#222">fib(0)</text>
+    <rect x="50.0" y="370.0" width="100.0" height="40.0" rx="8" fill="#fff" stroke="#555" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text x="100.0" y="395.0" font-size="15" text-anchor="middle" fill="#222">fib(1)</text>
+    <rect x="210.0" y="370.0" width="100.0" height="40.0" rx="8" fill="#fff" stroke="#555" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text x="260.0" y="395.0" font-size="15" text-anchor="middle" fill="#222">fib(0)</text>
+    <line x1="700.0" y1="380.0" x2="750.0" y2="380.0" stroke="#2b6cb0" stroke-width="2.5" marker-end="url(#m2b6cb0)"/>
+    <text x="760.0" y="385.0" font-size="13" text-anchor="start" fill="#2b6cb0" font-weight="bold">cilk_spawn fib(n-1)</text>
+    <line x1="700.0" y1="412.0" x2="750.0" y2="412.0" stroke="#c05621" stroke-width="2.5" marker-end="url(#mc05621)"/>
+    <text x="760.0" y="417.0" font-size="13" text-anchor="start" fill="#c05621" font-weight="bold">continuation: fib(n-2)</text>
+    <rect x="700.0" y="430.0" width="50.0" height="26.0" rx="6" fill="#fff" stroke="#555" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text x="760.0" y="448.0" font-size="13" text-anchor="start" fill="#555">base case, returns at once</text>
+  </g>
+</svg>

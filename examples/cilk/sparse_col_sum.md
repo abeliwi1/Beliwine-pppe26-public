@@ -40,17 +40,24 @@ To make the imbalance concrete and reproducible, the matrix is constructed with:
 - `NHEAVY` dense rows at the **start** of the matrix (`HEAVY_NNZ` elements each)
 - Remaining rows are sparse (`LIGHT_NNZ` elements each)
 
+The program's built-in defaults are a small 10,000 × 10,000 matrix (100 heavy rows
+of 5,000 nnz, the rest 10 nnz). The results and analysis below use a larger
+matrix, passed on the command line:
+
 ```
+./sparse_col_sum 100000 100000 1000 50000 10
+
 matrix: 100000 x 100000
   heavy: first 1000 rows × 50000 nnz each  →  50M nnz
   light: remaining 99000 rows × 10 nnz each →   1M nnz
 ```
 
-99% of the work is in 1% of the rows, all concentrated at the top.
+In both, the heavy rows are the first 1% of the matrix. They hold 98% of the
+non-zeros in the large matrix and 83% in the default one.
 
 ## Results
 
-Platform: Apple M-series, 10 threads/workers.
+Platform: Apple M-series, 10 threads/workers, the 100K × 100K matrix above.
 
 | version      | time    | speedup |
 |--------------|---------|---------|
@@ -78,9 +85,10 @@ As soon as a thread finishes a row it pulls the next available one. This
 naturally balances the load: threads that finish light rows quickly pick up more
 work, and the heavy rows are spread across multiple threads.
 
-The cost is a centralized work queue protected by a lock. With 100K rows each
+The cost is a centralized work queue: one shared counter that every thread
+bumps with an atomic fetch-and-add to claim its next row. With 100K rows each
 requiring a queue operation, the scheduling overhead is non-trivial — every
-thread must atomically claim the next row before starting work on it.
+claim touches the same cache line, so threads contend on it.
 
 ### Cilk — 4.3× speedup
 
@@ -98,7 +106,7 @@ stealable and restores full load balance.
 
 With grain 1, work-stealing scales better than dynamic scheduling because:
 - **No central contention**: steals happen peer-to-peer between worker deques
-  rather than through a shared lock
+  rather than through one shared counter
 - **Low steal rate**: once the heavy rows are distributed, most workers rarely
   need to steal — the common case (processing a row already in the local deque)
   has near-zero overhead
@@ -121,6 +129,9 @@ sizes are unpredictable and a central queue becomes a bottleneck.
 make
 ./sparse_col_sum [nrows] [ncols] [nheavy] [heavy_nnz] [light_nnz]
 
-# default (100K × 100K, 1000 heavy rows of 50K nnz, rest 10 nnz):
+# built-in default (10K × 10K, 100 heavy rows of 5K nnz, rest 10 nnz):
 ./sparse_col_sum
+
+# the matrix used for the results above (100K × 100K, 1000 heavy rows of 50K nnz):
+./sparse_col_sum 100000 100000 1000 50000 10
 ```

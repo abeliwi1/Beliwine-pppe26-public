@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="470" viewBox="0 0 1000 470" role="img" aria-label="Eight elements x0 to x7. In step 0 every element adds the element one to its left; in step 1, the element two to its left; in step 2, the element four to its left. After three steps each element holds the sum of itself and everything before it.">
+  <defs><marker id="m2b6cb0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2b6cb0"/></marker><marker id="m2f855a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f855a"/></marker><marker id="m555" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#555"/></marker><marker id="mc05621" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c05621"/></marker></defs>
+  <rect width="1000" height="470" fill="#fff"/>
+  <g font-family="Helvetica, Arial, sans-serif" fill="#222">
+    <text x="500" y="32" font-size="19" font-weight="bold" text-anchor="middle">Hillis–Steele scan: log₂ N steps, every element busy in each</text>
+    <text x="116.0" y="93.0" font-size="13" text-anchor="end" fill="#555" font-weight="bold">input</text>
+    <rect x="130.0" y="70.0" width="96.0" height="36.0" rx="4" fill="#f7f7f7" stroke="#555" stroke-width="1.5"/>
+    <text x="178.0" y="93.0" font-size="13" text-anchor="middle" fill="#222">x0</text>
+    <rect x="234.0" y="70.0" width="96.0" height="36.0" rx="4" fill="#f7f7f7" stroke="#555" stroke-width="1.5"/>
+    <text x="282.0" y="93.0" font-size="13" text-anchor="middle" fill="#222">x1</text>
+    <rect x="338.0" y="70.0" width="96.0" height="36.0" rx="4" fill="#f7f7f7" stroke="#555" stroke-width="1.5"/>
+    <text x="386.0" y="93.0" font-size="13" text-anchor="middle" fill="#222">x2</text>
+    <rect x="442.0" y="70.0" width="96.0" height="36.0" rx="4" fill="#f7f7f7" stroke="#555" stroke-width="1.5"/>
+    <text x="490.0" y="93.0" font-size="13" text-anchor="middle" fill="#222">x3</text>
+    <rect x="546.0" y="70.0" width="96.0" height="36.0" rx="4" fill="#f7f7f7" stroke="#555" stroke-width="1.5"/>
+    <text x="594.0" y="93.0" font-size="13" text-anchor="middle" fill="#222">x4</text>
+    <rect x="650.0" y="70.0" width="96.0" height="36.0" rx="4" fill="#f7f7f7" stroke="#555" stroke-width="1.5"/>
+    <text x="698.0" y="93.0" font-size="13" text-anchor="middle" fill="#222">x5</text>
+    <rect x="754.0" y="70.0" width="96.0" height="36.0" rx="4" fill="#f7f7f7" stroke="#555" stroke-width="1.5"/>
+    <text x="802.0" y="93.0" font-size="13" text-anchor="middle" fill="#222">x6</text>
+    <rect x="858.0" y="70.0" width="96.0" height="36.0" rx="4" fill="#f7f7f7" stroke="#555" stroke-width="1.5"/>
+    <text x="906.0" y="93.0" font-size="13" text-anchor="middle" fill="#222">x7</text>
+    <text x="116.0" y="193.0" font-size="13" text-anchor="end" fill="#2b6cb0" font-weight="bold">step 0: +x[i−1]</text>
+    <rect x="130.0" y="170.0" width="96.0" height="36.0" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="178.0" y="193.0" font-size="13" text-anchor="middle" fill="#222">sum 0</text>
+    <rect x="234.0" y="170.0" width="96.0" height="36.0" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="282.0" y="193.0" font-size="13" text-anchor="middle" fill="#222">sum 0–1</text>
+    <rect x="338.0" y="170.0" width="96.0" height="36.0" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="386.0" y="193.0" font-size="13" text-anchor="middle" fill="#222">sum 1–2</text>
+    <rect x="442.0" y="170.0" width="96.0" height="36.0" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="490.0" y="193.0" font-size="13" text-anchor="middle" fill="#222">sum 2–3</text>
+    <rect x="546.0" y="170.0" width="96.0" height="36.0" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="594.0" y="193.0" font-size="13" text-anchor="middle" fill="#222">sum 3–4</text>
+    <rect x="650.0" y="170.0" width="96.0" height="36.0" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="698.0" y="193.0" font-size="13" text-anchor="middle" fill="#222">sum 4–5</text>
+    <rect x="754.0" y="170.0" width="96.0" height="36.0" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="802.0" y="193.0" font-size="13" text-anchor="middle" fill="#222">sum 5–6</text>
+    <rect x="858.0" y="170.0" width="96.0" height="36.0" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="906.0" y="193.0" font-size="13" text-anchor="middle" fill="#222">sum 6–7</text>
+    <text x="116.0" y="293.0" font-size="13" text-anchor="end" fill="#c05621" font-weight="bold">step 1: +x[i−2]</text>
+    <rect x="130.0" y="270.0" width="96.0" height="36.0" rx="4" fill="#fbe3d0" stroke="#c05621" stroke-width="1.5"/>
+    <text x="178.0" y="293.0" font-size="13" text-anchor="middle" fill="#222">sum 0</text>
+    <rect x="234.0" y="270.0" width="96.0" height="36.0" rx="4" fill="#fbe3d0" stroke="#c05621" stroke-width="1.5"/>
+    <text x="282.0" y="293.0" font-size="13" text-anchor="middle" fill="#222">sum 0–1</text>
+    <rect x="338.0" y="270.0" width="96.0" height="36.0" rx="4" fill="#fbe3d0" stroke="#c05621" stroke-width="1.5"/>
+    <text x="386.0" y="293.0" font-size="13" text-anchor="middle" fill="#222">sum 0–2</text>
+    <rect x="442.0" y="270.0" width="96.0" height="36.0" rx="4" fill="#fbe3d0" stroke="#c05621" stroke-width="1.5"/>
+    <text x="490.0" y="293.0" font-size="13" text-anchor="middle" fill="#222">sum 0–3</text>
+    <rect x="546.0" y="270.0" width="96.0" height="36.0" rx="4" fill="#fbe3d0" stroke="#c05621" stroke-width="1.5"/>
+    <text x="594.0" y="293.0" font-size="13" text-anchor="middle" fill="#222">sum 1–4</text>
+    <rect x="650.0" y="270.0" width="96.0" height="36.0" rx="4" fill="#fbe3d0" stroke="#c05621" stroke-width="1.5"/>
+    <text x="698.0" y="293.0" font-size="13" text-anchor="middle" fill="#222">sum 2–5</text>
+    <rect x="754.0" y="270.0" width="96.0" height="36.0" rx="4" fill="#fbe3d0" stroke="#c05621" stroke-width="1.5"/>
+    <text x="802.0" y="293.0" font-size="13" text-anchor="middle" fill="#222">sum 3–6</text>
+    <rect x="858.0" y="270.0" width="96.0" height="36.0" rx="4" fill="#fbe3d0" stroke="#c05621" stroke-width="1.5"/>
+    <text x="906.0" y="293.0" font-size="13" text-anchor="middle" fill="#222">sum 4–7</text>
+    <text x="116.0" y="393.0" font-size="13" text-anchor="end" fill="#2f855a" font-weight="bold">step 2: +x[i−4]</text>
+    <rect x="130.0" y="370.0" width="96.0" height="36.0" rx="4" fill="#e3f1e6" stroke="#2f855a" stroke-width="1.5"/>
+    <text x="178.0" y="393.0" font-size="13" text-anchor="middle" fill="#222">sum 0</text>
+    <rect x="234.0" y="370.0" width="96.0" height="36.0" rx="4" fill="#e3f1e6" stroke="#2f855a" stroke-width="1.5"/>
+    <text x="282.0" y="393.0" font-size="13" text-anchor="middle" fill="#222">sum 0–1</text>
+    <rect x="338.0" y="370.0" width="96.0" height="36.0" rx="4" fill="#e3f1e6" stroke="#2f855a" stroke-width="1.5"/>
+    <text x="386.0" y="393.0" font-size="13" text-anchor="middle" fill="#222">sum 0–2</text>
+    <rect x="442.0" y="370.0" width="96.0" height="36.0" rx="4" fill="#e3f1e6" stroke="#2f855a" stroke-width="1.5"/>
+    <text x="490.0" y="393.0" font-size="13" text-anchor="middle" fill="#222">sum 0–3</text>
+    <rect x="546.0" y="370.0" width="96.0" height="36.0" rx="4" fill="#e3f1e6" stroke="#2f855a" stroke-width="1.5"/>
+    <text x="594.0" y="393.0" font-size="13" text-anchor="middle" fill="#222">sum 0–4</text>
+    <rect x="650.0" y="370.0" width="96.0" height="36.0" rx="4" fill="#e3f1e6" stroke="#2f855a" stroke-width="1.5"/>
+    <text x="698.0" y="393.0" font-size="13" text-anchor="middle" fill="#222">sum 0–5</text>
+    <rect x="754.0" y="370.0" width="96.0" height="36.0" rx="4" fill="#e3f1e6" stroke="#2f855a" stroke-width="1.5"/>
+    <text x="802.0" y="393.0" font-size="13" text-anchor="middle" fill="#222">sum 0–6</text>
+    <rect x="858.0" y="370.0" width="96.0" height="36.0" rx="4" fill="#e3f1e6" stroke="#2f855a" stroke-width="1.5"/>
+    <text x="906.0" y="393.0" font-size="13" text-anchor="middle" fill="#222">sum 0–7</text>
+    <line x1="178.0" y1="108.0" x2="178.0" y2="167.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="282.0" y1="108.0" x2="282.0" y2="167.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="184.0" y1="108.0" x2="276.0" y2="167.0" stroke="#2b6cb0" stroke-width="1.6" marker-end="url(#m2b6cb0)"/>
+    <line x1="386.0" y1="108.0" x2="386.0" y2="167.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="288.0" y1="108.0" x2="380.0" y2="167.0" stroke="#2b6cb0" stroke-width="1.6" marker-end="url(#m2b6cb0)"/>
+    <line x1="490.0" y1="108.0" x2="490.0" y2="167.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="392.0" y1="108.0" x2="484.0" y2="167.0" stroke="#2b6cb0" stroke-width="1.6" marker-end="url(#m2b6cb0)"/>
+    <line x1="594.0" y1="108.0" x2="594.0" y2="167.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="496.0" y1="108.0" x2="588.0" y2="167.0" stroke="#2b6cb0" stroke-width="1.6" marker-end="url(#m2b6cb0)"/>
+    <line x1="698.0" y1="108.0" x2="698.0" y2="167.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="600.0" y1="108.0" x2="692.0" y2="167.0" stroke="#2b6cb0" stroke-width="1.6" marker-end="url(#m2b6cb0)"/>
+    <line x1="802.0" y1="108.0" x2="802.0" y2="167.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="704.0" y1="108.0" x2="796.0" y2="167.0" stroke="#2b6cb0" stroke-width="1.6" marker-end="url(#m2b6cb0)"/>
+    <line x1="906.0" y1="108.0" x2="906.0" y2="167.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="808.0" y1="108.0" x2="900.0" y2="167.0" stroke="#2b6cb0" stroke-width="1.6" marker-end="url(#m2b6cb0)"/>
+    <line x1="178.0" y1="208.0" x2="178.0" y2="267.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="282.0" y1="208.0" x2="282.0" y2="267.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="386.0" y1="208.0" x2="386.0" y2="267.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="184.0" y1="208.0" x2="380.0" y2="267.0" stroke="#c05621" stroke-width="1.6" marker-end="url(#mc05621)"/>
+    <line x1="490.0" y1="208.0" x2="490.0" y2="267.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="288.0" y1="208.0" x2="484.0" y2="267.0" stroke="#c05621" stroke-width="1.6" marker-end="url(#mc05621)"/>
+    <line x1="594.0" y1="208.0" x2="594.0" y2="267.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="392.0" y1="208.0" x2="588.0" y2="267.0" stroke="#c05621" stroke-width="1.6" marker-end="url(#mc05621)"/>
+    <line x1="698.0" y1="208.0" x2="698.0" y2="267.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="496.0" y1="208.0" x2="692.0" y2="267.0" stroke="#c05621" stroke-width="1.6" marker-end="url(#mc05621)"/>
+    <line x1="802.0" y1="208.0" x2="802.0" y2="267.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="600.0" y1="208.0" x2="796.0" y2="267.0" stroke="#c05621" stroke-width="1.6" marker-end="url(#mc05621)"/>
+    <line x1="906.0" y1="208.0" x2="906.0" y2="267.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="704.0" y1="208.0" x2="900.0" y2="267.0" stroke="#c05621" stroke-width="1.6" marker-end="url(#mc05621)"/>
+    <line x1="178.0" y1="308.0" x2="178.0" y2="367.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="282.0" y1="308.0" x2="282.0" y2="367.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="386.0" y1="308.0" x2="386.0" y2="367.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="490.0" y1="308.0" x2="490.0" y2="367.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="594.0" y1="308.0" x2="594.0" y2="367.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="184.0" y1="308.0" x2="588.0" y2="367.0" stroke="#2f855a" stroke-width="1.6" marker-end="url(#m2f855a)"/>
+    <line x1="698.0" y1="308.0" x2="698.0" y2="367.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="288.0" y1="308.0" x2="692.0" y2="367.0" stroke="#2f855a" stroke-width="1.6" marker-end="url(#m2f855a)"/>
+    <line x1="802.0" y1="308.0" x2="802.0" y2="367.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="392.0" y1="308.0" x2="796.0" y2="367.0" stroke="#2f855a" stroke-width="1.6" marker-end="url(#m2f855a)"/>
+    <line x1="906.0" y1="308.0" x2="906.0" y2="367.0" stroke="#555" stroke-width="1.0" marker-end="url(#m555)"/>
+    <line x1="496.0" y1="308.0" x2="900.0" y2="367.0" stroke="#2f855a" stroke-width="1.6" marker-end="url(#m2f855a)"/>
+    <text x="500.0" y="440.0" font-size="14" text-anchor="middle" fill="#222">Span: log₂ N steps.   Work: about N additions in every step, N log₂ N in all.</text>
+  </g>
+</svg>

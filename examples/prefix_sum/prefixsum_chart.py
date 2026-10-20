@@ -1,7 +1,7 @@
 """
 prefixsum_chart.py
 
-Runs ./prefixsum at varying thread counts, then plots:
+Runs ./omp_prefix_sum at varying thread counts, then plots:
   1. Speedup vs threads (measured + Amdahl fit)
   2. Parallel efficiency vs threads
   3. Amdahl serial fraction annotation
@@ -20,10 +20,10 @@ THREAD_COUNTS = [1, 2, 4, 6, 8, 10]
 
 def run_prefixsum(n_threads):
     result = subprocess.run(
-        ["./prefixsum", str(N), str(n_threads)],
+        ["./omp_prefix_sum", str(N), str(n_threads)],
         capture_output=True, text=True
     )
-    times = re.findall(r"omp two-pass\s+time=([0-9.]+)", result.stdout)
+    times = re.findall(r"omp scan, then add\s+time=([0-9.]+)", result.stdout)
     times = [float(t) for t in times]
     # drop first (warm-up already done inside binary), take median of rest
     return np.median(times)

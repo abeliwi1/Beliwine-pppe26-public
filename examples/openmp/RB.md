@@ -1,6 +1,6 @@
 ## RB comments
 
-The stencil.c example is cool, but it has a lot of redundancy with loop optimizations. Maybe turn this into a homework.
+The stencil.c example was removed: it had a lot of redundancy with loop optimizations. Maybe turn it into a homework.
 
 ## Prefix Sum 
 

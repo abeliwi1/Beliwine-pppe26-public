@@ -59,8 +59,9 @@ and (where it matters) measured numbers.
 
 | | |
 |---|---|
-| [openmp/](examples/openmp/) | block parallelism, reductions, scheduling policies |
+| [openmp/](examples/openmp/) | parallel regions, parallel loops, reductions, tasks |
 | [cilk/](examples/cilk/) | OpenCilk primitives, work stealing, work/span |
+| [prefix_sum/](examples/prefix_sum/README.prefix_sum.md) | a loop no pragma can parallelize: a parallel scan that does more work, and the memory bandwidth that limits it |
 | [java_threads/](examples/java_threads/) | fork/join, and the startup cost of a thread pool |
 | [joblib/](examples/joblib/) | parallelism from Python, and the hazard of parallelizing bad code |
 | [java_rag_pipeline/](examples/java_rag_pipeline/) | an end-to-end pipeline to profile and speed up |
