@@ -69,5 +69,5 @@ tell you how much is there before you run a single trial.
 - [fib_dag.html](fib_dag.html) — the DAG these numbers are counted from.
 - [work_stealing.html](work_stealing.html) — how the scheduler turns available
   parallelism into `T_P ≈ T₁/P + T∞`.
-- [work_stealing_vs_static.md](work_stealing_vs_static.md) — measured speedups, the
+- [Lecture 11: who wins?](../../course_materials/11.cilk.md#stealing-static-and-dynamic-who-wins) — measured speedups, the
   empirical side of this model.

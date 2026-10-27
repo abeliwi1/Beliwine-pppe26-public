@@ -1,6 +1,6 @@
 # Instructions: threads and processes on cores
 
-These instructions are for a Claude Code session on the Linux course machine
+These instructions are for a Claude Code session on a Linux machine
 (AMD Ryzen AI 9 HX 370, Pop!_OS 24.04). They describe an experiment and a figure
 for Lecture 09 (`course_materials/09.threads.md`). Do the whole thing without
 waiting for further input, then report back as described in the last section.

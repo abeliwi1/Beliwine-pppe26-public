@@ -94,4 +94,4 @@ swapped bits are still readable and `lazy_alloc` uses them.
 | Caches, and the TLB's capacity cliff | [../memory_hierarchy/](../memory_hierarchy/README.memory.md) |
 | Processes and threads: why one has its own page table and the other does not | [Lecture 09](../../course_materials/09.threads.md) |
 | Threads in practice, all sharing one address space | [../openmp/](../openmp/) &middot; [../cilk/](../cilk/README.cilk.md) |
-| False sharing: two threads, one cache line, no logical sharing | [../false_sharing/](../false_sharing/README.false_sharing.md) |
+| False sharing: two threads, one cache line, no logical sharing | [../sharing/](../sharing/README.sharing.md) |

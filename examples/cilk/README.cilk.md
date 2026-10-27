@@ -62,9 +62,9 @@ scheduler wins or loses against OpenMP's static and dynamic scheduling.
 | Step | Open | What it teaches |
 |------|------|-----------------|
 | View | [work_stealing.html](work_stealing.html) | the deque mechanism: owners pop the bottom, thieves steal the top |
-| Read | [work_stealing_vs_static.md](work_stealing_vs_static.md) | stealing vs. static, with measured results |
-| Run  | [qsort_steal.c](qsort_steal.c) | *irregular* recursive work — stealing wins (`cilk_spawn` vs `omp task`) |
-| Run  | [mergesort_balanced.c](mergesort_balanced.c) | *regular* balanced work — static wins (`cilk_for` vs `omp for`) |
+| Read | [Lecture 11: who wins?](../../course_materials/11.cilk.md#stealing-static-and-dynamic-who-wins) | static vs. dynamic vs. stealing on all three examples, measured on 4 and 8 threads |
+| Run  | [qsort_steal.c](qsort_steal.c) | *irregular* recursive work — stealing wins (static vs `omp task` vs `cilk_spawn`) |
+| Run  | [mergesort_balanced.c](mergesort_balanced.c) | *regular* balanced work — static wins on equal cores (static vs `dynamic` vs `cilk_for`) |
 | Read | [dynamic_vs_work_stealing.md](dynamic_vs_work_stealing.md) | where OpenMP `schedule(dynamic)` competes with stealing |
 | Run  | [sparse_col_sum.c](sparse_col_sum.c) | *irregular* flat loop — static vs `dynamic` vs `cilk` side by side |
 | Read | [sparse_col_sum.md](sparse_col_sum.md) | the three-way results and per-version analysis |
@@ -75,7 +75,7 @@ scheduler wins or loses against OpenMP's static and dynamic scheduling.
 
 **Primitives** — `fib.c`, `vector_add.c`, `sum_reducer.c`
 **Scheduler benchmarks** — `qsort_steal.c`, `mergesort_balanced.c`, `sparse_col_sum.c`
-**Write-ups** — `cilk_primitives.md`, `work_span.md`, `work_stealing_vs_static.md`, `dynamic_vs_work_stealing.md`, `sparse_col_sum.md`
+**Write-ups** — `cilk_primitives.md`, `work_span.md`, `dynamic_vs_work_stealing.md`, `sparse_col_sum.md`
 **Figures** — `fib_dag.html`, `work_stealing.html` (standalone pages — open in any browser)
 
 See also [../prefix_sum/cilk_prefix_sum.c](../prefix_sum/cilk_prefix_sum.c) for a larger

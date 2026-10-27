@@ -41,7 +41,7 @@ int NCOLS      = 10000;
 int NHEAVY     = 100;     /* dense rows at the start */
 int HEAVY_NNZ  = 5000;    /* non-zeros per heavy row */
 int LIGHT_NNZ  = 10;      /* non-zeros per light row */
-int NUM_THREADS = 10;
+int NUM_THREADS = 10;     /* set from OMP_NUM_THREADS in main */
 const int TRIALS = 4;
 
 int timeval_subtract(struct timeval *result, struct timeval *y, struct timeval *x)
@@ -195,6 +195,7 @@ int main(int argc, char *argv[])
     if (argc > 3) NHEAVY     = atoi(argv[3]);
     if (argc > 4) HEAVY_NNZ  = atoi(argv[4]);
     if (argc > 5) LIGHT_NNZ  = atoi(argv[5]);
+    NUM_THREADS = omp_get_max_threads();
 
     int nnz = NHEAVY * HEAVY_NNZ + (NROWS - NHEAVY) * LIGHT_NNZ;
     printf("matrix: %d x %d   nnz=%d   heavy=%d rows x %d nnz   light=%d rows x %d nnz\n\n",

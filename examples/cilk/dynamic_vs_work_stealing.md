@@ -1,6 +1,6 @@
 # Dynamic scheduling vs. work-stealing
 
-[work_stealing_vs_static.md](work_stealing_vs_static.md) framed the contrast as
+It is tempting to frame the contrast as
 **static scheduling** (decide the split up front) vs. **work-stealing** (rebalance
 at run time). But that skips the obvious middle option: OpenMP's own
 `schedule(dynamic)`, which *also* rebalances at run time. So the real spectrum has

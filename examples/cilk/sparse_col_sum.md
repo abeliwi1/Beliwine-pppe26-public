@@ -57,28 +57,34 @@ non-zeros in the large matrix and 83% in the default one.
 
 ## Results
 
-Platform: Apple M-series, 10 threads/workers, the 100K × 100K matrix above.
+Platform: Apple M5 (4 performance + 6 efficiency cores), the 100K × 100K
+matrix above, with 4 and with 8 threads/workers. Times are the median of
+12 trials (three runs of four); speedups are the mean over the three runs.
 
-| version      | time    | speedup |
-|--------------|---------|---------|
-| serial       | 23 ms   | 1.0×    |
-| omp static   | 26 ms   | 0.9×    |
-| omp dynamic  |  6 ms   | 3.9×    |
-| cilk         |  5.4 ms | **4.3×** |
+| version      | 4 threads |  speedup | 8 threads |  speedup |
+|--------------|-----------|----------|-----------|----------|
+| serial       | 24.5 ms   | 1.0×     | 24.5 ms   | 1.0×     |
+| omp static   | 26.4 ms   | 0.91×    | 26.4 ms   | 0.91×    |
+| omp dynamic  |  7.6 ms   | 3.20×    |  5.9 ms   | 4.08×    |
+| cilk         |  6.8 ms   | **3.54×** |  5.4 ms  | **4.49×** |
+
+Lecture 11 charts these numbers next to the two sorts.
 
 ## Why each version performs the way it does
 
 ### OpenMP static — slower than serial
 
 `schedule(static)` assigns equal-sized contiguous row ranges to each thread.
-With 10 threads and 100K rows, thread 0 gets rows 0–9999, which includes
-**all 1000 heavy rows**. Thread 0 processes 50M + 90K ≈ 50M non-zeros while
-threads 1–9 each process only ~100K non-zeros. The other 9 threads finish
-almost instantly and then sit idle waiting for the barrier. The elapsed time is
+With 8 threads and 100K rows, thread 0 gets rows 0–12,499, which includes
+**all 1000 heavy rows**. Thread 0 processes 50M + 115K ≈ 50M non-zeros while
+threads 1–7 each process only 125K. The other 7 threads finish almost
+instantly and then sit idle waiting for the barrier. With 4 threads thread 0
+gets rows 0–24,999, still every heavy row, so adding threads changes nothing:
+0.91× either way. The elapsed time is
 dominated by thread 0 alone — slower than serial because of the overhead of
 spawning threads and the merge step, with zero benefit.
 
-### OpenMP dynamic — 3.9× speedup
+### OpenMP dynamic — 3.2× on 4 threads, 4.1× on 8
 
 `schedule(dynamic, 1)` assigns rows one at a time from a shared work queue.
 As soon as a thread finishes a row it pulls the next available one. This
@@ -90,7 +96,7 @@ bumps with an atomic fetch-and-add to claim its next row. With 100K rows each
 requiring a queue operation, the scheduling overhead is non-trivial — every
 claim touches the same cache line, so threads contend on it.
 
-### Cilk — 4.3× speedup
+### Cilk — 3.5× on 4 threads, 4.5× on 8
 
 `cilk_for` with `grainsize(1)` makes each row a separate task in a distributed
 work-stealing deque. There is no central queue: each worker maintains its own
@@ -98,10 +104,10 @@ double-ended deque of tasks and only reaches out to steal from another worker's
 deque when its own is empty.
 
 **Grain size is critical.** The default grain size for `cilk_for` lumps
-`~N/8P ≈ 1250` rows into each indivisible leaf task. With the heavy rows
-concentrated in positions 0–999, the first leaf task `[0, 1250)` captures all
-1000 heavy rows and cannot be subdivided once started — collapsing to the same
-imbalance as the static schedule. Setting `grainsize(1)` makes each row
+N/8P rows into each indivisible leaf task: 3,125 rows on 4 workers, 1,562 on
+8. With the heavy rows concentrated in positions 0–999, the first leaf task
+captures all 1000 heavy rows and cannot be subdivided once started —
+collapsing to the same imbalance as the static schedule. Setting `grainsize(1)` makes each row
 stealable and restores full load balance.
 
 With grain 1, work-stealing scales better than dynamic scheduling because:
@@ -133,5 +139,10 @@ make
 ./sparse_col_sum
 
 # the matrix used for the results above (100K × 100K, 1000 heavy rows of 50K nnz):
-./sparse_col_sum 100000 100000 1000 50000 10
+CILK_NWORKERS=8 OMP_NUM_THREADS=8 ./sparse_col_sum 100000 100000 1000 50000 10
 ```
+
+`OMP_NUM_THREADS` sets the OpenMP thread count and `CILK_NWORKERS` the Cilk
+worker count; set both to the same number. Without them, both default to the
+number of cores (10 on the M5). The built-in default matrix runs in well
+under a millisecond, too fast for the program's timer to resolve.

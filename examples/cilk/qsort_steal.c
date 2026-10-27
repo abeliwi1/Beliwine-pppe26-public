@@ -139,6 +139,33 @@ static void run_omp(int *a, long n, int nthreads)
     qsort_omp(a, 0, n - 1);
 }
 
+/* OpenMP static: decide every thread's share before it starts sorting.
+   Partition level by level, each level's ranges split by a static loop,
+   until there is a range per thread; then each thread sorts its own range
+   serially.  The pivots split unevenly, so the ranges are unequal, and
+   nothing moves work from a busy thread to an idle one. */
+#define MAX_RANGES 1024
+static void qsort_static(int *a, long n, int nthreads)
+{
+    long lo[MAX_RANGES], hi[MAX_RANGES], nlo[MAX_RANGES], nhi[MAX_RANGES];
+    int nr = 1;
+    lo[0] = 0; hi[0] = n - 1;
+    while (nr < nthreads && 2 * nr <= MAX_RANGES) {
+        #pragma omp parallel for schedule(static) num_threads(nthreads)
+        for (int r = 0; r < nr; r++) {
+            long p = partition(a, lo[r], hi[r]);
+            nlo[2*r] = lo[r];  nhi[2*r] = p;
+            nlo[2*r+1] = p + 1; nhi[2*r+1] = hi[r];
+        }
+        nr *= 2;
+        memcpy(lo, nlo, nr * sizeof(long));
+        memcpy(hi, nhi, nr * sizeof(long));
+    }
+    #pragma omp parallel for schedule(static) num_threads(nthreads)
+    for (int r = 0; r < nr; r++)
+        qsort_serial(a, lo[r], hi[r]);
+}
+
 int sorted(int *a, long n)
 {
     for (long i = 1; i < n; i++)
@@ -177,9 +204,11 @@ int main(int argc, char *argv[])
     RUN("serial",  qsort_serial(work, 0, N - 1));
     RUN("cilk",    qsort_cilk(work, 0, N - 1));
     RUN("omp task", run_omp(work, N, nthreads));
+    RUN("omp static", qsort_static(work, N, nthreads));
     printf("\n%-14s  %s\n", "version", "time");
     printf("%-14s  %s\n", "-------", "----");
     for (int t = 0; t < TRIALS; t++) RUN("serial",   qsort_serial(work, 0, N - 1));
+    for (int t = 0; t < TRIALS; t++) RUN("omp static", qsort_static(work, N, nthreads));
     for (int t = 0; t < TRIALS; t++) RUN("omp task", run_omp(work, N, nthreads));
     for (int t = 0; t < TRIALS; t++) RUN("cilk",     qsort_cilk(work, 0, N - 1));
 

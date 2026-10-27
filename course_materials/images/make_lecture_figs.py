@@ -1,6 +1,6 @@
 """Generate the SVG figures for Lectures 10-12, in the style of threads.svg.
 
-    python3 make_lecture_figs.py .      # writes the eight SVGs into this directory
+    python3 make_lecture_figs.py .      # writes the ten SVGs into this directory
 
 The schedule timelines are simulated, not drawn by hand: change `speed` or the
 chunk size in schedule_figs() and the figures follow.
@@ -243,6 +243,68 @@ def work_stealing():
     f.save("cilk_work_stealing.svg")
 
 
+def schedule_bars(threads, runs, top, name, aria):
+    # examples/cilk on an Apple M5: speedup over serial in each run (median of
+    # that run's trials).  qsort_steal's "dynamic" is OpenMP task, OpenMP's
+    # run-time scheduler for recursion.
+    examples = [("mergesort_balanced", "regular: every merge the same size"),
+                ("qsort_steal", "recursive, uneven pivots"),
+                ("sparse_col_sum", "flat loop, heavy rows first")]
+    series = [("OpenMP static", BLUE), ("OpenMP dynamic (task for qsort)", ORANGE), ("Cilk work stealing", GREEN)]
+    f = Fig(1000, 470, f"Static, dynamic and work stealing: {threads} threads", aria)
+    x0, x1, yb, yt = 110, 960, 360, 80          # plot area: speedup 0 at yb, top at yt
+    sy = lambda v: yb - v / top * (yb - yt)
+    for v in range(top + 1):
+        f.line(x0, sy(v), x1, sy(v), "#e2e2e2", 1)
+        f.text(x0 - 10, sy(v) + 5, f"{v}×", 13, "end", GRAY)
+    gap = x0 + (x1 - x0) / 3                    # between the first two groups
+    for v, label in ((1, "serial"), (threads, f"perfect: {threads}×")):
+        f.line(x0, sy(v), x1, sy(v), GRAY, 1.2, dash="6 4")
+        f.text(gap, sy(v) + (18 if v == top else -8), label, 13, color=GRAY)
+    f.line(x0, yb, x1, yb, GRAY, 1.5)
+    gw = (x1 - x0) / 3
+    bw = 62
+    for g, (key, note) in enumerate(examples):
+        cx = x0 + gw * (g + 0.5)
+        for k, (rs, (_, c)) in enumerate(zip(runs[key], series)):
+            mean, lo, hi = sum(rs) / len(rs), min(rs), max(rs)
+            x = cx + (k - 1) * (bw + 12) - bw / 2
+            f.rect(x, sy(mean), bw, yb - sy(mean), TINT[c], c, 1.5)
+            if hi - lo > 0.02:
+                f.line(x + bw / 2, sy(lo), x + bw / 2, sy(hi), INK, 1.5)
+            f.text(x + bw / 2, sy(hi) - 8, f"{mean:.2f}", 13, color=c, bold=True)
+        f.text(cx, yb + 26, key, 16, bold=True)
+        f.text(cx, yb + 46, note, 13, color=GRAY)
+    lx = 165
+    for nm, c in series:
+        f.rect(lx, 428, 18, 18, TINT[c], c, 1.5)
+        f.text(lx + 26, 442, nm, 14, "start", c, bold=True)
+        lx += 230 if c == BLUE else 300
+    f.text(500, 62, f"speedup over serial, {threads} threads/workers, Apple M5; bar = mean of runs, black line = range",
+           13, color=GRAY)
+    f.save(name)
+
+
+def schedule_bars_both():
+    # runs = {example: [runs of static, runs of dynamic, runs of Cilk]}
+    schedule_bars(4, {
+        "mergesort_balanced": [[3.11, 3.10], [3.07, 3.06], [2.88, 2.86]],
+        "qsort_steal": [[1.99, 1.97], [3.44, 3.44], [3.44, 3.45]],
+        "sparse_col_sum": [[0.90, 0.89, 0.93], [3.09, 3.24, 3.27], [3.40, 3.62, 3.60]],
+    }, 5, "cilk_schedule_bars_4.svg",
+        "Speedup over serial with 4 threads on an Apple M5. mergesort_balanced: static 3.10, dynamic 3.06, "
+        "Cilk 2.87. qsort_steal: static 1.98, OpenMP task 3.44, Cilk 3.45. sparse_col_sum: static 0.91, "
+        "dynamic 3.20, Cilk 3.54.")
+    schedule_bars(8, {
+        "mergesort_balanced": [[4.47, 4.46], [4.55, 4.51], [4.03, 4.05]],
+        "qsort_steal": [[2.34, 2.32], [4.88, 4.82], [5.04, 5.04]],
+        "sparse_col_sum": [[0.90, 0.90, 0.93], [3.97, 4.19, 4.08], [4.42, 4.54, 4.50]],
+    }, 8, "cilk_schedule_bars_8.svg",
+        "Speedup over serial with 8 threads on an Apple M5. mergesort_balanced: static 4.46, dynamic 4.53, "
+        "Cilk 4.04. qsort_steal: static 2.33, OpenMP task 4.85, Cilk 5.04. sparse_col_sum: static 0.91, "
+        "dynamic 4.08, Cilk 4.49.")
+
+
 # ---------------------------------------------------------------- Lecture 12
 def prefix_chain():
     f = Fig(1000, 250, "The serial prefix sum is a chain",
@@ -361,6 +423,7 @@ fork_join()
 schedule_figs()
 fib_dag()
 work_stealing()
+schedule_bars_both()
 prefix_chain()
 prefix_three_pass()
 hillis_steele()

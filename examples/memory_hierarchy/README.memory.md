@@ -132,7 +132,7 @@ the most useful thing it has to say.
 | Topic | Directory |
 |---|---|
 | Loop interchange, tiling, fusion, fission | [../loop_optimizations/](../loop_optimizations/README.loops.md) |
-| False sharing, measured at 19× | [../false_sharing/](../false_sharing/README.false_sharing.md) |
+| False sharing, measured at 19× | [../false_sharing/](../deprecated/false_sharing/README.false_sharing.md) |
 | Software prefetching for gathers | [../prefetch.example/](../prefetch.example/README.prefetch.md) |
 | Arithmetic intensity and the bandwidth ceiling | [../roofline/](../roofline/) |
 | Vectorization, which multiplies the cost of a bad layout | [../vectorization/](../vectorization/README.vectorization.md) |

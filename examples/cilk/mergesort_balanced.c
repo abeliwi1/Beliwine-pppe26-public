@@ -132,6 +132,31 @@ static void mergesort_omp(int *a, int *buf, long n, int nthreads)
     if (k & 1) memcpy(a, buf, n * sizeof(int));
 }
 
+/* ---- OpenMP: the same loops with schedule(dynamic) --------------------- */
+static void mergesort_omp_dynamic(int *a, int *buf, long n, int nthreads)
+{
+    /* Identical to mergesort_omp except for the schedule: every iteration
+       is handed out at run time, one at a time, from a shared counter. */
+    #pragma omp parallel num_threads(nthreads)
+    {
+        #pragma omp for schedule(dynamic)
+        for (long lo = 0; lo < n; lo += LEAF)
+            insertion_sort(a, lo, lmin(lo + LEAF, n));
+
+        int *src = a, *dst = buf;
+        for (long w = LEAF; w < n; w *= 2) {
+            #pragma omp for schedule(dynamic)
+            for (long lo = 0; lo < n; lo += 2*w)
+                merge(src, dst, lo, lmin(lo + w, n), lmin(lo + 2*w, n));
+            int *t = src; src = dst; dst = t;
+        }
+    }
+
+    long k = 0;
+    for (long w = LEAF; w < n; w *= 2) k++;
+    if (k & 1) memcpy(a, buf, n * sizeof(int));
+}
+
 /* ---- Cilk: cilk_for parallel loops (work-stealing) -------------------- */
 static void mergesort_cilk(int *a, int *buf, long n)
 {
@@ -184,6 +209,7 @@ int main(int argc, char *argv[])
     /* warm up + correctness */
     RUN("serial", mergesort_serial(work, buf, N));
     RUN("omp",    mergesort_omp(work, buf, N, nthreads));
+    RUN("omp dynamic", mergesort_omp_dynamic(work, buf, N, nthreads));
     RUN("cilk",   mergesort_cilk(work, buf, N));
 
     printf("\n%-14s  %s\n", "version", "time");
@@ -191,6 +217,7 @@ int main(int argc, char *argv[])
     for (int t = 0; t < TRIALS; t++) RUN("serial", mergesort_serial(work, buf, N));
     for (int t = 0; t < TRIALS; t++) RUN("cilk",   mergesort_cilk(work, buf, N));
     for (int t = 0; t < TRIALS; t++) RUN("omp",    mergesort_omp(work, buf, N, nthreads));
+    for (int t = 0; t < TRIALS; t++) RUN("omp dynamic", mergesort_omp_dynamic(work, buf, N, nthreads));
 
     free(orig); free(work); free(buf);
     return 0;

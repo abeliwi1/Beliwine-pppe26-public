@@ -1,5 +1,9 @@
 # Work-stealing vs. static scheduling
 
+> **Deprecated.** These measurements predate the static quicksort and the
+> dynamic merge sort, and its links assume the file sits in `examples/cilk/`.
+> See [Lecture 11](../../../course_materials/11.cilk.md#stealing-static-and-dynamic-who-wins) for current results.
+
 Two parallel sorts in this directory are deliberately built as opposites so the
 scheduler is the *only* variable. Together they show that neither scheduler is
 universally faster — the right one depends on the **shape of the work**.

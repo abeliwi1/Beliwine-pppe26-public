@@ -51,7 +51,7 @@ and (where it matters) measured numbers.
 |---|---|
 | [memory_hierarchy/](examples/memory_hierarchy/) | measured cache latency, bandwidth, set conflicts, core-to-core transfer |
 | [virtual_memory/](examples/virtual_memory/) | page tables, TLB reach, and the TLB cliff |
-| [false_sharing/](examples/false_sharing/) | two threads, different variables, one cache line |
+| [sharing/](examples/sharing/README.sharing.md) | what sharing a cache line costs: true sharing, false sharing, and where the threads run |
 | [prefetch.example/](examples/prefetch.example/) | why software prefetching mostly doesn't help |
 | [roofline/](examples/roofline/) | arithmetic intensity as the guide to what is worth parallelizing |
 

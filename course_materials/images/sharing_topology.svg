@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="560" viewBox="0 0 1000 560" role="img" aria-label="The Ryzen AI 9 HX 370's caches, and the four pairs of CPUs the sharing benchmark uses. Four Zen 5 cores each have a private L1 and L2 and share a 16 MB L3. Eight Zen 5c cores each have a private L1 and L2 and share a separate 8 MB L3. The two L3s connect through the on-chip interconnect. Pair 1 is two hardware threads of one Zen 5 core, which share its L1 and L2. Pair 2 is two Zen 5 cores, which share the 16 MB L3. Pair 3 is two Zen 5c cores, which share the 8 MB L3. Pair 4 is a Zen 5 core and a Zen 5c core, which share no cache, so a cache line between them crosses the interconnect.">
+  <defs>
+    <marker id="tip" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#333"/></marker>
+  </defs>
+  <rect width="1000" height="560" fill="#fff"/>
+  <g font-family="Helvetica, Arial, sans-serif" fill="#222">
+    <text x="500" y="30" font-size="19" font-weight="bold" text-anchor="middle">Where the two threads run, and which cache they share</text>
+    <text x="500" y="52" font-size="13" text-anchor="middle" fill="#555">AMD Ryzen AI 9 HX 370. Each core runs two hardware threads, numbered as two CPUs.</text>
+
+    <!-- ===== Zen 5 cluster ===== -->
+    <rect x="30" y="70" width="415" height="270" rx="8" fill="#eef4fb" stroke="#2b6cb0" stroke-width="2"/>
+    <text x="237" y="92" font-size="15" font-weight="bold" text-anchor="middle" fill="#2b6cb0">4 Zen 5 cores (up to 5.2 GHz)</text>
+
+    <!-- core 0 -->
+    <rect x="45" y="104" width="90" height="148" rx="5" fill="#fff" stroke="#2b6cb0"/>
+    <text x="90" y="121" font-size="13" font-weight="bold" text-anchor="middle">core 0</text>
+    <rect x="52" y="129" width="36" height="24" rx="3" fill="#dbe9f7" stroke="#2b6cb0"/><text x="70" y="145" font-size="11" text-anchor="middle">CPU 0</text>
+    <rect x="92" y="129" width="36" height="24" rx="3" fill="#dbe9f7" stroke="#2b6cb0"/><text x="110" y="145" font-size="11" text-anchor="middle">CPU 12</text>
+    <rect x="52" y="172" width="76" height="28" fill="#f7f7f7" stroke="#999"/><text x="90" y="191" font-size="12" text-anchor="middle">L1 48 KB</text>
+    <rect x="52" y="208" width="76" height="28" fill="#f7f7f7" stroke="#999"/><text x="90" y="227" font-size="12" text-anchor="middle">L2 1 MB</text>
+
+    <!-- core 1 -->
+    <rect x="145" y="104" width="90" height="148" rx="5" fill="#fff" stroke="#2b6cb0"/>
+    <text x="190" y="121" font-size="13" font-weight="bold" text-anchor="middle">core 1</text>
+    <rect x="152" y="129" width="36" height="24" rx="3" fill="#dbe9f7" stroke="#2b6cb0"/><text x="170" y="145" font-size="11" text-anchor="middle">CPU 1</text>
+    <rect x="192" y="129" width="36" height="24" rx="3" fill="#dbe9f7" stroke="#2b6cb0"/><text x="210" y="145" font-size="11" text-anchor="middle">CPU 13</text>
+    <rect x="152" y="172" width="76" height="28" fill="#f7f7f7" stroke="#999"/><text x="190" y="191" font-size="12" text-anchor="middle">L1 48 KB</text>
+    <rect x="152" y="208" width="76" height="28" fill="#f7f7f7" stroke="#999"/><text x="190" y="227" font-size="12" text-anchor="middle">L2 1 MB</text>
+
+    <!-- cores 2, 3 -->
+    <rect x="245" y="104" width="90" height="148" rx="5" fill="#fff" stroke="#2b6cb0"/>
+    <text x="290" y="121" font-size="13" font-weight="bold" text-anchor="middle">core 2</text>
+    <text x="290" y="145" font-size="11" text-anchor="middle" fill="#555">CPUs 2, 14</text>
+    <rect x="252" y="172" width="76" height="28" fill="#f7f7f7" stroke="#999"/><text x="290" y="191" font-size="12" text-anchor="middle">L1</text>
+    <rect x="252" y="208" width="76" height="28" fill="#f7f7f7" stroke="#999"/><text x="290" y="227" font-size="12" text-anchor="middle">L2</text>
+    <rect x="345" y="104" width="90" height="148" rx="5" fill="#fff" stroke="#2b6cb0"/>
+    <text x="390" y="121" font-size="13" font-weight="bold" text-anchor="middle">core 3</text>
+    <text x="390" y="145" font-size="11" text-anchor="middle" fill="#555">CPUs 3, 15</text>
+    <rect x="352" y="172" width="76" height="28" fill="#f7f7f7" stroke="#999"/><text x="390" y="191" font-size="12" text-anchor="middle">L1</text>
+    <rect x="352" y="208" width="76" height="28" fill="#f7f7f7" stroke="#999"/><text x="390" y="227" font-size="12" text-anchor="middle">L2</text>
+
+    <rect x="45" y="282" width="390" height="40" rx="4" fill="#e3f1e6" stroke="#2f7d4a"/>
+    <text x="240" y="307" font-size="13" text-anchor="middle">L3 16 MB, shared by the 4 Zen 5 cores</text>
+
+    <!-- ===== Zen 5c cluster ===== -->
+    <rect x="465" y="70" width="505" height="270" rx="8" fill="#fdf1e7" stroke="#c05621" stroke-width="2"/>
+    <text x="717" y="92" font-size="15" font-weight="bold" text-anchor="middle" fill="#c05621">8 Zen 5c cores (up to 3.3 GHz)</text>
+    <g font-size="11" text-anchor="middle">
+      <rect x="477" y="104" width="54" height="148" rx="5" fill="#fff" stroke="#c05621"/><text x="504" y="121" font-weight="bold">core 4</text>
+      <rect x="481" y="129" width="46" height="24" rx="3" fill="#fbe3d0" stroke="#c05621"/><text x="504" y="145">CPU 4</text>
+      <rect x="481" y="172" width="46" height="28" fill="#f7f7f7" stroke="#999"/><text x="504" y="191">L1</text>
+      <rect x="481" y="208" width="46" height="28" fill="#f7f7f7" stroke="#999"/><text x="504" y="227">L2</text>
+      <rect x="538" y="104" width="54" height="148" rx="5" fill="#fff" stroke="#c05621"/><text x="565" y="121" font-weight="bold">core 5</text>
+      <rect x="542" y="129" width="46" height="24" rx="3" fill="#fbe3d0" stroke="#c05621"/><text x="565" y="145">CPU 5</text>
+      <rect x="542" y="172" width="46" height="28" fill="#f7f7f7" stroke="#999"/><text x="565" y="191">L1</text>
+      <rect x="542" y="208" width="46" height="28" fill="#f7f7f7" stroke="#999"/><text x="565" y="227">L2</text>
+      <rect x="599" y="104" width="54" height="148" rx="5" fill="#fff" stroke="#c05621"/><text x="626" y="121" font-weight="bold">core 6</text>
+      <rect x="603" y="172" width="46" height="28" fill="#f7f7f7" stroke="#999"/><text x="626" y="191">L1</text>
+      <rect x="603" y="208" width="46" height="28" fill="#f7f7f7" stroke="#999"/><text x="626" y="227">L2</text>
+      <rect x="660" y="104" width="54" height="148" rx="5" fill="#fff" stroke="#c05621"/><text x="687" y="121" font-weight="bold">core 7</text>
+      <rect x="664" y="172" width="46" height="28" fill="#f7f7f7" stroke="#999"/><text x="687" y="191">L1</text>
+      <rect x="664" y="208" width="46" height="28" fill="#f7f7f7" stroke="#999"/><text x="687" y="227">L2</text>
+      <rect x="721" y="104" width="54" height="148" rx="5" fill="#fff" stroke="#c05621"/><text x="748" y="121" font-weight="bold">core 8</text>
+      <rect x="725" y="172" width="46" height="28" fill="#f7f7f7" stroke="#999"/><text x="748" y="191">L1</text>
+      <rect x="725" y="208" width="46" height="28" fill="#f7f7f7" stroke="#999"/><text x="748" y="227">L2</text>
+      <rect x="782" y="104" width="54" height="148" rx="5" fill="#fff" stroke="#c05621"/><text x="809" y="121" font-weight="bold">core 9</text>
+      <rect x="786" y="172" width="46" height="28" fill="#f7f7f7" stroke="#999"/><text x="809" y="191">L1</text>
+      <rect x="786" y="208" width="46" height="28" fill="#f7f7f7" stroke="#999"/><text x="809" y="227">L2</text>
+      <rect x="843" y="104" width="54" height="148" rx="5" fill="#fff" stroke="#c05621"/><text x="870" y="121" font-weight="bold">core 10</text>
+      <rect x="847" y="172" width="46" height="28" fill="#f7f7f7" stroke="#999"/><text x="870" y="191">L1</text>
+      <rect x="847" y="208" width="46" height="28" fill="#f7f7f7" stroke="#999"/><text x="870" y="227">L2</text>
+      <rect x="904" y="104" width="54" height="148" rx="5" fill="#fff" stroke="#c05621"/><text x="931" y="121" font-weight="bold">core 11</text>
+      <rect x="908" y="172" width="46" height="28" fill="#f7f7f7" stroke="#999"/><text x="931" y="191">L1</text>
+      <rect x="908" y="208" width="46" height="28" fill="#f7f7f7" stroke="#999"/><text x="931" y="227">L2</text>
+    </g>
+    <rect x="477" y="282" width="481" height="40" rx="4" fill="#e3f1e6" stroke="#2f7d4a"/>
+    <text x="717" y="307" font-size="13" text-anchor="middle">L3 8 MB, shared by the 8 Zen 5c cores</text>
+
+    <!-- ===== interconnect ===== -->
+    <rect x="30" y="370" width="940" height="36" rx="6" fill="#f2f2f2" stroke="#888"/>
+    <text x="845" y="393" font-size="13" text-anchor="middle">on-chip interconnect (and memory)</text>
+    <line x1="240" y1="340" x2="240" y2="370" stroke="#888" stroke-width="2"/>
+    <line x1="717" y1="340" x2="717" y2="370" stroke="#888" stroke-width="2"/>
+
+    <!-- ===== the four pairs ===== -->
+    <!-- 1: CPU 0 and CPU 12, inside core 0: the line stays in core 0's L1 -->
+    <path d="M70,153 C70,168 110,168 110,153" fill="none" stroke="#333" stroke-width="2" marker-start="url(#tip)" marker-end="url(#tip)"/>
+    <circle cx="90" cy="164" r="9" fill="#333"/><text x="90" y="168.5" font-size="12" font-weight="bold" text-anchor="middle" fill="#fff">1</text>
+
+    <!-- 2: core 0 and core 1, through the Zen 5 L3 -->
+    <path d="M100,236 L100,270 L180,270 L180,236" fill="none" stroke="#333" stroke-width="2" marker-start="url(#tip)" marker-end="url(#tip)"/>
+    <circle cx="140" cy="270" r="10" fill="#333"/><text x="140" y="275" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">2</text>
+
+    <!-- 3: core 4 and core 5, through the Zen 5c L3 -->
+    <path d="M504,236 L504,270 L565,270 L565,236" fill="none" stroke="#333" stroke-width="2" marker-start="url(#tip)" marker-end="url(#tip)"/>
+    <circle cx="534" cy="270" r="10" fill="#333"/><text x="534" y="275" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">3</text>
+
+    <!-- 4: core 0 and core 4, through both L3s and the interconnect -->
+    <path d="M80,236 L80,262 L58,262 L58,390 L492,390 L492,236" fill="none" stroke="#333" stroke-width="2" stroke-dasharray="6 4" marker-start="url(#tip)" marker-end="url(#tip)"/>
+    <circle cx="280" cy="390" r="10" fill="#333"/><text x="280" y="395" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">4</text>
+
+    <!-- ===== legend ===== -->
+    <g font-size="13">
+      <circle cx="44" cy="448" r="10" fill="#333"/><text x="44" y="453" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">1</text>
+      <text x="62" y="453"><tspan font-weight="bold">Same core</tspan> (CPUs 0 and 12): two hardware threads share the core's L1 and L2.</text>
+      <circle cx="44" cy="474" r="10" fill="#333"/><text x="44" y="479" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">2</text>
+      <text x="62" y="479"><tspan font-weight="bold">Two Zen 5 cores</tspan> (CPUs 0 and 1): private L1 and L2; the line moves through the 16 MB L3.</text>
+      <circle cx="44" cy="500" r="10" fill="#333"/><text x="44" y="505" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">3</text>
+      <text x="62" y="505"><tspan font-weight="bold">Two Zen 5c cores</tspan> (CPUs 4 and 5): private L1 and L2; the line moves through the 8 MB L3.</text>
+      <circle cx="44" cy="526" r="10" fill="#333"/><text x="44" y="531" font-size="13" font-weight="bold" text-anchor="middle" fill="#fff">4</text>
+      <text x="62" y="531"><tspan font-weight="bold">Zen 5 and Zen 5c</tspan> (CPUs 0 and 4): no cache in common; the line crosses the interconnect.</text>
+    </g>
+  </g>
+</svg>

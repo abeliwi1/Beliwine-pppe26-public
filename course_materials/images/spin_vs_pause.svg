@@ -1,0 +1,168 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="585" viewBox="0 0 1000 585" role="img" aria-label="Why spin is slower than pause. Two threads take turns writing one shared variable. With pause, the waiting thread checks the variable now and then, so the cache line moves once per handoff. With spin, the waiting thread re-reads the variable as fast as it can; its reads pull the line back from the thread that is about to write, so the line makes extra trips and each handoff takes about twice as long.">
+<defs><marker id="tip" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#333"/></marker><marker id="tipr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#b83232"/></marker></defs>
+<rect x="0" y="0" width="1000" height="585" rx="0" fill="#fff" stroke="none" stroke-width="1"/>
+<g font-family="Helvetica, Arial, sans-serif">
+<text x="500" y="30" font-size="19" text-anchor="middle" fill="#222" font-weight="bold">Why spin is slower than pause</text>
+<text x="500" y="52" font-size="13" text-anchor="middle" fill="#555" font-weight="normal">Two threads take turns writing one shared variable. Time runs left to right; a diagonal arrow is the cache line moving between cores.</text>
+<rect x="20" y="70" width="960" height="220" rx="8" fill="#fcfcfb" stroke="#ddd" stroke-width="1"/>
+<text x="40" y="96" font-size="15" text-anchor="start" fill="#222" font-weight="bold">pause: the waiter checks now and then, and idles in between</text>
+<line x1="110" y1="150" x2="960" y2="150" stroke="#bbb" stroke-width="1"/>
+<text x="60" y="155" font-size="13" text-anchor="middle" fill="#2b6cb0" font-weight="bold">thread A</text>
+<line x1="110" y1="220" x2="960" y2="220" stroke="#bbb" stroke-width="1"/>
+<text x="60" y="225" font-size="13" text-anchor="middle" fill="#c05621" font-weight="bold">thread B</text>
+<rect x="120" y="137" width="60" height="26" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="2"/>
+<text x="150" y="154" font-size="12" text-anchor="middle" fill="#2b6cb0" font-weight="bold">write 1</text>
+<rect x="138.5" y="213" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="198.5" y="213" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<path d="M185,164 L258,206" fill="none" stroke="#333" stroke-width="1.8" marker-end="url(#tip)"/>
+<rect x="270" y="207" width="60" height="26" rx="4" fill="#fbe3d0" stroke="#c05621" stroke-width="2"/>
+<text x="300" y="224" font-size="12" text-anchor="middle" fill="#c05621" font-weight="bold">write 2</text>
+<rect x="228.5" y="143" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="288.5" y="143" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="348.5" y="143" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<path d="M335,206 L408,164" fill="none" stroke="#333" stroke-width="1.8" marker-end="url(#tip)"/>
+<rect x="420" y="137" width="60" height="26" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="2"/>
+<text x="450" y="154" font-size="12" text-anchor="middle" fill="#2b6cb0" font-weight="bold">write 3</text>
+<rect x="378.5" y="213" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="438.5" y="213" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="498.5" y="213" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<path d="M485,164 L558,206" fill="none" stroke="#333" stroke-width="1.8" marker-end="url(#tip)"/>
+<rect x="570" y="207" width="60" height="26" rx="4" fill="#fbe3d0" stroke="#c05621" stroke-width="2"/>
+<text x="600" y="224" font-size="12" text-anchor="middle" fill="#c05621" font-weight="bold">write 4</text>
+<rect x="528.5" y="143" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="588.5" y="143" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="648.5" y="143" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<path d="M635,206 L708,164" fill="none" stroke="#333" stroke-width="1.8" marker-end="url(#tip)"/>
+<rect x="720" y="137" width="60" height="26" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="2"/>
+<text x="750" y="154" font-size="12" text-anchor="middle" fill="#2b6cb0" font-weight="bold">write 5</text>
+<rect x="678.5" y="213" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="738.5" y="213" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="798.5" y="213" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<path d="M270,256 L270,262 L420,262 L420,256" fill="none" stroke="#333" stroke-width="1.2"/>
+<text x="345.0" y="278" font-size="12" text-anchor="middle" fill="#222" font-weight="bold">one handoff: one trip</text>
+<rect x="20" y="310" width="960" height="220" rx="8" fill="#fcfcfb" stroke="#ddd" stroke-width="1"/>
+<text x="40" y="336" font-size="15" text-anchor="start" fill="#222" font-weight="bold">spin: the waiter re-reads as fast as it can, and its reads pull the line back</text>
+<line x1="110" y1="390" x2="960" y2="390" stroke="#bbb" stroke-width="1"/>
+<text x="60" y="395" font-size="13" text-anchor="middle" fill="#2b6cb0" font-weight="bold">thread A</text>
+<line x1="110" y1="460" x2="960" y2="460" stroke="#bbb" stroke-width="1"/>
+<text x="60" y="465" font-size="13" text-anchor="middle" fill="#c05621" font-weight="bold">thread B</text>
+<rect x="120" y="377" width="60" height="26" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="2"/>
+<text x="150" y="394" font-size="12" text-anchor="middle" fill="#2b6cb0" font-weight="bold">write 1</text>
+<rect x="114.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="126.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="138.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="150.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="162.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="174.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="186.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="198.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="210.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="222.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="234.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="246.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="258.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="270.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="282.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="294.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="306.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="318.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="330.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="342.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="354.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="366.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="378.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<path d="M185,404 L248,446" fill="none" stroke="#333" stroke-width="1.8" marker-end="url(#tip)"/>
+<rect x="194.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="206.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="218.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="230.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="242.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="254.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="266.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="278.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="290.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="302.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="314.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="326.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="338.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="350.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="362.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="374.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="386.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="398.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="410.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="422.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="434.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="446.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="458.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="470.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="482.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="494.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="506.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="518.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="530.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="542.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="554.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="566.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="578.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="590.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="602.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="614.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="626.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="638.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="650.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="662.5" y="383" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<path d="M255,446 L318,404" fill="none" stroke="#b83232" stroke-width="1.8" marker-end="url(#tipr)"/>
+<path d="M325,404 L388,446" fill="none" stroke="#333" stroke-width="1.8" marker-end="url(#tip)"/>
+<rect x="400" y="447" width="60" height="26" rx="4" fill="#fbe3d0" stroke="#c05621" stroke-width="2"/>
+<text x="430" y="464" font-size="12" text-anchor="middle" fill="#c05621" font-weight="bold">write 2</text>
+<rect x="474.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="486.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="498.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="510.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="522.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="534.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="546.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="558.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="570.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="582.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="594.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="606.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="618.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="630.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="642.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="654.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="666.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="678.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="690.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="702.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="714.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="726.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="738.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="750.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="762.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="774.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="786.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="798.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="810.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="822.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="834.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="846.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="858.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="870.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="882.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<rect x="894.5" y="453" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<path d="M465,446 L528,404" fill="none" stroke="#333" stroke-width="1.8" marker-end="url(#tip)"/>
+<path d="M535,404 L598,446" fill="none" stroke="#b83232" stroke-width="1.8" marker-end="url(#tipr)"/>
+<path d="M605,446 L668,404" fill="none" stroke="#333" stroke-width="1.8" marker-end="url(#tip)"/>
+<rect x="680" y="377" width="60" height="26" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="2"/>
+<text x="710" y="394" font-size="12" text-anchor="middle" fill="#2b6cb0" font-weight="bold">write 3</text>
+<path d="M400,496 L400,502 L680,502 L680,496" fill="none" stroke="#333" stroke-width="1.2"/>
+<text x="540.0" y="518" font-size="12" text-anchor="middle" fill="#222" font-weight="bold">one handoff: an extra trip, about twice as long</text>
+<rect x="40" y="551" width="3" height="14" rx="0" fill="#999" stroke="none" stroke-width="1"/>
+<text x="52" y="563" font-size="12" text-anchor="start" fill="#555" font-weight="normal">a read of the shared variable</text>
+<path d="M260,558 L300,558" fill="none" stroke="#333" stroke-width="1.8" marker-end="url(#tip)"/>
+<text x="308" y="563" font-size="12" text-anchor="start" fill="#555" font-weight="normal">the line moves to the thread that needs it</text>
+<path d="M600,558 L640,558" fill="none" stroke="#b83232" stroke-width="1.8" marker-end="url(#tipr)"/>
+<text x="648" y="563" font-size="12" text-anchor="start" fill="#555" font-weight="normal">a spinning read takes it back first</text>
+</g></svg>

@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="470" viewBox="0 0 1000 470" role="img" aria-label="Speedup over serial with 8 threads on an Apple M5. mergesort_balanced: static 4.46, dynamic 4.53, Cilk 4.04. qsort_steal: static 2.33, OpenMP task 4.85, Cilk 5.04. sparse_col_sum: static 0.91, dynamic 4.08, Cilk 4.49.">
+  <defs></defs>
+  <rect width="1000" height="470" fill="#fff"/>
+  <g font-family="Helvetica, Arial, sans-serif" fill="#222">
+    <text x="500" y="32" font-size="19" font-weight="bold" text-anchor="middle">Static, dynamic and work stealing: 8 threads</text>
+    <line x1="110.0" y1="360.0" x2="960.0" y2="360.0" stroke="#e2e2e2" stroke-width="1"/>
+    <text x="100.0" y="365.0" font-size="13" text-anchor="end" fill="#555">0×</text>
+    <line x1="110.0" y1="325.0" x2="960.0" y2="325.0" stroke="#e2e2e2" stroke-width="1"/>
+    <text x="100.0" y="330.0" font-size="13" text-anchor="end" fill="#555">1×</text>
+    <line x1="110.0" y1="290.0" x2="960.0" y2="290.0" stroke="#e2e2e2" stroke-width="1"/>
+    <text x="100.0" y="295.0" font-size="13" text-anchor="end" fill="#555">2×</text>
+    <line x1="110.0" y1="255.0" x2="960.0" y2="255.0" stroke="#e2e2e2" stroke-width="1"/>
+    <text x="100.0" y="260.0" font-size="13" text-anchor="end" fill="#555">3×</text>
+    <line x1="110.0" y1="220.0" x2="960.0" y2="220.0" stroke="#e2e2e2" stroke-width="1"/>
+    <text x="100.0" y="225.0" font-size="13" text-anchor="end" fill="#555">4×</text>
+    <line x1="110.0" y1="185.0" x2="960.0" y2="185.0" stroke="#e2e2e2" stroke-width="1"/>
+    <text x="100.0" y="190.0" font-size="13" text-anchor="end" fill="#555">5×</text>
+    <line x1="110.0" y1="150.0" x2="960.0" y2="150.0" stroke="#e2e2e2" stroke-width="1"/>
+    <text x="100.0" y="155.0" font-size="13" text-anchor="end" fill="#555">6×</text>
+    <line x1="110.0" y1="115.0" x2="960.0" y2="115.0" stroke="#e2e2e2" stroke-width="1"/>
+    <text x="100.0" y="120.0" font-size="13" text-anchor="end" fill="#555">7×</text>
+    <line x1="110.0" y1="80.0" x2="960.0" y2="80.0" stroke="#e2e2e2" stroke-width="1"/>
+    <text x="100.0" y="85.0" font-size="13" text-anchor="end" fill="#555">8×</text>
+    <line x1="110.0" y1="325.0" x2="960.0" y2="325.0" stroke="#555" stroke-width="1.2" stroke-dasharray="6 4"/>
+    <text x="393.3" y="317.0" font-size="13" text-anchor="middle" fill="#555">serial</text>
+    <line x1="110.0" y1="80.0" x2="960.0" y2="80.0" stroke="#555" stroke-width="1.2" stroke-dasharray="6 4"/>
+    <text x="393.3" y="98.0" font-size="13" text-anchor="middle" fill="#555">perfect: 8×</text>
+    <line x1="110.0" y1="360.0" x2="960.0" y2="360.0" stroke="#555" stroke-width="1.5"/>
+    <rect x="146.7" y="203.7" width="62.0" height="156.3" rx="0" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="177.7" y="195.6" font-size="13" text-anchor="middle" fill="#2b6cb0" font-weight="bold">4.46</text>
+    <rect x="220.7" y="201.5" width="62.0" height="158.5" rx="0" fill="#fbe3d0" stroke="#c05621" stroke-width="1.5"/>
+    <line x1="251.7" y1="202.2" x2="251.7" y2="200.8" stroke="#222" stroke-width="1.5"/>
+    <text x="251.7" y="192.8" font-size="13" text-anchor="middle" fill="#c05621" font-weight="bold">4.53</text>
+    <rect x="294.7" y="218.6" width="62.0" height="141.4" rx="0" fill="#e3f1e6" stroke="#2f855a" stroke-width="1.5"/>
+    <text x="325.7" y="210.2" font-size="13" text-anchor="middle" fill="#2f855a" font-weight="bold">4.04</text>
+    <text x="251.7" y="386.0" font-size="16" text-anchor="middle" fill="#222" font-weight="bold">mergesort_balanced</text>
+    <text x="251.7" y="406.0" font-size="13" text-anchor="middle" fill="#555">regular: every merge the same size</text>
+    <rect x="430.0" y="278.4" width="62.0" height="81.6" rx="0" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <line x1="461.0" y1="278.8" x2="461.0" y2="278.1" stroke="#222" stroke-width="1.5"/>
+    <text x="461.0" y="270.1" font-size="13" text-anchor="middle" fill="#2b6cb0" font-weight="bold">2.33</text>
+    <rect x="504.0" y="190.2" width="62.0" height="169.8" rx="0" fill="#fbe3d0" stroke="#c05621" stroke-width="1.5"/>
+    <line x1="535.0" y1="191.3" x2="535.0" y2="189.2" stroke="#222" stroke-width="1.5"/>
+    <text x="535.0" y="181.2" font-size="13" text-anchor="middle" fill="#c05621" font-weight="bold">4.85</text>
+    <rect x="578.0" y="183.6" width="62.0" height="176.4" rx="0" fill="#e3f1e6" stroke="#2f855a" stroke-width="1.5"/>
+    <text x="609.0" y="175.6" font-size="13" text-anchor="middle" fill="#2f855a" font-weight="bold">5.04</text>
+    <text x="535.0" y="386.0" font-size="16" text-anchor="middle" fill="#222" font-weight="bold">qsort_steal</text>
+    <text x="535.0" y="406.0" font-size="13" text-anchor="middle" fill="#555">recursive, uneven pivots</text>
+    <rect x="713.3" y="328.1" width="62.0" height="31.9" rx="0" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <line x1="744.3" y1="328.5" x2="744.3" y2="327.4" stroke="#222" stroke-width="1.5"/>
+    <text x="744.3" y="319.4" font-size="13" text-anchor="middle" fill="#2b6cb0" font-weight="bold">0.91</text>
+    <rect x="787.3" y="217.2" width="62.0" height="142.8" rx="0" fill="#fbe3d0" stroke="#c05621" stroke-width="1.5"/>
+    <line x1="818.3" y1="221.0" x2="818.3" y2="213.3" stroke="#222" stroke-width="1.5"/>
+    <text x="818.3" y="205.3" font-size="13" text-anchor="middle" fill="#c05621" font-weight="bold">4.08</text>
+    <rect x="861.3" y="203.0" width="62.0" height="157.0" rx="0" fill="#e3f1e6" stroke="#2f855a" stroke-width="1.5"/>
+    <line x1="892.3" y1="205.3" x2="892.3" y2="201.1" stroke="#222" stroke-width="1.5"/>
+    <text x="892.3" y="193.1" font-size="13" text-anchor="middle" fill="#2f855a" font-weight="bold">4.49</text>
+    <text x="818.3" y="386.0" font-size="16" text-anchor="middle" fill="#222" font-weight="bold">sparse_col_sum</text>
+    <text x="818.3" y="406.0" font-size="13" text-anchor="middle" fill="#555">flat loop, heavy rows first</text>
+    <rect x="165.0" y="428.0" width="18.0" height="18.0" rx="0" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="191.0" y="442.0" font-size="14" text-anchor="start" fill="#2b6cb0" font-weight="bold">OpenMP static</text>
+    <rect x="395.0" y="428.0" width="18.0" height="18.0" rx="0" fill="#fbe3d0" stroke="#c05621" stroke-width="1.5"/>
+    <text x="421.0" y="442.0" font-size="14" text-anchor="start" fill="#c05621" font-weight="bold">OpenMP dynamic (task for qsort)</text>
+    <rect x="695.0" y="428.0" width="18.0" height="18.0" rx="0" fill="#e3f1e6" stroke="#2f855a" stroke-width="1.5"/>
+    <text x="721.0" y="442.0" font-size="14" text-anchor="start" fill="#2f855a" font-weight="bold">Cilk work stealing</text>
+    <text x="500.0" y="62.0" font-size="13" text-anchor="middle" fill="#555">speedup over serial, 8 threads/workers, Apple M5; bar = mean of runs, black line = range</text>
+  </g>
+</svg>
