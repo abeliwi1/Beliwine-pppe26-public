@@ -157,8 +157,22 @@ void to_hex_simd(const uint8_t* in, size_t n, char* out) {
 // Finish the leftover 0-15 bytes by calling the scalar to_hex on them.
 __attribute__((noinline))
 void to_hex_simd(const uint8_t* in, size_t n, char* out) {
-  // TODO (Part 3)
-  (void)in; (void)n; (void)out;
+  const uint8x16_t table = vld1q_u8(HEX);
+  const uint8x16_t nibble = vdupq_n_u8(0x0f); // low nibble bits mask
+  size_t i = 0;
+  for (; i + 16 <= n; i += 16) {
+    uint8x16_t bytes = vld1q_u8(in + i);
+    // A byte shift zero-fills, so the high nibble needs no mask.
+    uint8x16_t hi = vshrq_n_u8(bytes, 4);
+    uint8x16_t lo = vandq_u8(bytes, nibble);
+    uint8x16x2_t chars;
+    chars.val[0] = vqtbl1q_u8(table, hi);
+    chars.val[1] = vqtbl1q_u8(table, lo);
+    vst2q_u8(reinterpret_cast<uint8_t*>(out + 2 * i), chars);
+  }
+  // finishing the leftovers
+  if (i < n)
+    to_hex(in + i, n - i, out + 2 * i);
 }
 #else
 void to_hex_simd(const uint8_t*, size_t, char*) {}  // no SIMD path on this ISA
@@ -178,8 +192,23 @@ void to_hex_simd(const uint8_t*, size_t, char*) {}  // no SIMD path on this ISA
 // hn::StoreInterleaved2.  Highway's quick_reference.md documents them all.
 __attribute__((noinline))
 void to_hex_highway(const uint8_t* in, size_t n, char* out) {
-  // TODO (Part 4)
-  (void)in; (void)n; (void)out;
+  const hn::ScalableTag<uint8_t> d;
+  const size_t lanes = hn::Lanes(d);
+  const auto table = hn::LoadDup128(d, HEX); // using auto given unknown target type
+  const auto nibble = hn::Set(d, uint8_t{0x0f});
+  size_t i = 0;
+  for (; i + lanes <= n; i += lanes) {
+    const auto bytes = hn::LoadU(d, in + i);
+    const auto hi = hn::ShiftRight<4>(bytes);
+    const auto lo = hn::And(bytes, nibble);
+    const auto hi_chars = hn::TableLookupBytes(table, hi);
+    const auto lo_chars = hn::TableLookupBytes(table, lo);
+    hn::StoreInterleaved2(hi_chars, lo_chars, d,
+                          reinterpret_cast<uint8_t*>(out + 2 * i));
+  }
+  // finishing the leftovers
+  if (i < n)
+    to_hex(in + i, n - i, out + 2 * i);
 }
 #endif
 
