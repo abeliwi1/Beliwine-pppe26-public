@@ -59,6 +59,18 @@ int timeval_subtract(struct timeval *result, struct timeval *y, struct timeval *
     return x->tv_sec < y->tv_sec;
 }
 
+/* Both parallel versions split the array into NUM_THREADS blocks, one per
+   thread, and pass 2 combines NUM_THREADS block totals.  If the runtime gave a
+   parallel region fewer threads, some blocks would never be computed and the
+   answer would be wrong, so stop instead. */
+void check_threads(int nthreads)
+{
+    if (nthreads != NUM_THREADS) {
+        fprintf(stderr, "asked for %d threads, got %d\n", NUM_THREADS, nthreads);
+        exit(1);
+    }
+}
+
 /* Serial prefix sum. */
 void prefix_serial(double *in, double *out)
 {
@@ -83,8 +95,8 @@ void prefix_omp(double *in, double *out)
     #pragma omp parallel num_threads(NUM_THREADS)
     {
         int tid   = omp_get_thread_num();
-        int nthreads = omp_get_num_threads();
-        int chunk = (N + nthreads - 1) / nthreads;
+        check_threads(omp_get_num_threads());
+        int chunk = (N + NUM_THREADS - 1) / NUM_THREADS;
         int start = tid * chunk;
         int end   = start + chunk < N ? start + chunk : N;
 
@@ -106,8 +118,8 @@ void prefix_omp(double *in, double *out)
     #pragma omp parallel num_threads(NUM_THREADS)
     {
         int tid   = omp_get_thread_num();
-        int nthreads = omp_get_num_threads();
-        int chunk = (N + nthreads - 1) / nthreads;
+        check_threads(omp_get_num_threads());
+        int chunk = (N + NUM_THREADS - 1) / NUM_THREADS;
         int start = tid * chunk;
         int end   = start + chunk < N ? start + chunk : N;
 
@@ -132,8 +144,8 @@ void prefix_omp_reduce_scan(double *in, double *out)
     #pragma omp parallel num_threads(NUM_THREADS)
     {
         int tid   = omp_get_thread_num();
-        int nthreads = omp_get_num_threads();
-        int chunk = (N + nthreads - 1) / nthreads;
+        check_threads(omp_get_num_threads());
+        int chunk = (N + NUM_THREADS - 1) / NUM_THREADS;
         int start = tid * chunk;
         int end   = start + chunk < N ? start + chunk : N;
         /* A sum, unlike a scan, can be added up in any order, so it can use
@@ -157,8 +169,8 @@ void prefix_omp_reduce_scan(double *in, double *out)
     #pragma omp parallel num_threads(NUM_THREADS)
     {
         int tid   = omp_get_thread_num();
-        int nthreads = omp_get_num_threads();
-        int chunk = (N + nthreads - 1) / nthreads;
+        check_threads(omp_get_num_threads());
+        int chunk = (N + NUM_THREADS - 1) / NUM_THREADS;
         int start = tid * chunk;
         int end   = start + chunk < N ? start + chunk : N;
         double s = offset[tid];
@@ -194,6 +206,7 @@ int main(int argc, char *argv[])
 {
     if (argc > 1) N = atoi(argv[1]);
     if (argc > 2) NUM_THREADS = atoi(argv[2]);
+    omp_set_dynamic(0);     /* don't let the runtime give a region fewer threads */
     printf("N = %d  threads = %d\n\n", N, NUM_THREADS);
 
     double *in      = malloc(N * sizeof(double));

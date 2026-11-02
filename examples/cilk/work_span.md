@@ -43,10 +43,10 @@ From the [diagram](fib_dag.html):
 | Quantity | Value | Grows as | Meaning |
 |----------|------:|----------|---------|
 | Work `T₁` | 9 nodes | Θ(φⁿ) | every call in the tree — the serial running time |
-| Span `T∞` | 7 nodes | Θ(n) | longest fork→sync path, down one spine and back |
-| Parallelism `T₁/T∞` | ≈ 1.3× | Θ(φⁿ ⁄ n) | tiny at n = 4, explodes for large n |
+| Span `T∞` | 4 nodes | Θ(n) | longest root-to-leaf path: fib(4) → fib(3) → fib(2) → fib(1) |
+| Parallelism `T₁/T∞` | ≈ 2.25× | Θ(φⁿ ⁄ n) | tiny at n = 4, explodes for large n |
 
-Parallelism is negligible at `n = 4`, but because work grows **exponentially** while
+Parallelism is small at `n = 4`, but because work grows **exponentially** while
 span grows only **linearly**, for large `n` it explodes as Θ(φⁿ ⁄ n). That gap is the
 whole point of divide-and-conquer parallelism.
 
