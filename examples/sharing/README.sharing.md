@@ -54,6 +54,18 @@ other thread writes next. The other modes report nanoseconds per *increment* by
 one thread, while the other thread does its own increments at the same time.
 Every number is the fastest of 7 runs, and both threads start together.
 
+`pause` and `spin` differ in one line, in how the waiting thread waits:
+
+```c++
+// Thread `me` (0 or 1) takes turns: wait until the value is v, then write v + 1.
+for (long v = me; v < handoffs; v += 2) {
+    while (shared.value.load(std::memory_order_acquire) != v)
+        if (relax) cpu_relax();     // pause: the spin-wait hint (x86 PAUSE, Arm YIELD)
+                                    // spin:  no hint, re-read at once
+    shared.value.store(v + 1, std::memory_order_release);
+}
+```
+
 ## Results
 
 Measured 2026-10-26 on mains power, three runs of `run.sh`: the median of the
