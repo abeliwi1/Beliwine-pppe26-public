@@ -64,6 +64,7 @@ and (where it matters) measured numbers.
 | [prefix_sum/](examples/prefix_sum/README.prefix_sum.md) | a loop no pragma can parallelize: a parallel scan that does more work, and the memory bandwidth that limits it |
 | [java_threads/](examples/java_threads/) | fork/join, and the startup cost of a thread pool |
 | [synchronization/](examples/synchronization/README.synchronization.md) | one shared counter, incremented eight ways: races, locks, atomics, and not sharing |
+| [ordering/](examples/ordering/README.ordering.md) | making one thread wait for another: a bounded blocking queue six ways, barriers, futures, and deadlock |
 | [joblib/](examples/joblib/) | parallelism from Python, and the hazard of parallelizing bad code |
 | [java_rag_pipeline/](examples/java_rag_pipeline/) | an end-to-end pipeline to profile and speed up |
 

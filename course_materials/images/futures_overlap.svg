@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="560" viewBox="0 0 1000 560" role="img" aria-label="Two timelines on the same time scale. Top, synchronous: one request thread calls fetchProfile for 40 ms, then fetchRecommendations for 120 ms, then fetchCart for 60 ms, then renders; it finishes at 235 ms, after 220 ms of waiting. Bottom, asynchronous: the request thread submits all three calls at time 0, and three pool threads make them at the same time. The request thread waits in profile.get() until 40 ms and in recs.get() until 120 ms; cart.get() returns at once, because the cart arrived at 60 ms. It renders at 120 ms and finishes at 135 ms, 100 ms sooner: the latency is the longest call, not the sum of the three.">
+  <defs>
+    <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="#f3f7fc"/><line x1="0" y1="0" x2="0" y2="7" stroke="#dbe9f7" stroke-width="4"/></pattern>
+  </defs>
+  <rect width="1000" height="560" fill="#fff"/>
+  <g font-family="Helvetica, Arial, sans-serif" fill="#222">
+    <text x="500.0" y="30" font-size="19" font-weight="bold" text-anchor="middle">Overlapping requests with futures</text>
+    <text x="500.0" y="52" font-size="13" text-anchor="middle" fill="#555">One page needs three services: 40 ms, 120 ms and 60 ms. The request thread mostly waits.</text>
+    <rect x="20" y="72" width="960" height="150" rx="8" fill="#fafafa" stroke="#ddd"/>
+    <text x="40" y="96" font-size="15" text-anchor="start" fill="#222" font-weight="bold">Synchronous: each call waits for its answer before the next one starts</text>
+    <text x="40" y="115" font-size="12" text-anchor="start" fill="#555">The request thread spends 220 ms waiting, one service at a time. The latencies add up.</text>
+    <text x="161" y="156" font-size="13" text-anchor="end" fill="#222" font-weight="bold">request thread</text>
+    <rect x="175.0" y="140" width="130.0" height="24" rx="4" fill="url(#hatch)" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="240.0" y="156" font-size="11" text-anchor="middle" fill="#2b6cb0" font-weight="bold">fetchProfile</text>
+    <rect x="305.0" y="140" width="390.0" height="24" rx="4" fill="url(#hatch)" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="500.0" y="156" font-size="11" text-anchor="middle" fill="#2b6cb0" font-weight="bold">fetchRecommendations</text>
+    <rect x="695.0" y="140" width="195.0" height="24" rx="4" fill="url(#hatch)" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="792.5" y="156" font-size="11" text-anchor="middle" fill="#2b6cb0" font-weight="bold">fetchCart</text>
+    <rect x="890.0" y="140" width="48.75" height="24" rx="4" fill="#fbe3d0" stroke="#c05621" stroke-width="1.5"/>
+    <text x="914.375" y="156" font-size="11" text-anchor="middle" fill="#c05621" font-weight="bold">render</text>
+    <line x1="175.0" y1="185" x2="955.0" y2="185" stroke="#999" stroke-width="1"/>
+    <line x1="175.0" y1="181" x2="175.0" y2="189" stroke="#999" stroke-width="1"/>
+    <text x="175.0" y="202" font-size="11" text-anchor="middle" fill="#555">0 ms</text>
+    <line x1="305.0" y1="181" x2="305.0" y2="189" stroke="#999" stroke-width="1"/>
+    <text x="305.0" y="202" font-size="11" text-anchor="middle" fill="#555">40 ms</text>
+    <line x1="695.0" y1="181" x2="695.0" y2="189" stroke="#999" stroke-width="1"/>
+    <text x="695.0" y="202" font-size="11" text-anchor="middle" fill="#555">160 ms</text>
+    <line x1="890.0" y1="181" x2="890.0" y2="189" stroke="#999" stroke-width="1"/>
+    <text x="890.0" y="202" font-size="11" text-anchor="middle" fill="#555">220 ms</text>
+    <line x1="938.75" y1="181" x2="938.75" y2="189" stroke="#999" stroke-width="1"/>
+    <text x="938.75" y="202" font-size="11" text-anchor="middle" fill="#555">235 ms</text>
+    <rect x="20" y="240" width="960" height="270" rx="8" fill="#fafafa" stroke="#ddd"/>
+    <text x="40" y="264" font-size="15" text-anchor="start" fill="#222" font-weight="bold">Asynchronous: submit all three, then get the results</text>
+    <text x="40" y="283" font-size="12" text-anchor="start" fill="#555">submit() returns a Future at once, and a pool thread makes the call. The three waits overlap: the latency is the longest one, not the sum.</text>
+    <text x="161" y="329" font-size="13" text-anchor="end" fill="#222" font-weight="bold">request thread</text>
+    <line x1="176.0" y1="313" x2="176.0" y2="337" stroke="#222" stroke-width="2"/>
+    <line x1="179.0" y1="313" x2="179.0" y2="337" stroke="#222" stroke-width="2"/>
+    <line x1="182.0" y1="313" x2="182.0" y2="337" stroke="#222" stroke-width="2"/>
+    <line x1="178.25" y1="325" x2="305.0" y2="325" stroke="#555" stroke-width="2" stroke-dasharray="5 4"/>
+    <line x1="305.0" y1="325" x2="565.0" y2="325" stroke="#555" stroke-width="2" stroke-dasharray="5 4"/>
+    <circle cx="305.0" cy="325" r="4" fill="#222"/>
+    <circle cx="565.0" cy="325" r="4" fill="#222"/>
+    <text x="240.0" y="307" font-size="11" text-anchor="middle" fill="#222">profile.get()</text>
+    <text x="435.0" y="307" font-size="11" text-anchor="middle" fill="#222">recs.get()</text>
+    <text x="569.0" y="307" font-size="11" text-anchor="start" fill="#222">cart.get(): already done</text>
+    <rect x="565.0" y="313" width="48.75" height="24" rx="4" fill="#fbe3d0" stroke="#c05621" stroke-width="1.5"/>
+    <text x="589.375" y="329" font-size="11" text-anchor="middle" fill="#c05621" font-weight="bold">render</text>
+    <text x="173.0" y="353" font-size="10" text-anchor="start" fill="#555">3 × submit()</text>
+    <text x="161" y="381" font-size="13" text-anchor="end" fill="#2b6cb0" font-weight="bold">pool thread 1</text>
+    <rect x="175.0" y="365" width="130.0" height="24" rx="4" fill="url(#hatch)" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="240.0" y="381" font-size="11" text-anchor="middle" fill="#2b6cb0" font-weight="bold">fetchProfile</text>
+    <line x1="305.0" y1="365" x2="305.0" y2="331" stroke="#2b6cb0" stroke-width="1" stroke-dasharray="2 3"/>
+    <text x="161" y="417" font-size="13" text-anchor="end" fill="#2b6cb0" font-weight="bold">pool thread 2</text>
+    <rect x="175.0" y="401" width="390.0" height="24" rx="4" fill="url(#hatch)" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="370.0" y="417" font-size="11" text-anchor="middle" fill="#2b6cb0" font-weight="bold">fetchRecommendations</text>
+    <line x1="565.0" y1="401" x2="565.0" y2="331" stroke="#2b6cb0" stroke-width="1" stroke-dasharray="2 3"/>
+    <text x="161" y="453" font-size="13" text-anchor="end" fill="#2b6cb0" font-weight="bold">pool thread 3</text>
+    <rect x="175.0" y="437" width="195.0" height="24" rx="4" fill="url(#hatch)" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="272.5" y="453" font-size="11" text-anchor="middle" fill="#2b6cb0" font-weight="bold">fetchCart</text>
+    <line x1="370.0" y1="437" x2="370.0" y2="331" stroke="#2b6cb0" stroke-width="1" stroke-dasharray="2 3"/>
+    <line x1="175.0" y1="485" x2="955.0" y2="485" stroke="#999" stroke-width="1"/>
+    <line x1="175.0" y1="481" x2="175.0" y2="489" stroke="#999" stroke-width="1"/>
+    <text x="175.0" y="502" font-size="11" text-anchor="middle" fill="#555">0 ms</text>
+    <line x1="305.0" y1="481" x2="305.0" y2="489" stroke="#999" stroke-width="1"/>
+    <text x="305.0" y="502" font-size="11" text-anchor="middle" fill="#555">40 ms</text>
+    <line x1="370.0" y1="481" x2="370.0" y2="489" stroke="#999" stroke-width="1"/>
+    <text x="370.0" y="502" font-size="11" text-anchor="middle" fill="#555">60 ms</text>
+    <line x1="565.0" y1="481" x2="565.0" y2="489" stroke="#999" stroke-width="1"/>
+    <text x="565.0" y="502" font-size="11" text-anchor="middle" fill="#555">120 ms</text>
+    <line x1="613.75" y1="481" x2="613.75" y2="489" stroke="#999" stroke-width="1"/>
+    <text x="613.75" y="502" font-size="11" text-anchor="middle" fill="#555">135 ms</text>
+    <line x1="938.75" y1="481" x2="938.75" y2="489" stroke="#999" stroke-width="1"/>
+    <text x="938.75" y="502" font-size="11" text-anchor="middle" fill="#555">235 ms</text>
+    <line x1="613.75" y1="325" x2="938.75" y2="325" stroke="#2f855a" stroke-width="2"/>
+    <line x1="613.75" y1="317" x2="613.75" y2="333" stroke="#2f855a" stroke-width="2"/>
+    <line x1="938.75" y1="317" x2="938.75" y2="333" stroke="#2f855a" stroke-width="2"/>
+    <text x="776.25" y="347" font-size="12" text-anchor="middle" fill="#2f855a" font-weight="bold">100 ms saved</text>
+    <rect x="200" y="524" width="40" height="22" rx="4" fill="url(#hatch)" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="248" y="540" font-size="12" text-anchor="start" fill="#555">a call to a service: the caller waits</text>
+    <rect x="500" y="524" width="40" height="22" rx="4" fill="#fbe3d0" stroke="#c05621" stroke-width="1.5"/>
+    <text x="548" y="540" font-size="12" text-anchor="start" fill="#555">computing</text>
+    <line x1="175.0" y1="535" x2="175.0" y2="535" stroke="#555" stroke-width="2" stroke-dasharray="5 4"/>
+    <line x1="660" y1="535" x2="700" y2="535" stroke="#555" stroke-width="2" stroke-dasharray="5 4"/>
+    <text x="708" y="540" font-size="12" text-anchor="start" fill="#555">waiting in get()</text>
+  </g>
+</svg>

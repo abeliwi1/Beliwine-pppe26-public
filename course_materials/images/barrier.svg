@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="345" viewBox="0 0 1000 345" role="img" aria-label="A timeline of a CyclicBarrier with 4 threads, T0 to T3. Step 1 takes a different time in each thread. Each thread that finishes early calls await() and waits at the barrier. When T2, the last, arrives, the barrier's action runs once and all four start step 2 together. The same barrier is reused after step 2, where T3 arrives last, and all four start step 3 together.">
+  <rect width="1000" height="345" fill="#fff"/>
+  <g font-family="Helvetica, Arial, sans-serif" fill="#222">
+    <text x="500.0" y="30" font-size="19" font-weight="bold" text-anchor="middle">CyclicBarrier(4)</text>
+    <text x="500.0" y="52" font-size="13" text-anchor="middle" fill="#555">Each thread calls await() when its step is done. No thread starts the next step until all four have arrived.</text>
+    <text x="116" y="115" font-size="14" text-anchor="end" fill="#2b6cb0" font-weight="bold">T0</text>
+    <rect x="130" y="99" width="250" height="22" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <line x1="380" y1="110" x2="470" y2="110" stroke="#555" stroke-width="2" stroke-dasharray="5 4"/>
+    <circle cx="380" cy="110" r="5" fill="#2f855a"/>
+    <rect x="480" y="99" width="220" height="22" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <line x1="700" y1="110" x2="805" y2="110" stroke="#555" stroke-width="2" stroke-dasharray="5 4"/>
+    <circle cx="700" cy="110" r="5" fill="#2f855a"/>
+    <rect x="815" y="99" width="150" height="22" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="116" y="157" font-size="14" text-anchor="end" fill="#2b6cb0" font-weight="bold">T1</text>
+    <rect x="130" y="141" width="170" height="22" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <line x1="300" y1="152" x2="470" y2="152" stroke="#555" stroke-width="2" stroke-dasharray="5 4"/>
+    <circle cx="300" cy="152" r="5" fill="#2f855a"/>
+    <rect x="480" y="141" width="280" height="22" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <line x1="760" y1="152" x2="805" y2="152" stroke="#555" stroke-width="2" stroke-dasharray="5 4"/>
+    <circle cx="760" cy="152" r="5" fill="#2f855a"/>
+    <rect x="815" y="141" width="150" height="22" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="116" y="199" font-size="14" text-anchor="end" fill="#2b6cb0" font-weight="bold">T2</text>
+    <rect x="130" y="183" width="340" height="22" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <circle cx="470" cy="194" r="5" fill="#2f855a"/>
+    <rect x="480" y="183" width="160" height="22" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <line x1="640" y1="194" x2="805" y2="194" stroke="#555" stroke-width="2" stroke-dasharray="5 4"/>
+    <circle cx="640" cy="194" r="5" fill="#2f855a"/>
+    <rect x="815" y="183" width="150" height="22" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="116" y="241" font-size="14" text-anchor="end" fill="#2b6cb0" font-weight="bold">T3</text>
+    <rect x="130" y="225" width="210" height="22" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <line x1="340" y1="236" x2="470" y2="236" stroke="#555" stroke-width="2" stroke-dasharray="5 4"/>
+    <circle cx="340" cy="236" r="5" fill="#2f855a"/>
+    <rect x="480" y="225" width="325" height="22" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <circle cx="805" cy="236" r="5" fill="#2f855a"/>
+    <rect x="815" y="225" width="150" height="22" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <line x1="475" y1="86" x2="475" y2="260" stroke="#2f855a" stroke-width="3"/>
+    <line x1="810" y1="86" x2="810" y2="260" stroke="#2f855a" stroke-width="3"/>
+    <text x="300.0" y="90" font-size="12" text-anchor="middle" fill="#2b6cb0" font-weight="bold">step 1</text>
+    <text x="642.5" y="90" font-size="12" text-anchor="middle" fill="#2b6cb0" font-weight="bold">step 2</text>
+    <text x="890.0" y="90" font-size="12" text-anchor="middle" fill="#2b6cb0" font-weight="bold">step 3</text>
+    <text x="475" y="278" font-size="12" text-anchor="middle" fill="#2f855a" font-weight="bold">T2 arrives last: the action runs once, then all leave</text>
+    <text x="810" y="278" font-size="12" text-anchor="middle" fill="#2f855a" font-weight="bold">the same barrier, reused</text>
+    <rect x="200" y="307" width="40" height="22" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="248" y="323" font-size="12" text-anchor="start" fill="#555">a step of work</text>
+    <line x1="380" y1="318" x2="420" y2="318" stroke="#555" stroke-width="2" stroke-dasharray="5 4"/>
+    <text x="428" y="323" font-size="12" text-anchor="start" fill="#555">waiting in await() (asleep)</text>
+    <line x1="640" y1="307" x2="640" y2="329" stroke="#2f855a" stroke-width="3"/>
+    <text x="650" y="323" font-size="12" text-anchor="start" fill="#555">barrier: no thread passes until all arrive</text>
+  </g>
+</svg>

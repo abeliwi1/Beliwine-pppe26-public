@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="698" viewBox="0 0 1000 698" role="img" aria-label="A bounded blocking queue with capacity 4, in three steps. 1: the queue is empty, count is 0, the mutex is free, and consumers C1 and C2 are asleep in the wait set after calling wait(). Producer P calls put(17). 2: P holds the mutex, writes 17 into slot 0, count becomes 1, and P calls notifyAll(), waking C1 and C2, which now need the mutex. 3: C1 holds the mutex and takes 17; count is 0 again. C2 gets the mutex later, re-tests count == 0 in its while loop, and goes back to sleep in the wait set.">
+  <defs>
+    <marker id="tip" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#222"/></marker>
+    <marker id="tipo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c05621"/></marker>
+    <marker id="tipb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2b6cb0"/></marker>
+  </defs>
+  <rect width="1000" height="698" fill="#fff"/>
+  <g font-family="Helvetica, Arial, sans-serif" fill="#222">
+    <text x="500.0" y="30" font-size="19" font-weight="bold" text-anchor="middle">Waiting on a bounded queue</text>
+    <text x="500.0" y="52" font-size="13" text-anchor="middle" fill="#555">Two consumers wait on an empty queue; then a producer puts one item.</text>
+    <rect x="20" y="78" width="960" height="176" rx="8" fill="#fafafa" stroke="#ddd"/>
+    <text x="40" y="102" font-size="15" text-anchor="start" fill="#222" font-weight="bold">1.  The queue is empty: two consumers wait</text>
+    <text x="40" y="121" font-size="12" text-anchor="start" fill="#555">C1 and C2 called take(), found count == 0, and called wait(): each released the mutex and went to sleep.</text>
+    <rect x="60" y="148" width="120" height="86" rx="8" fill="#fff" stroke="#222" stroke-width="1.5"/>
+    <text x="120" y="166" font-size="13" text-anchor="middle" fill="#222" font-weight="bold">mutex</text>
+    <text x="120" y="205" font-size="13" text-anchor="middle" fill="#555" font-style="italic">free</text>
+    <rect x="330" y="176" width="60" height="44" fill="#fff" stroke="#222" stroke-width="1.5"/>
+    <rect x="390" y="176" width="60" height="44" fill="#fff" stroke="#222" stroke-width="1.5"/>
+    <rect x="450" y="176" width="60" height="44" fill="#fff" stroke="#222" stroke-width="1.5"/>
+    <rect x="510" y="176" width="60" height="44" fill="#fff" stroke="#222" stroke-width="1.5"/>
+    <text x="450" y="240" font-size="13" text-anchor="middle" fill="#222" font-weight="bold">count = 0</text>
+    <text x="578" y="203" font-size="12" text-anchor="start" fill="#555">capacity 4</text>
+    <rect x="690" y="142" width="270" height="100" rx="10" fill="#fff" stroke="#555" stroke-width="1.5" stroke-dasharray="6 4"/>
+    <text x="825" y="160" font-size="12" text-anchor="middle" fill="#555" font-weight="bold">wait set</text>
+    <circle cx="770" cy="192" r="21" fill="#fff" stroke="#2b6cb0" stroke-width="2" stroke-dasharray="4 3"/>
+    <text x="770" y="197" font-size="14" text-anchor="middle" fill="#2b6cb0" font-weight="bold">C1</text>
+    <text x="792" y="176" font-size="11" text-anchor="start" fill="#555" font-style="italic">z z</text>
+    <text x="770" y="231" font-size="11" text-anchor="middle" fill="#555">in wait()</text>
+    <circle cx="880" cy="192" r="21" fill="#fff" stroke="#2b6cb0" stroke-width="2" stroke-dasharray="4 3"/>
+    <text x="880" y="197" font-size="14" text-anchor="middle" fill="#2b6cb0" font-weight="bold">C2</text>
+    <text x="902" y="176" font-size="11" text-anchor="start" fill="#555" font-style="italic">z z</text>
+    <text x="880" y="231" font-size="11" text-anchor="middle" fill="#555">in wait()</text>
+    <circle cx="255" cy="200" r="21" fill="#fbe3d0" stroke="#c05621" stroke-width="2"/>
+    <text x="255" y="205" font-size="14" text-anchor="middle" fill="#c05621" font-weight="bold">P</text>
+    <text x="255" y="168" font-size="13" text-anchor="middle" fill="#c05621" font-weight="bold">put(17)</text>
+    <rect x="20" y="268" width="960" height="176" rx="8" fill="#fafafa" stroke="#ddd"/>
+    <text x="40" y="292" font-size="15" text-anchor="start" fill="#222" font-weight="bold">2.  P puts an item and calls notifyAll()</text>
+    <text x="40" y="311" font-size="12" text-anchor="start" fill="#555">P takes the mutex, writes slot 0, and wakes both consumers. They are awake, but need the mutex to return from wait().</text>
+    <rect x="60" y="338" width="120" height="86" rx="8" fill="#fff" stroke="#222" stroke-width="1.5"/>
+    <text x="120" y="356" font-size="13" text-anchor="middle" fill="#222" font-weight="bold">mutex</text>
+    <circle cx="120" cy="390" r="21" fill="#fbe3d0" stroke="#c05621" stroke-width="2"/>
+    <text x="120" y="395" font-size="14" text-anchor="middle" fill="#c05621" font-weight="bold">P</text>
+    <rect x="330" y="366" width="60" height="44" fill="#fff" stroke="#222" stroke-width="1.5"/>
+    <rect x="390" y="366" width="60" height="44" fill="#fff" stroke="#222" stroke-width="1.5"/>
+    <rect x="450" y="366" width="60" height="44" fill="#fff" stroke="#222" stroke-width="1.5"/>
+    <rect x="510" y="366" width="60" height="44" fill="#fff" stroke="#222" stroke-width="1.5"/>
+    <text x="360" y="394" font-size="18" text-anchor="middle" fill="#222" font-weight="bold">17</text>
+    <text x="450" y="430" font-size="13" text-anchor="middle" fill="#222" font-weight="bold">count = 1</text>
+    <text x="578" y="393" font-size="12" text-anchor="start" fill="#555">capacity 4</text>
+    <rect x="690" y="332" width="270" height="100" rx="10" fill="#fff" stroke="#555" stroke-width="1.5" stroke-dasharray="6 4"/>
+    <text x="825" y="350" font-size="12" text-anchor="middle" fill="#555" font-weight="bold">wait set</text>
+    <circle cx="770" cy="382" r="21" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="2"/>
+    <text x="770" y="387" font-size="14" text-anchor="middle" fill="#2b6cb0" font-weight="bold">C1</text>
+    <text x="770" y="421" font-size="11" text-anchor="middle" fill="#555">awake, wants mutex</text>
+    <circle cx="880" cy="382" r="21" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="2"/>
+    <text x="880" y="387" font-size="14" text-anchor="middle" fill="#2b6cb0" font-weight="bold">C2</text>
+    <text x="880" y="421" font-size="11" text-anchor="middle" fill="#555">awake, wants mutex</text>
+    <path d="M 180 360 C 380 326, 560 326, 688 362" fill="none" stroke="#c05621" stroke-width="1.8" marker-end="url(#tipo)"/>
+    <text x="450" y="334" font-size="13" text-anchor="middle" fill="#c05621" font-weight="bold">notifyAll(): wake every waiter</text>
+    <rect x="20" y="458" width="960" height="176" rx="8" fill="#fafafa" stroke="#ddd"/>
+    <text x="40" y="482" font-size="15" text-anchor="start" fill="#222" font-weight="bold">3.  C1 gets the mutex and takes the item; C2 re-tests and waits again</text>
+    <text x="40" y="501" font-size="12" text-anchor="start" fill="#555">When C2 gets the mutex, count is 0 again. while (count == 0) wait(); sends it back to sleep. With if, it would take from an empty queue.</text>
+    <rect x="60" y="528" width="120" height="86" rx="8" fill="#fff" stroke="#222" stroke-width="1.5"/>
+    <text x="120" y="546" font-size="13" text-anchor="middle" fill="#222" font-weight="bold">mutex</text>
+    <circle cx="120" cy="580" r="21" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="2"/>
+    <text x="120" y="585" font-size="14" text-anchor="middle" fill="#2b6cb0" font-weight="bold">C1</text>
+    <rect x="330" y="556" width="60" height="44" fill="#fff" stroke="#222" stroke-width="1.5"/>
+    <rect x="390" y="556" width="60" height="44" fill="#fff" stroke="#222" stroke-width="1.5"/>
+    <rect x="450" y="556" width="60" height="44" fill="#fff" stroke="#222" stroke-width="1.5"/>
+    <rect x="510" y="556" width="60" height="44" fill="#fff" stroke="#222" stroke-width="1.5"/>
+    <text x="450" y="620" font-size="13" text-anchor="middle" fill="#222" font-weight="bold">count = 0</text>
+    <text x="578" y="583" font-size="12" text-anchor="start" fill="#555">capacity 4</text>
+    <rect x="690" y="522" width="270" height="100" rx="10" fill="#fff" stroke="#555" stroke-width="1.5" stroke-dasharray="6 4"/>
+    <text x="825" y="540" font-size="12" text-anchor="middle" fill="#555" font-weight="bold">wait set</text>
+    <circle cx="880" cy="572" r="21" fill="#fff" stroke="#2b6cb0" stroke-width="2" stroke-dasharray="4 3"/>
+    <text x="880" y="577" font-size="14" text-anchor="middle" fill="#2b6cb0" font-weight="bold">C2</text>
+    <text x="902" y="556" font-size="11" text-anchor="start" fill="#555" font-style="italic">z z</text>
+    <text x="880" y="611" font-size="11" text-anchor="middle" fill="#555">re-tested: wait()</text>
+    <path d="M 360 554 C 350 524, 240 524, 182 562" fill="none" stroke="#2b6cb0" stroke-width="1.8" marker-end="url(#tipb)"/>
+    <text x="300" y="524" font-size="13" text-anchor="middle" fill="#2b6cb0" font-weight="bold">take() → 17</text>
+    <text x="500.0" y="664" font-size="13" text-anchor="middle" fill="#555">wait() releases the mutex and sleeps as one step.  notifyAll() wakes every waiter, and each takes the mutex in turn.</text>
+  </g>
+</svg>

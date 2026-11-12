@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="380" viewBox="0 0 1000 380" role="img" aria-label="A timeline of a CountDownLatch with count 3 at server startup. main starts three threads and calls ready.await(). The db pool thread calls countDown() first, then the cache thread, then the config thread, and the count goes 3, 2, 1, 0. Each thread keeps running after its countDown(): refreshing the cache, monitoring the pool, watching the config. When the count reaches 0, await() returns and main starts accepting requests. None of the threads ever finishes, so join() could not express this wait.">
+  <rect width="1000" height="380" fill="#fff"/>
+  <g font-family="Helvetica, Arial, sans-serif" fill="#222">
+    <text x="500.0" y="30" font-size="19" font-weight="bold" text-anchor="middle">CountDownLatch(3) at server startup</text>
+    <text x="500.0" y="52" font-size="13" text-anchor="middle" fill="#555">Three threads each get one part ready, count down, and keep running. main waits until all three are ready.</text>
+    <text x="116" y="125" font-size="14" text-anchor="end" fill="#c05621" font-weight="bold">main</text>
+    <rect x="130" y="109" width="90" height="22" rx="4" fill="#fbe3d0" stroke="#c05621" stroke-width="1.5"/>
+    <text x="175.0" y="124" font-size="11" text-anchor="middle" fill="#c05621">start threads</text>
+    <circle cx="220" cy="120" r="5" fill="#c05621"/>
+    <line x1="220" y1="120" x2="600" y2="120" stroke="#555" stroke-width="2" stroke-dasharray="5 4"/>
+    <text x="226" y="102" font-size="12" text-anchor="start" fill="#c05621" font-weight="bold">ready.await()</text>
+    <rect x="608" y="109" width="357" height="22" rx="4" fill="#fbe3d0" stroke="#c05621" stroke-width="1.5"/>
+    <text x="786.5" y="124" font-size="11" text-anchor="middle" fill="#c05621">acceptRequests()</text>
+    <text x="608" y="102" font-size="12" text-anchor="start" fill="#c05621" font-weight="bold">count is 0: await() returns</text>
+    <text x="116" y="195" font-size="13" text-anchor="end" fill="#2b6cb0" font-weight="bold">cache</text>
+    <rect x="130" y="179" width="340" height="22" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="300.0" y="194" font-size="11" text-anchor="middle" fill="#2b6cb0">loadCache()</text>
+    <rect x="476" y="179" width="489" height="22" rx="4" fill="#f3f7fc" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="720.5" y="194" font-size="11" text-anchor="middle" fill="#2b6cb0">refreshCacheForever()</text>
+    <line x1="473" y1="174" x2="473" y2="206" stroke="#c05621" stroke-width="3"/>
+    <text x="116" y="237" font-size="13" text-anchor="end" fill="#2b6cb0" font-weight="bold">db pool</text>
+    <rect x="130" y="221" width="200" height="22" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="230.0" y="236" font-size="11" text-anchor="middle" fill="#2b6cb0">openDbPool()</text>
+    <rect x="336" y="221" width="629" height="22" rx="4" fill="#f3f7fc" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="650.5" y="236" font-size="11" text-anchor="middle" fill="#2b6cb0">monitorPoolForever()</text>
+    <line x1="333" y1="216" x2="333" y2="248" stroke="#c05621" stroke-width="3"/>
+    <text x="116" y="279" font-size="13" text-anchor="end" fill="#2b6cb0" font-weight="bold">config</text>
+    <rect x="130" y="263" width="470" height="22" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="365.0" y="278" font-size="11" text-anchor="middle" fill="#2b6cb0">readConfig()</text>
+    <rect x="606" y="263" width="359" height="22" rx="4" fill="#f3f7fc" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="785.5" y="278" font-size="11" text-anchor="middle" fill="#2b6cb0">watchConfigForever()</text>
+    <line x1="603" y1="258" x2="603" y2="290" stroke="#c05621" stroke-width="3"/>
+    <line x1="175" y1="168" x2="175" y2="290" stroke="#c05621" stroke-width="1" stroke-dasharray="2 3"/>
+    <rect x="144" y="149" width="62" height="18" rx="9" fill="#fff" stroke="#c05621"/>
+    <text x="175" y="162" font-size="11" text-anchor="middle" fill="#c05621" font-weight="bold">count 3</text>
+    <line x1="333" y1="168" x2="333" y2="290" stroke="#c05621" stroke-width="1" stroke-dasharray="2 3"/>
+    <rect x="302" y="149" width="62" height="18" rx="9" fill="#fff" stroke="#c05621"/>
+    <text x="333" y="162" font-size="11" text-anchor="middle" fill="#c05621" font-weight="bold">count 2</text>
+    <line x1="473" y1="168" x2="473" y2="290" stroke="#c05621" stroke-width="1" stroke-dasharray="2 3"/>
+    <rect x="442" y="149" width="62" height="18" rx="9" fill="#fff" stroke="#c05621"/>
+    <text x="473" y="162" font-size="11" text-anchor="middle" fill="#c05621" font-weight="bold">count 1</text>
+    <line x1="603" y1="168" x2="603" y2="290" stroke="#c05621" stroke-width="1" stroke-dasharray="2 3"/>
+    <rect x="572" y="149" width="62" height="18" rx="9" fill="#fff" stroke="#c05621"/>
+    <text x="603" y="162" font-size="11" text-anchor="middle" fill="#c05621" font-weight="bold">count 0</text>
+    <text x="965" y="314" font-size="12" text-anchor="end" fill="#555" font-style="italic">every thread keeps running after countDown(): none of them ever finishes, so join() could not do this</text>
+    <rect x="140" y="341" width="40" height="22" rx="4" fill="#dbe9f7" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="188" y="357" font-size="12" text-anchor="start" fill="#555">getting ready</text>
+    <rect x="300" y="341" width="40" height="22" rx="4" fill="#f3f7fc" stroke="#2b6cb0" stroke-width="1.5"/>
+    <text x="348" y="357" font-size="12" text-anchor="start" fill="#555">running, after it is ready</text>
+    <line x1="540" y1="352" x2="580" y2="352" stroke="#555" stroke-width="2" stroke-dasharray="5 4"/>
+    <text x="588" y="357" font-size="12" text-anchor="start" fill="#555">waiting (asleep)</text>
+    <line x1="720" y1="341" x2="720" y2="363" stroke="#c05621" stroke-width="3"/>
+    <text x="730" y="357" font-size="12" text-anchor="start" fill="#555">ready.countDown()</text>
+  </g>
+</svg>
