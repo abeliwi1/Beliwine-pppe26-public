@@ -137,49 +137,46 @@ static double panel(int p, double eps)
     return integrate(double(p) / PANELS, double(p + 1) / PANELS, eps / PANELS);
 }
 
-// TODO (Part 1): parallelize the loop over panels with OpenMP, static schedule.
-//    also make updates to sum thread-safe
+// Equal contiguous blocks of panels. Each thread adds into a private sum.
 static double omp_static(double eps)
 {
     double sum = 0;
+    #pragma omp parallel for schedule(static) reduction(+:sum)
     for (int p = 0; p < PANELS; p++)
         sum += panel(p, eps);
     return sum;
 }
 
-// TODO (Part 1): the same loop with OpenMP, dynamic schedule, one panel at a time.
-//    also make updates to sum thread-safe
+// One panel at a time, handed to whichever thread is free.
 static double omp_dynamic(double eps)
 {
     double sum = 0;
+    #pragma omp parallel for schedule(dynamic, 1) reduction(+:sum)
     for (int p = 0; p < PANELS; p++)
         sum += panel(p, eps);
     return sum;
 }
 
-// TODO (Part 1): the same loop with cilk_for and Cilk's default grain size.
-//    also make updates to sum thread-safe
+// cilk_for with the default grain. Each worker adds into its own view of sum.
 static double cilk_for_panels(double eps)
 {
-    double sum = 0;
-    for (int p = 0; p < PANELS; p++)
+    cilk::opadd_reducer<double> sum = 0;
+    cilk_for (int p = 0; p < PANELS; p++)
         sum += panel(p, eps);
     return sum;
 }
 
-// TODO (Part 1): the same loop with cilk_for and a grain size of 1.
-//    also make updates to sum thread-safe
+// One panel per grain, so a stolen piece is never more than one panel.
 static double cilk_for_grain1(double eps)
 {
-    double sum = 0;
-    for (int p = 0; p < PANELS; p++)
+    cilk::opadd_reducer<double> sum = 0;
+    #pragma cilk grainsize(1)
+    cilk_for (int p = 0; p < PANELS; p++)
         sum += panel(p, eps);
     return sum;
 }
 
-// TODO (Part 1): the recursion with OpenMP tasks.  Make the left half a task,
-// compute the right half here, and wait for the task before adding them.
-// Below SPAWN_DEPTH it is plain serial recursion.
+// Left half is a task; this thread computes the right half, then waits.
 static double adapt_omp(double a, double b, double eps, double whole,
                         double fa, double fm, double fb, int depth)
 {
@@ -197,8 +194,10 @@ static double adapt_omp(double a, double b, double eps, double whole,
 
     // TODO (Part 1): changes below here
     double l, r;
+    #pragma omp task shared(l)
     l = adapt_omp(a, m, eps / 2, left, fa, flm, fm, depth + 1);
     r = adapt_omp(m, b, eps / 2, right, fm, frm, fb, depth + 1);
+    #pragma omp taskwait
     return l + r;
 }
 
@@ -216,8 +215,7 @@ static double omp_task(double eps)
     return sum;
 }
 
-// TODO (Part 1): the recursion with Cilk.  Spawn the left half, compute the
-// right half here, and sync before adding them.
+// Spawn the left half; this worker computes the right half, then syncs.
 static double adapt_cilk(double a, double b, double eps, double whole,
                          double fa, double fm, double fb, int depth)
 {
@@ -234,8 +232,9 @@ static double adapt_cilk(double a, double b, double eps, double whole,
                adapt(m, b, eps / 2, right, fm, frm, fb);
 
     // TODO (Part 1): changes below here
-    double l = adapt_cilk(a, m, eps / 2, left, fa, flm, fm, depth + 1);
+    double l = cilk_spawn adapt_cilk(a, m, eps / 2, left, fa, flm, fm, depth + 1);
     double r = adapt_cilk(m, b, eps / 2, right, fm, frm, fb, depth + 1);
+    cilk_sync;
     return l + r;
 }
 
